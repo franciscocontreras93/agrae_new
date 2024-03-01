@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>831</width>
+    <height>400</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="1" column="1">
+    <widget class="QPushButton" name="btn_cancel">
+     <property name="maximumSize">
+      <size>
+       <width>100</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="text">
+      <string>Cancelar</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2">
+    <widget class="QPushButton" name="btn_create">
+     <property name="maximumSize">
+      <size>
+       <width>300</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="text">
+      <string>Crear Lotes</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="3">
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="tab_1">
+      <attribute name="title">
+       <string>Crear Lote desde Capa o Archivo</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="title">
+          <string>Seleccionar Archivo o Capa</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <property name="sizeConstraint">
+             <enum>QLayout::SetDefaultConstraint</enum>
+            </property>
+            <item>
+             <widget class="QLabel" name="label_12">
+              <property name="maximumSize">
+               <size>
+                <width>200</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Seleccionar Capa o Archivo</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QgsMapLayerComboBox" name="comboLayers"/>
+            </item>
+            <item>
+             <widget class="QToolButton" name="toolButton_2">
+              <property name="minimumSize">
+               <size>
+                <width>30</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>30</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="title">
+          <string>Asignar Campaña y Explotación</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <layout class="QGridLayout" name="gridLayout_6">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_13">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>10</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Seleccionar Campaña</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLabel" name="label_14">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>10</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Seleccionar Explotación</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QComboBox" name="comboCamp"/>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="comboExp"/>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_4">
+         <property name="title">
+          <string>Datos del Lote</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_5">
+          <item row="1" column="0">
+           <widget class="QgsFieldComboBox" name="comboNombre">
+            <property name="allowEmptyFieldName">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QgsFieldComboBox" name="comboProduccion">
+            <property name="allowEmptyFieldName">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QgsFieldComboBox" name="comboRegimen">
+            <property name="allowEmptyFieldName">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QgsFieldComboBox" name="comboCultivo">
+            <property name="allowEmptyFieldName">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>Nombre del Lote</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Cultivo del Lote</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>Produccion Esperada del Lote</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>Regimen del Lote</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_2">
+      <attribute name="title">
+       <string>Crear Lotes desde Recintos</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QGroupBox" name="groupBox_6">
+         <property name="title">
+          <string>Asignar Campaña y Explotación</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_6">
+          <item>
+           <layout class="QGridLayout" name="gridLayout_8">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_19">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>10</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Seleccionar Campaña</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLabel" name="label_20">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>10</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Seleccionar Explotación</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QComboBox" name="comboCamp_2"/>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="comboExp_2"/>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_5">
+         <property name="title">
+          <string>Datos del Lote</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_7">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_15">
+            <property name="text">
+             <string>Nombre del Lote</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="label_17">
+            <property name="text">
+             <string>Produccion Esperada del Lote</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QLabel" name="label_18">
+            <property name="text">
+             <string>Regimen del Lote</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="comboCultivo_2"/>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_16">
+            <property name="text">
+             <string>Cultivo del Lote</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLineEdit" name="line_name">
+            <property name="maximumSize">
+             <size>
+              <width>200</width>
+              <height>16777215</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QLineEdit" name="line_prod">
+            <property name="maximumSize">
+             <size>
+              <width>200</width>
+              <height>16777215</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QComboBox" name="comboRegimen_2"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsFieldComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qgsfieldcombobox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QgsMapLayerComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qgsmaplayercombobox.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

@@ -1,0 +1,85 @@
+<RCC>
+    <qresource prefix="/plugins/agrae" >
+        <!-- <file>icon.png</file> -->
+        
+        <file>gui\icons\icon.svg</file>
+
+        <file>gui\icons\pen-solid.svg</file>
+        <file>gui\icons\pen-to-square-solid.svg</file>
+        <file>gui\icons\trash-solid.svg</file>
+        <file>gui\icons\save-solid.svg</file>
+        <file>gui\icons\plus-solid.svg</file>
+        <file>gui\icons\clone-solid.svg</file>
+        <file>gui\icons\reload.svg</file>
+        <file>gui\icons\weather.svg</file>
+        <file>gui\icons\layer-add-o.svg</file>
+        <file>gui\icons\image-solid.svg</file>
+        <file>gui\icons\list-check-solid.svg</file>
+        <file>gui\icons\info.png</file>
+        <file>gui\icons\npk.png</file>
+        <file>gui\icons\matraz.png</file>
+        <file>gui\icons\search.svg</file>
+        <file>gui\icons\search-lotes.svg</file>
+        <file>gui\icons\file-excel-solid.svg</file>
+        <file>gui\icons\file-import-solid.svg</file>
+        <file>gui\icons\tools.svg</file>
+        <file>gui\icons\upload-db.svg</file>
+        <file>gui\icons\chart-bar-solid.svg</file>
+        <file>gui\icons\farmer-solid.svg</file>
+        <file>gui\icons\user-solid.svg</file>
+        <file>gui\icons\users-solid.svg</file>
+        <file>gui\icons\handshake-solid.svg</file>
+        <file>gui\icons\ellipsis-solid.svg</file>
+        <file>gui\icons\money-bill-wheat-solid.svg</file>
+        <file>gui\icons\cultivo-solid.svg</file>
+        <file>gui\icons\s-solid.svg</file>
+        <file>gui\icons\a-solid.svg</file>
+        <file>gui\icons\map-solid.svg</file>
+        <file>gui\icons\circle-info-solid.svg</file>
+
+        <!-- PLOT GRAPHS -->
+        <file>gui\base\lgnd1.svg</file>
+        <file>gui\base\p1.svg</file>
+        <file>gui\base\co2.svg</file>
+
+        <!-- <file>gui\icons\cultivo-solid.svg</file>
+        <file>gui\icons\layer-upload.svg</file>
+        <file>gui\icons\ceap-solid.svg</file>
+        <file>gui\icons\user-solid.svg</file>
+        <file>gui\icons\users-solid.svg</file>
+        <file>gui\icons\farmer-solid.svg</file>
+        <file>gui\icons\farmer-solid-color.svg</file>
+        <file>gui\icons\tractor-solid.svg</file>
+        <file>gui\icons\user-check-solid.svg</file>
+        <file>gui\icons\image-solid.svg</file>
+        <file>gui\icons\search-parcela.svg</file>
+        
+        <file>gui\icons\share-solid.svg</file>
+        <file>gui\icons\pen-to-square-solid.svg</file>
+        <file>gui\icons\paperclip-solid.svg</file>
+        <file>gui\icons\object-join.svg</file>
+        <file>gui\icons\minus-solid.svg</file>
+        <file>gui\icons\list-check-solid.svg</file>
+        <file>gui\icons\layer-edit.svg</file>
+        <file>gui\icons\layer-add-o.svg</file>
+        <file>gui\icons\filter-solid.svg</file>
+        <file>gui\icons\ellipsis-solid.svg</file>
+        <file>gui\icons\floppy-disk-solid.svg</file>
+        <file>gui\icons\file-export-solid.svg</file>
+        <file>gui\icons\gear-solid.svg</file>
+        <file>gui\icons\chart-bar-solid.svg</file>
+        <file>gui\icons\file-pdf-regular.svg</file>
+        <file>gui\icons\angle-right-solid.svg</file>
+        <file>gui\icons\angle-left-solid.svg</file>
+        <file>gui\icons\map-solid.svg</file>
+        <file>gui\icons\print-solid.svg</file>
+        
+        <file>gui\icons\square-check-solid.svg</file>
+        <file>gui\icons\rindes.svg</file>
+        <file>gui\icons\flask-solid.svg</file>
+        <file>gui\icons\regression.svg</file> -->
+        <!-- <file>gui\img\lgnd1.svg</file>
+        <file>gui\img\p1.svg</file>
+        <file>gui\img\co2.svg</file> -->
+    </qresource>
+</RCC>

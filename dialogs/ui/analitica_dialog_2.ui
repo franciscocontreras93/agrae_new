@@ -1,0 +1,1805 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>900</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>900</width>
+    <height>600</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1200</width>
+    <height>600</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>aGrae GIS - Panel Analitica</string>
+  </property>
+  <widget class="QTabWidget" name="tabWidget">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>881</width>
+     <height>581</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">backgroud-color: transparent;</string>
+   </property>
+   <property name="currentIndex">
+    <number>0</number>
+   </property>
+   <widget class="QWidget" name="tab">
+    <attribute name="title">
+     <string>Analitica</string>
+    </attribute>
+    <widget class="QWidget" name="verticalWidget" native="true">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>170</y>
+       <width>301</width>
+       <height>211</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout"/>
+    </widget>
+    <widget class="QWidget" name="gridLayoutWidget">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>301</width>
+       <height>81</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="gridLayout" columnstretch="0,1">
+      <item row="0" column="1">
+       <widget class="QLabel" name="lbl_lote">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Nombre Lote y Parcela:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Cultivo:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Produccion Esperada:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="lbl_cultivo">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="lbl_prod">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+    <widget class="QLabel" name="lgnd1">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>380</y>
+       <width>300</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QTableView" name="tableView">
+     <property name="geometry">
+      <rect>
+       <x>350</x>
+       <y>140</y>
+       <width>515</width>
+       <height>300</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: transparent;
+overflow: hidden;
+border:0</string>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Sunken</enum>
+     </property>
+     <property name="editTriggers">
+      <set>QAbstractItemView::NoEditTriggers</set>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::NoSelection</enum>
+     </property>
+     <attribute name="horizontalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="horizontalHeaderStretchLastSection">
+      <bool>true</bool>
+     </attribute>
+     <attribute name="verticalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
+    </widget>
+    <widget class="QLabel" name="p1">
+     <property name="geometry">
+      <rect>
+       <x>350</x>
+       <y>50</y>
+       <width>541</width>
+       <height>391</height>
+      </rect>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="prod_pond">
+     <property name="geometry">
+      <rect>
+       <x>320</x>
+       <y>460</y>
+       <width>171</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="text">
+      <string>PRODUCCION PONDERADA</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_5">
+     <property name="geometry">
+      <rect>
+       <x>490</x>
+       <y>460</y>
+       <width>231</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="text">
+      <string>VALORES POR PARCELA</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="area_total">
+     <property name="geometry">
+      <rect>
+       <x>720</x>
+       <y>460</y>
+       <width>141</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="text">
+      <string>AREA</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_7">
+     <property name="geometry">
+      <rect>
+       <x>320</x>
+       <y>490</y>
+       <width>311</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="text">
+      <string>NECESIDADES MEDIAS PONDERADAS N/P/K</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="npk_pond">
+     <property name="geometry">
+      <rect>
+       <x>630</x>
+       <y>490</y>
+       <width>231</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="text">
+      <string>N/P/K</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_9">
+     <property name="geometry">
+      <rect>
+       <x>430</x>
+       <y>20</y>
+       <width>401</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;OPCIÓN 1: &lt;/span&gt;REALIZAR &lt;span style=&quot; font-weight:600;&quot;&gt;FERTILIZACIÓN VARIABLE INTRAPARCELARIA &lt;/span&gt;&lt;br/&gt;DISTRIBUYENDO EN CADA &lt;span style=&quot; font-weight:600;&quot;&gt;UF&lt;/span&gt; LAS NECESIDADES DE FERTILIZACIÓN CALCULADAS &lt;br/&gt;QUE CORRESPONDEN A CADA UNA, EN FUNCIÓN DE SU POTENCIAL PRODUCTIVO.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="textFormat">
+      <enum>Qt::RichText</enum>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_10">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>470</y>
+       <width>271</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;OPCIÓN 2: &lt;/span&gt;REALIZAR &lt;span style=&quot; font-weight:600;&quot;&gt;FERTILIZACIÓN VARIABLE &lt;br/&gt;INTRAPARCELARIA &lt;/span&gt;DISTRIBUYENDO PARA TODA LA &lt;br/&gt;PARCELA LAS NECESIDADES MEDIAS PONDERADAS&lt;br/&gt;POR LA SUPERFICIE DE CADA &lt;span style=&quot; font-weight:600;&quot;&gt;UF.&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;justify&quot;&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="textFormat">
+      <enum>Qt::RichText</enum>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_2">
+     <property name="geometry">
+      <rect>
+       <x>80</x>
+       <y>150</y>
+       <width>47</width>
+       <height>13</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Suelo 3</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_6">
+     <property name="geometry">
+      <rect>
+       <x>170</x>
+       <y>150</y>
+       <width>47</width>
+       <height>13</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Suelo 2</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_8">
+     <property name="geometry">
+      <rect>
+       <x>260</x>
+       <y>150</y>
+       <width>47</width>
+       <height>13</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Suelo 1</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_17">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>210</y>
+       <width>16</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>N</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_23">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>250</y>
+       <width>16</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>P</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_24">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>290</y>
+       <width>16</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>K</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_25">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>330</y>
+       <width>31</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Carb.</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <zorder>p1</zorder>
+    <zorder>verticalWidget</zorder>
+    <zorder>gridLayoutWidget</zorder>
+    <zorder>lgnd1</zorder>
+    <zorder>tableView</zorder>
+    <zorder>prod_pond</zorder>
+    <zorder>label_5</zorder>
+    <zorder>area_total</zorder>
+    <zorder>label_7</zorder>
+    <zorder>npk_pond</zorder>
+    <zorder>label_9</zorder>
+    <zorder>label_10</zorder>
+    <zorder>label_2</zorder>
+    <zorder>label_6</zorder>
+    <zorder>label_8</zorder>
+    <zorder>label_17</zorder>
+    <zorder>label_23</zorder>
+    <zorder>label_24</zorder>
+    <zorder>label_25</zorder>
+   </widget>
+   <widget class="QWidget" name="tab_2">
+    <attribute name="title">
+     <string>Fertilizacion</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_2">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>30</y>
+       <width>111</width>
+       <height>121</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,0,0,0,0" columnstretch="0,0">
+      <item row="0" column="0" colspan="2">
+       <widget class="QLineEdit" name="line_formula_1">
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Formula...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QLineEdit" name="line_precio_1">
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Precio...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QLineEdit" name="line_cantidad_1">
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Cantidad...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0" colspan="2">
+       <widget class="QComboBox" name="combo_ajuste_1">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <item>
+         <property name="text">
+          <string>Ajustar...</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>N</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>P</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>K</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>PK</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+    <widget class="QWidget" name="gridLayoutWidget_3">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>30</y>
+       <width>111</width>
+       <height>121</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_3" rowstretch="0,0,0,0" columnstretch="0,0">
+      <item row="3" column="0" colspan="2">
+       <widget class="QComboBox" name="combo_ajuste_2">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <item>
+         <property name="text">
+          <string>Ajustar...</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>N</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>P</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>K</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>PK</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="2">
+       <widget class="QLineEdit" name="line_formula_2">
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Formula...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QLineEdit" name="line_precio_2">
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Precio...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QLineEdit" name="line_cantidad_2">
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Cantidad...</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>160</y>
+       <width>511</width>
+       <height>381</height>
+      </rect>
+     </property>
+     <property name="title">
+      <string>Aportes</string>
+     </property>
+     <widget class="QLabel" name="label_19">
+      <property name="geometry">
+       <rect>
+        <x>380</x>
+        <y>20</y>
+        <width>111</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>8</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>APORTE 4</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="t_aporte_1">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>330</y>
+        <width>111</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QWidget" name="verticalLayoutWidget_5">
+      <property name="geometry">
+       <rect>
+        <x>380</x>
+        <y>40</y>
+        <width>111</width>
+        <height>291</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_5">
+       <item>
+        <widget class="QTableView" name="table_aporte_4">
+         <property name="styleSheet">
+          <string notr="true">background-color: transparent;
+overflow: hidden;
+padding: 5px;
+border:0</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Plain</enum>
+         </property>
+         <property name="lineWidth">
+          <number>0</number>
+         </property>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::NoSelection</enum>
+         </property>
+         <property name="gridStyle">
+          <enum>Qt::NoPen</enum>
+         </property>
+         <attribute name="horizontalHeaderVisible">
+          <bool>false</bool>
+         </attribute>
+         <attribute name="horizontalHeaderStretchLastSection">
+          <bool>true</bool>
+         </attribute>
+         <attribute name="verticalHeaderVisible">
+          <bool>false</bool>
+         </attribute>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QLabel" name="label_13">
+      <property name="geometry">
+       <rect>
+        <x>140</x>
+        <y>20</y>
+        <width>111</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>8</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>APORTE 2</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_12">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>20</y>
+        <width>111</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>8</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>APORTE 1</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="t_aporte_2">
+      <property name="geometry">
+       <rect>
+        <x>140</x>
+        <y>330</y>
+        <width>111</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QWidget" name="verticalLayoutWidget_4">
+      <property name="geometry">
+       <rect>
+        <x>260</x>
+        <y>40</y>
+        <width>111</width>
+        <height>291</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <item>
+        <widget class="QTableView" name="table_aporte_3">
+         <property name="styleSheet">
+          <string notr="true">background-color: transparent;
+overflow: hidden;
+padding: 5px;
+border:0</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Plain</enum>
+         </property>
+         <property name="lineWidth">
+          <number>0</number>
+         </property>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::NoSelection</enum>
+         </property>
+         <property name="gridStyle">
+          <enum>Qt::NoPen</enum>
+         </property>
+         <attribute name="horizontalHeaderVisible">
+          <bool>false</bool>
+         </attribute>
+         <attribute name="horizontalHeaderStretchLastSection">
+          <bool>true</bool>
+         </attribute>
+         <attribute name="verticalHeaderVisible">
+          <bool>false</bool>
+         </attribute>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QLabel" name="t_aporte_4">
+      <property name="geometry">
+       <rect>
+        <x>380</x>
+        <y>330</y>
+        <width>111</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="t_aporte_3">
+      <property name="geometry">
+       <rect>
+        <x>260</x>
+        <y>330</y>
+        <width>111</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_18">
+      <property name="geometry">
+       <rect>
+        <x>260</x>
+        <y>20</y>
+        <width>111</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>8</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>APORTE 3</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QWidget" name="verticalLayoutWidget_3">
+      <property name="geometry">
+       <rect>
+        <x>140</x>
+        <y>40</y>
+        <width>111</width>
+        <height>291</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QTableView" name="table_aporte_2">
+         <property name="styleSheet">
+          <string notr="true">background-color: transparent;
+overflow: hidden;
+padding: 5px;
+border:0</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Plain</enum>
+         </property>
+         <property name="lineWidth">
+          <number>0</number>
+         </property>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::NoSelection</enum>
+         </property>
+         <property name="gridStyle">
+          <enum>Qt::NoPen</enum>
+         </property>
+         <attribute name="horizontalHeaderVisible">
+          <bool>false</bool>
+         </attribute>
+         <attribute name="horizontalHeaderStretchLastSection">
+          <bool>true</bool>
+         </attribute>
+         <attribute name="verticalHeaderVisible">
+          <bool>false</bool>
+         </attribute>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="verticalLayoutWidget_2">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>40</y>
+        <width>111</width>
+        <height>291</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QTableView" name="table_aporte_1">
+         <property name="styleSheet">
+          <string notr="true">background-color: transparent;
+overflow: hidden;
+padding: 5px;
+border:0</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Plain</enum>
+         </property>
+         <property name="lineWidth">
+          <number>0</number>
+         </property>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::NoSelection</enum>
+         </property>
+         <property name="gridStyle">
+          <enum>Qt::NoPen</enum>
+         </property>
+         <attribute name="horizontalHeaderVisible">
+          <bool>false</bool>
+         </attribute>
+         <attribute name="horizontalHeaderStretchLastSection">
+          <bool>true</bool>
+         </attribute>
+         <attribute name="verticalHeaderVisible">
+          <bool>false</bool>
+         </attribute>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QLabel" name="t_precio_1">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>350</y>
+        <width>111</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>8</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="t_precio_2">
+      <property name="geometry">
+       <rect>
+        <x>140</x>
+        <y>350</y>
+        <width>111</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>8</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="t_precio_3">
+      <property name="geometry">
+       <rect>
+        <x>260</x>
+        <y>350</y>
+        <width>111</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>8</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="t_precio_4">
+      <property name="geometry">
+       <rect>
+        <x>380</x>
+        <y>350</y>
+        <width>111</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>8</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="gridLayoutWidget_4">
+     <property name="geometry">
+      <rect>
+       <x>250</x>
+       <y>30</y>
+       <width>111</width>
+       <height>121</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_4" rowstretch="0,0,0,0" columnstretch="0,0">
+      <item row="3" column="0" colspan="2">
+       <widget class="QComboBox" name="combo_ajuste_3">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <item>
+         <property name="text">
+          <string>Ajustar...</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>N</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>P</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>K</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>PK</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="2">
+       <widget class="QLineEdit" name="line_formula_3">
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Formula...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QLineEdit" name="line_precio_3">
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Precio...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QLineEdit" name="line_cantidad_3">
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Cantidad...</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+    <widget class="QWidget" name="gridLayoutWidget_5">
+     <property name="geometry">
+      <rect>
+       <x>370</x>
+       <y>30</y>
+       <width>111</width>
+       <height>121</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_5" rowstretch="0,0,0,0" columnstretch="0,0">
+      <item row="3" column="0" colspan="2">
+       <widget class="QComboBox" name="combo_ajuste_4">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <item>
+         <property name="text">
+          <string>Ajustar...</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>N</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>P</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>K</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>PK</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="2">
+       <widget class="QLineEdit" name="line_formula_4">
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Formula...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QLineEdit" name="line_precio_4">
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Precio...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QLineEdit" name="line_cantidad_4">
+        <property name="frame">
+         <bool>false</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Cantidad...</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="geometry">
+      <rect>
+       <x>540</x>
+       <y>160</y>
+       <width>321</width>
+       <height>381</height>
+      </rect>
+     </property>
+     <property name="title">
+      <string>Balance de Nutrientes</string>
+     </property>
+     <widget class="QWidget" name="verticalLayoutWidget_6">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>90</y>
+        <width>301</width>
+        <height>281</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_6">
+       <item>
+        <widget class="QTableView" name="table_necesidades">
+         <property name="styleSheet">
+          <string notr="true">background-color: transparent;
+overflow: hidden;
+padding: 5px;
+border:0</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Plain</enum>
+         </property>
+         <property name="lineWidth">
+          <number>0</number>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::NoSelection</enum>
+         </property>
+         <property name="gridStyle">
+          <enum>Qt::NoPen</enum>
+         </property>
+         <attribute name="horizontalHeaderVisible">
+          <bool>false</bool>
+         </attribute>
+         <attribute name="horizontalHeaderStretchLastSection">
+          <bool>true</bool>
+         </attribute>
+         <attribute name="verticalHeaderVisible">
+          <bool>false</bool>
+         </attribute>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QLabel" name="label_28">
+      <property name="geometry">
+       <rect>
+        <x>90</x>
+        <y>70</y>
+        <width>21</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>N</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_29">
+      <property name="geometry">
+       <rect>
+        <x>170</x>
+        <y>70</y>
+        <width>21</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>P</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_30">
+      <property name="geometry">
+       <rect>
+        <x>250</x>
+        <y>70</y>
+        <width>21</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>K</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_11">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>20</y>
+        <width>301</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;La siguiente tabla muestra el estado nutricionalactual del lote &lt;br/&gt;seleccionad. &lt;span style=&quot; font-weight:600;&quot;&gt;Calcule&lt;/span&gt; los ajustes optimos para ajustar a los &lt;br/&gt;valores que se muestran en ella&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+      <property name="textFormat">
+       <enum>Qt::RichText</enum>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QLabel" name="label_21">
+     <property name="geometry">
+      <rect>
+       <x>370</x>
+       <y>10</y>
+       <width>111</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>8</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Datos Aporte 4</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_20">
+     <property name="geometry">
+      <rect>
+       <x>250</x>
+       <y>10</y>
+       <width>111</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>8</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Datos Aporte 3</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_15">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>10</y>
+       <width>111</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>8</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Datos Aporte 2</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_14">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>111</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>8</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Datos Aporte 1</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_panel">
+     <property name="geometry">
+      <rect>
+       <x>490</x>
+       <y>100</y>
+       <width>31</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="flat">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_save_data">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>490</x>
+       <y>130</y>
+       <width>31</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="flat">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="combo_status">
+     <property name="geometry">
+      <rect>
+       <x>490</x>
+       <y>40</y>
+       <width>61</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <item>
+      <property name="text">
+       <string>Estado...</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Calculado</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Aplicado</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>No Aplicado</string>
+      </property>
+     </item>
+    </widget>
+    <widget class="QWidget" name="gridLayoutWidget_6">
+     <property name="geometry">
+      <rect>
+       <x>610</x>
+       <y>60</y>
+       <width>171</width>
+       <height>65</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_6">
+      <item row="1" column="0">
+       <widget class="QLabel" name="lbl_hc_cantidad">
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="lbl_hc_percent">
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_16">
+        <property name="font">
+         <font>
+          <pointsize>11</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Huella de Carbono</string>
+        </property>
+        <property name="textFormat">
+         <enum>Qt::AutoText</enum>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+    <widget class="QLabel" name="label_26">
+     <property name="geometry">
+      <rect>
+       <x>490</x>
+       <y>10</y>
+       <width>111</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>8</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Status del Analisis</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="lbl_co2">
+     <property name="geometry">
+      <rect>
+       <x>750</x>
+       <y>20</y>
+       <width>121</width>
+       <height>111</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

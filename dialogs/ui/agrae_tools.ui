@@ -1,0 +1,644 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DockWidget</class>
+ <widget class="QDockWidget" name="DockWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>443</width>
+    <height>690</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>439</width>
+    <height>437</height>
+   </size>
+  </property>
+  <property name="floating">
+   <bool>false</bool>
+  </property>
+  <property name="features">
+   <set>QDockWidget::AllDockWidgetFeatures</set>
+  </property>
+  <property name="allowedAreas">
+   <set>Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
+  </property>
+  <property name="windowTitle">
+   <string>DockWidget</string>
+  </property>
+  <widget class="QWidget" name="dockWidgetContents">
+   <layout class="QGridLayout" name="gridLayout_6">
+    <item row="4" column="0" colspan="2">
+     <widget class="QToolBox" name="toolBox">
+      <property name="minimumSize">
+       <size>
+        <width>280</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <property name="tabSpacing">
+       <number>7</number>
+      </property>
+      <widget class="QWidget" name="page_2">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>421</width>
+         <height>390</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string>Información del Lote</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_15">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>15</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Estado del Lote</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1" colspan="2">
+         <widget class="QLabel" name="label_status">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0" colspan="3">
+         <widget class="QGroupBox" name="groupBox_5">
+          <property name="title">
+           <string>Formulario de Datos</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_7">
+           <item row="5" column="1" colspan="2">
+            <widget class="QDateEdit" name="date_siembra">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="minimumDate">
+              <date>
+               <year>2023</year>
+               <month>11</month>
+               <day>1</day>
+              </date>
+             </property>
+             <property name="calendarPopup">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1" colspan="2">
+            <widget class="QComboBox" name="combo_cultivo">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="editable">
+              <bool>false</bool>
+             </property>
+             <item>
+              <property name="text">
+               <string>Seleccionar Cultivo...</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="6" column="1" colspan="2">
+            <widget class="QDateEdit" name="date_cosecha">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="calendarPopup">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QCheckBox" name="check_cosecha">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>Fecha Cosecha</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Regimen:</string>
+             </property>
+             <property name="margin">
+              <number>4</number>
+             </property>
+             <property name="indent">
+              <number>4</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Cultivo: </string>
+             </property>
+             <property name="margin">
+              <number>4</number>
+             </property>
+             <property name="indent">
+              <number>4</number>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1" colspan="2">
+            <widget class="QComboBox" name="combo_regimen">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <item>
+              <property name="text">
+               <string>Seleccionar Regimen...</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QToolButton" name="tool_lote">
+             <property name="text">
+              <string>...</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>Prod. Esperada:</string>
+             </property>
+             <property name="margin">
+              <number>4</number>
+             </property>
+             <property name="indent">
+              <number>4</number>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1" colspan="2">
+            <widget class="QSpinBox" name="line_produccion">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="wrapping">
+              <bool>true</bool>
+             </property>
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::NoButtons</enum>
+             </property>
+             <property name="suffix">
+              <string> kg</string>
+             </property>
+             <property name="maximum">
+              <number>1000000000</number>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1" colspan="2">
+            <widget class="QLineEdit" name="line_nombre">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="readOnly">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QCheckBox" name="check_siembra">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>Fecha Siembra</string>
+             </property>
+             <property name="tristate">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Nombre Lote:</string>
+             </property>
+             <property name="margin">
+              <number>4</number>
+             </property>
+             <property name="indent">
+              <number>4</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_3">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>421</width>
+         <height>390</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string>Información de Fertilizacion</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QGroupBox" name="groupBox">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>100</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>Cultivos asociados a la Exp. y Camp. Seleccionados.</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="0" column="1">
+            <widget class="QComboBox" name="combo_cultivo_2"/>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="maximumSize">
+              <size>
+               <width>80</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Cultivo:</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_2">
+          <property name="title">
+           <string>Datos de Fertilización</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_4">
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_3">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>15</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Estado de Fertilizacion</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>Seleccionar Aplicacion:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="combo_aplicacion">
+             <item>
+              <property name="text">
+               <string>1ra Aplicacion</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>2da Aplicacion</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>3ra Aplicacion</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>4ta Aplicacion</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QToolButton" name="tool_fert">
+             <property name="text">
+              <string>...</string>
+             </property>
+             <property name="toolButtonStyle">
+              <enum>Qt::ToolButtonIconOnly</enum>
+             </property>
+             <property name="arrowType">
+              <enum>Qt::NoArrow</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QLabel" name="label_status_fertilizacion">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="3">
+            <widget class="QGroupBox" name="groupBox_3">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="title">
+              <string/>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_5">
+              <item row="4" column="1">
+               <widget class="QLabel" name="label_11">
+                <property name="text">
+                 <string>Ajuste NPK</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="3">
+               <widget class="QLineEdit" name="line_formula">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="inputMask">
+                 <string>00-00-00</string>
+                </property>
+                <property name="text">
+                 <string>--</string>
+                </property>
+                <property name="placeholderText">
+                 <string>N-P-K</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="3">
+               <widget class="QComboBox" name="combo_ajuste">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>Seleccionar...</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>N</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>P</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>K</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>PK</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QLabel" name="label_12">
+                <property name="text">
+                 <string>Fecha</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QLabel" name="label_13">
+                <property name="text">
+                 <string>Formula NPK</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QLabel" name="label_14">
+                <property name="text">
+                 <string>Precio</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="3">
+               <widget class="QDateEdit" name="date_aplicacion">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="buttonSymbols">
+                 <enum>QAbstractSpinBox::NoButtons</enum>
+                </property>
+                <property name="calendarPopup">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="3">
+               <widget class="QSpinBox" name="line_precio">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="buttonSymbols">
+                 <enum>QAbstractSpinBox::NoButtons</enum>
+                </property>
+                <property name="maximum">
+                 <number>1000000000</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+    <item row="2" column="0" colspan="2">
+     <widget class="QGroupBox" name="groupBox_4">
+      <property name="title">
+       <string>Espacio de Trabajo</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="1" column="1">
+        <widget class="QComboBox" name="combo_explotacion"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_8">
+         <property name="text">
+          <string>Explotacion:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QToolButton" name="tool_exp">
+         <property name="text">
+          <string>...</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QComboBox" name="combo_campania"/>
+       </item>
+       <item row="0" column="2">
+        <widget class="QToolButton" name="tool_camp">
+         <property name="text">
+          <string>...</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_9">
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Campaña:</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="3" column="0" colspan="2">
+     <widget class="QGroupBox" name="groupBox_6">
+      <property name="title">
+       <string>Herramientas</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_8">
+       <item row="0" column="2">
+        <widget class="QLabel" name="label_16">
+         <property name="text">
+          <string>Laboratorio</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>Explotacion</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="QLabel" name="label_17">
+         <property name="text">
+          <string>Datos</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="3">
+        <widget class="QToolButton" name="tool_data">
+         <property name="text">
+          <string>...</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QToolButton" name="tool_exp_2">
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonIconOnly</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QToolButton" name="tool_lab">
+         <property name="text">
+          <string>...</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QToolButton" name="tool_agrae">
+         <property name="text">
+          <string>...</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_18">
+         <property name="text">
+          <string>aGrae</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
