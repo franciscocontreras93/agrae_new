@@ -14,12 +14,12 @@
   </temporal>
   <renderer-v2 symbollevels="0" type="RuleRenderer" forceraster="0" enableorderby="0" referencescale="-1">
     <rules key="{2867c40f-c9bf-4fbc-8671-4bd7ad19da6f}">
-      <rule symbol="0" filter="&quot;MN&quot; >= 0.000000 AND &quot;MN&quot; &lt;= 0.500000" label="0.0 - 0.5 ppm | Inapreciable" key="{cc2a673d-7fa5-4f85-a72d-b04f8faeb18d}"/>
-      <rule symbol="1" filter="&quot;MN&quot; > 0.500000 AND &quot;MN&quot; &lt;= 1.000000" label="0.5- 1.0 ppm | Inapreciable" key="{380dbc17-5c9a-41d9-9b15-d6c059799610}"/>
-      <rule symbol="2" filter="&quot;MN&quot; > 1.000000 AND &quot;MN&quot; &lt;= 10.000000" label="1.0 - 10.0 ppm | Inapreciable" key="{ccd4fd13-2c5f-4b34-be65-fd3f1c7562e2}"/>
-      <rule symbol="3" filter="&quot;MN&quot; > 10.000000 AND &quot;MN&quot; &lt;= 100.000000" label="10.0 - 100 ppm | Inapreciable" key="{2cb7f201-267b-4337-b76d-bf48e280504e}"/>
-      <rule symbol="4" filter="&quot;MN&quot; > 100.000000 AND &quot;MN&quot; &lt;= 715.000000" label="100 - 715 ppm | *" key="{942f3af6-c4e1-4703-a89e-22e84a672c40}"/>
-      <rule symbol="5" filter="&quot;MN&quot; > 715.000000 AND &quot;MN&quot; &lt;= 10000.000000" label="715 - ...  ppm | * " key="{a474bca4-7ad5-4cc2-9720-7325c297c0d4}"/>
+      <rule symbol="0" filter="&quot;valor&quot; >= 0.000000 AND &quot;valor&quot; &lt;= 0.500000" label="0.0 - 0.5 ppm | Inapreciable" key="{cc2a673d-7fa5-4f85-a72d-b04f8faeb18d}"/>
+      <rule symbol="1" filter="&quot;valor&quot; > 0.500000 AND &quot;valor&quot; &lt;= 1.000000" label="0.5- 1.0 ppm | Inapreciable" key="{380dbc17-5c9a-41d9-9b15-d6c059799610}"/>
+      <rule symbol="2" filter="&quot;valor&quot; > 1.000000 AND &quot;valor&quot; &lt;= 10.000000" label="1.0 - 10.0 ppm | Inapreciable" key="{ccd4fd13-2c5f-4b34-be65-fd3f1c7562e2}"/>
+      <rule symbol="3" filter="&quot;valor&quot; > 10.000000 AND &quot;valor&quot; &lt;= 100.000000" label="10.0 - 100 ppm | Inapreciable" key="{2cb7f201-267b-4337-b76d-bf48e280504e}"/>
+      <rule symbol="4" filter="&quot;valor&quot; > 100.000000 AND &quot;valor&quot; &lt;= 715.000000" label="100 - 715 ppm | *" key="{942f3af6-c4e1-4703-a89e-22e84a672c40}"/>
+      <rule symbol="5" filter="&quot;valor&quot; > 715.000000 AND &quot;valor&quot; &lt;= 10000.000000" label="715 - ...  ppm | * " key="{a474bca4-7ad5-4cc2-9720-7325c297c0d4}"/>
     </rules>
     <symbols>
       <symbol name="0" type="fill" alpha="1" force_rhr="0" clip_to_extent="1">
@@ -278,7 +278,7 @@
   </renderer-v2>
   <labeling type="simple">
     <settings calloutType="simple">
-      <text-style previewBkgrdColor="255,255,255,255" multilineHeight="1" legendString="Aa" fontItalic="0" fieldName="round(MN,2) ||' ppm'" blendMode="0" fontLetterSpacing="0" fontUnderline="0" fontWordSpacing="0" fontKerning="1" textColor="50,50,50,255" namedStyle="Black" fontWeight="87" isExpression="1" useSubstitutions="0" allowHtml="0" capitalization="0" fontStrikeout="0" fontSizeMapUnitScale="3x:0,0,0,0,0,0" fontSize="8" fontSizeUnit="Point" textOpacity="1" fontFamily="Arial" textOrientation="horizontal">
+      <text-style previewBkgrdColor="255,255,255,255" multilineHeight="1" legendString="Aa" fontItalic="0" fieldName="round(valor,2) ||' ppm'" blendMode="0" fontLetterSpacing="0" fontUnderline="0" fontWordSpacing="0" fontKerning="1" textColor="50,50,50,255" namedStyle="Black" fontWeight="87" isExpression="1" useSubstitutions="0" allowHtml="0" capitalization="0" fontStrikeout="0" fontSizeMapUnitScale="3x:0,0,0,0,0,0" fontSize="8" fontSizeUnit="Point" textOpacity="1" fontFamily="Arial" textOrientation="horizontal">
         <families/>
         <text-buffer bufferDraw="1" bufferBlendMode="0" bufferColor="250,250,250,255" bufferOpacity="1" bufferJoinStyle="128" bufferSizeUnits="MM" bufferNoFill="1" bufferSizeMapUnitScale="3x:0,0,0,0,0,0" bufferSize="1"/>
         <text-mask maskEnabled="0" maskOpacity="1" maskType="0" maskSizeMapUnitScale="3x:0,0,0,0,0,0" maskSize="0" maskSizeUnits="MM" maskJoinStyle="128" maskedSymbolLayers=""/>
@@ -559,7 +559,7 @@
         </config>
       </editWidget>
     </field>
-    <field name="mn" configurationFlags="None">
+    <field name="valor" configurationFlags="None">
       <editWidget type="TextEdit">
         <config>
           <Option/>
@@ -569,30 +569,30 @@
   </fieldConfiguration>
   <aliases>
     <alias name="" index="0" field="id"/>
-    <alias name="" index="1" field="mn"/>
+    <alias name="" index="1" field="valor"/>
   </aliases>
   <defaults>
     <default expression="" applyOnUpdate="0" field="id"/>
-    <default expression="" applyOnUpdate="0" field="mn"/>
+    <default expression="" applyOnUpdate="0" field="valor"/>
   </defaults>
   <constraints>
     <constraint exp_strength="0" constraints="3" unique_strength="1" notnull_strength="1" field="id"/>
-    <constraint exp_strength="0" constraints="0" unique_strength="0" notnull_strength="0" field="mn"/>
+    <constraint exp_strength="0" constraints="0" unique_strength="0" notnull_strength="0" field="valor"/>
   </constraints>
   <constraintExpressions>
     <constraint desc="" exp="" field="id"/>
-    <constraint desc="" exp="" field="mn"/>
+    <constraint desc="" exp="" field="valor"/>
   </constraintExpressions>
   <expressionfields/>
   <attributeactions>
     <defaultAction value="{00000000-0000-0000-0000-000000000000}" key="Canvas"/>
   </attributeactions>
   <attributetableconfig sortExpression="&quot;cod_control&quot;" sortOrder="0" actionWidgetStyle="dropDown">
-    <columns>
-      <column type="actions" hidden="1" width="-1"/>
-      <column name="mn" type="field" hidden="0" width="-1"/>
-      <column name="id" type="field" hidden="0" width="100"/>
-    </columns>
+    <coluvalors>
+      <coluvalor type="actions" hidden="1" width="-1"/>
+      <coluvalor name="valor" type="field" hidden="0" width="-1"/>
+      <coluvalor name="id" type="field" hidden="0" width="100"/>
+    </coluvalors>
   </attributetableconfig>
   <conditionalstyles>
     <rowstyles/>
@@ -676,7 +676,7 @@ def my_form_open(dialog, layer, feature):
     <field name="MG" editable="1"/>
     <field name="MG_EQ" editable="1"/>
     <field name="MG_F" editable="1"/>
-    <field name="MN" editable="1"/>
+    <field name="valor" editable="1"/>
     <field name="MO" editable="1"/>
     <field name="N" editable="1"/>
     <field name="NA" editable="1"/>
@@ -773,7 +773,7 @@ def my_form_open(dialog, layer, feature):
     <field name="mg_f" editable="1"/>
     <field name="mg_inc" editable="1"/>
     <field name="mg_tipo" editable="1"/>
-    <field name="mn" editable="1"/>
+    <field name="valor" editable="1"/>
     <field name="mo" editable="1"/>
     <field name="n" editable="1"/>
     <field name="n_inc" editable="1"/>
@@ -858,7 +858,7 @@ def my_form_open(dialog, layer, feature):
     <field name="MG" labelOnTop="0"/>
     <field name="MG_EQ" labelOnTop="0"/>
     <field name="MG_F" labelOnTop="0"/>
-    <field name="MN" labelOnTop="0"/>
+    <field name="valor" labelOnTop="0"/>
     <field name="MO" labelOnTop="0"/>
     <field name="N" labelOnTop="0"/>
     <field name="NA" labelOnTop="0"/>
@@ -955,7 +955,7 @@ def my_form_open(dialog, layer, feature):
     <field name="mg_f" labelOnTop="0"/>
     <field name="mg_inc" labelOnTop="0"/>
     <field name="mg_tipo" labelOnTop="0"/>
-    <field name="mn" labelOnTop="0"/>
+    <field name="valor" labelOnTop="0"/>
     <field name="mo" labelOnTop="0"/>
     <field name="n" labelOnTop="0"/>
     <field name="n_inc" labelOnTop="0"/>
@@ -1038,7 +1038,7 @@ def my_form_open(dialog, layer, feature):
     <field name="mg_f" reuseLastValue="0"/>
     <field name="mg_inc" reuseLastValue="0"/>
     <field name="mg_tipo" reuseLastValue="0"/>
-    <field name="mn" reuseLastValue="0"/>
+    <field name="valor" reuseLastValue="0"/>
     <field name="mo" reuseLastValue="0"/>
     <field name="n" reuseLastValue="0"/>
     <field name="n_inc" reuseLastValue="0"/>

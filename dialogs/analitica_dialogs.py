@@ -10,8 +10,6 @@ from ..tools import aGraeTools
 
 analiticaDialog, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui/analitica_dialog.ui'))
 
-#SE AGREGO EL HEADER
-
 class agraeAnaliticaDialog(QtWidgets.QDialog,analiticaDialog):
     def __init__(self,data:pd.DataFrame,parent=None):
         super(agraeAnaliticaDialog,self).__init__(parent)
