@@ -29,6 +29,7 @@ from .analitica_dialogs import agraeAnaliticaDialog
 from .gestion_personas import GestionPersonasDialog
 from .gestion_distribuidor import GestionDistribuidorDialog
 from .gestion_agricultor import GestionAgricultorDialog
+from .datos_base_dialog import GestionDatosBaseDialog
 
 from .plots_dialog import agraePlotsDialog
 
@@ -125,7 +126,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.IndentifyLoteAction.triggered.connect(self.identify)
 
         self.CrearSegmentos = QtWidgets.QAction(agraeGUI().getIcon('segmentos'),'Crear Segmentos',self)
+        self.CrearSegmentos.triggered.connect(lambda : self.gestionarDatosBaseDialog(0))
+
         self.CrearAmbientes = QtWidgets.QAction(agraeGUI().getIcon('ambientes'),'Crear Ambientes',self)
+        self.CrearAmbientes.triggered.connect(lambda : self.gestionarDatosBaseDialog(1))
         actions_agrae = [self.IndentifyLoteAction,self.CrearSegmentos,self.CrearAmbientes]
 
         self.tools.settingsToolsButtons(self.tool_agrae,actions_agrae,icon=agraeGUI().getIcon('main'),setMainIcon=True)
@@ -306,6 +310,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         dlg = GestionAgricultorDialog()
         dlg.exec()
     
+    def gestionarDatosBaseDialog(self,i):
+        dlg = GestionDatosBaseDialog()
+        dlg.tabWidget.setCurrentIndex(i)
+        dlg.exec()
+        
+        pass
     # FUCNTIONS
     def identify(self):
         self.identifyTool = selectTool(self.layer)
