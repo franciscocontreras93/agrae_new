@@ -96,7 +96,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         self.CargarCapasExplotacion = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar capas de Explotacion',self)
         self.CargarCapasExplotacion.triggered.connect(self.generarCapasExplotacion)
-        actions_exp = [self.CargarCapasExplotacion]
+        self.GenerarReporteFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('printer'),'Generar Reporte de Fertiliacion',self)
+
+        actions_exp = [self.CargarCapasExplotacion,self.GenerarReporteFertilizacion]
         self.tools.settingsToolsButtons(self.tool_exp_2,actions_exp,icon=agraeGUI().getIcon('tools'),setMainIcon=True)
 
         # TOOL_LAB
@@ -125,10 +127,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.IndentifyLoteAction = QtWidgets.QAction(agraeGUI().getIcon('info'),'Identificar Lotes',self) 
         self.IndentifyLoteAction.triggered.connect(self.identify)
 
-        self.CrearSegmentos = QtWidgets.QAction(agraeGUI().getIcon('segmentos'),'Crear Segmentos',self)
+        self.CrearSegmentos = QtWidgets.QAction(agraeGUI().getIcon('segmentos'),'Cargar Segmentos',self)
         self.CrearSegmentos.triggered.connect(lambda : self.gestionarDatosBaseDialog(0))
 
-        self.CrearAmbientes = QtWidgets.QAction(agraeGUI().getIcon('ambientes'),'Crear Ambientes',self)
+        self.CrearAmbientes = QtWidgets.QAction(agraeGUI().getIcon('ambientes'),'Cargar Ambientes',self)
         self.CrearAmbientes.triggered.connect(lambda : self.gestionarDatosBaseDialog(1))
         actions_agrae = [self.IndentifyLoteAction,self.CrearSegmentos,self.CrearAmbientes]
 

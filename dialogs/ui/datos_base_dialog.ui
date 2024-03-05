@@ -58,7 +58,7 @@
           <item row="1" column="0">
            <widget class="QgsFieldComboBox" name="field_segmento">
             <property name="allowEmptyFieldName">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
            </widget>
           </item>
@@ -76,7 +76,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton">
+        <widget class="QPushButton" name="btn_create_segmentos">
          <property name="text">
           <string>Cargar Segmentos</string>
          </property>
@@ -138,7 +138,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="btn_create_ambiente">
+        <widget class="QPushButton" name="btn_create_ambientes">
          <property name="maximumSize">
           <size>
            <width>16777215</width>

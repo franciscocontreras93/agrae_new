@@ -23,6 +23,7 @@ class aGraeTools():
         self.instance = QgsProject.instance()
         self.conn = agraeDataBaseDriver().connection()
         self.plugin_name = 'aGrae Toolbox'
+
     
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
@@ -88,6 +89,7 @@ class aGraeTools():
             completer = QCompleter(data)
             completer.setCaseSensitivity(False)
             return completer
+    
     def populateTable(self,sql:str,tableWidget:QtWidgets.QTableWidget, action=False):
         with self.conn.cursor() as cursor:
                 try:
@@ -112,6 +114,7 @@ class aGraeTools():
                                 tableWidget.setItem(j, i, item)
                 except IndexError as ie:
                     pass
+    
     def enableElements(self,widget,elements:list):
        
         if widget.isChecked():
@@ -158,33 +161,64 @@ class aGraeTools():
         except:
             return ''
     
-    def crearSegmento(self):
-        lyr = self.iface.activeLayer()
+    def crearSegmento(self,layer,field_segmento):
+        lyr = layer
         srid = lyr.crs().authid()[5:]
-        sql = """ insert into segmento(segmento,geometria) values """
+        sql = """ insert into agrae.segmentos(segmento,geometria) values """
         if len(lyr.selectedFeatures()) > 0: features = lyr.selectedFeatures() 
         else: features = lyr.getFeatures()
         try:
-            with self.conn as conn:
+            with self.conn.cursor() as cursor:
                 try: 
-                    cursor = conn.cursor()
                     for f in features :
-                        try:
-                            segm = f['segmento']
-                        except:
-                            segm = f['segm']      
+                        segm = f[field] 
                         geometria = f.geometry() .asWkt()
-                        sql = sql + f""" ({segm},st_multi(st_force2d(st_transform(st_geomfromtext('{geometria}',{srid}),4326)))),"""                   
-                        # print(sql)
-                    
-                    cursor.execute(sql[:-1])   
-                    conn.commit() 
+                        sql = sql + f""" ({segm},st_multi(st_force2d(st_transform(st_geomfromtext('{geometria}',{srid}),4326)))),\n"""                   
+                    # print(sql)
+                    # cursor.execute(sql[:-2])   
+                    # self.conn.commit() 
                     QMessageBox.about(None, 'aGrae GIS', 'Segmentos Cargados Correctamente \na la base de datos')
+
                 except Exception as ex:
+
                     QgsMessageLog.logMessage(f'{ex}', 'aGrae GIS', level=1)
+                    self.conn.rollback()
+    
         except Exception as ex: 
             QgsMessageLog.logMessage(f'{ex}', 'aGrae GIS', level=1)
-            conn.rollback
+            self.conn.rollback()
+
+    def crearAmbiente(self,layer,field_ambiente,field_ndvi):
+        lyr = layer
+        srid = lyr.crs().authid()[5:]
+        sql = """ insert into agrae.ambiente(ambiente,ndvimax,geometria) values """
+        if len(lyr.selectedFeatures()) > 0: features = lyr.selectedFeatures() 
+        else: features = lyr.getFeatures()
+        try:
+            with self.conn.cursor() as cursor:
+                try: 
+                    for f in features :
+                        amb = f[field_ambiente]
+                        ndvimax = f[field_ndvi]
+
+                        geometria = f.geometry() .asWkt()
+                        sql = sql + f'''({amb},{ndvimax}, st_multi(st_force2d(st_transform(st_geomfromtext('{geometria}',{srid}),4326)))),\n'''                  
+                    
+                    # print(sql)
+                    # cursor.execute(sql[:-2])   
+                    # self.conn.commit() 
+                    QMessageBox.about(None, 'aGrae GIS', 'Segmentos Cargados Correctamente \na la base de datos')
+
+                except Exception as ex:
+
+                    QgsMessageLog.logMessage(f'{ex}', 'aGrae GIS', level=1)
+                    self.conn.rollback()
+    
+        except Exception as ex: 
+            QgsMessageLog.logMessage(f'{ex}', 'aGrae GIS', level=1)
+            self.conn.rollback()
+
+        pass
 
     def getDataBaseLayerUri(self,idcampania,idexplotacion,name):
         dns = agraeDataBaseDriver().getDSN()
@@ -545,3 +579,9 @@ class aGraeTools():
 
         data = zip(uf,n1,p1,k1,pk1)
         return data
+    
+    def groupLayers(self,group_name:str,name_layer:str):
+        layers  = [l for l in self.instance.mapLayers().values() if group_name in l.name()]
+        for l in layers:
+            if name_layer in l.name():
+                return l 

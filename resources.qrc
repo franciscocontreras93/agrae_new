@@ -36,6 +36,7 @@
         <file>gui\icons\a-solid.svg</file>
         <file>gui\icons\map-solid.svg</file>
         <file>gui\icons\circle-info-solid.svg</file>
+        <file>gui\icons\print-solid.svg</file>
 
         <!-- PLOT GRAPHS -->
         <file>gui\base\lgnd1.svg</file>
