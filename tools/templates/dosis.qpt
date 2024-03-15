@@ -1,0 +1,723 @@
+<Layout worldFileMap="" name="Preescripcion" units="mm" printResolution="300">
+ <Snapper tolerance="5" snapToItems="1" snapToGrid="0" snapToGuides="1"/>
+ <Grid resolution="10" offsetY="0" resUnits="mm" offsetUnits="mm" offsetX="0"/>
+ <PageCollection>
+  <symbol name="" force_rhr="0" type="fill" clip_to_extent="1" alpha="1">
+   <data_defined_properties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </data_defined_properties>
+   <layer class="SimpleFill" locked="0" pass="0" enabled="1">
+    <Option type="Map">
+     <Option name="border_width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+     <Option name="color" type="QString" value="255,255,255,255"/>
+     <Option name="joinstyle" type="QString" value="miter"/>
+     <Option name="offset" type="QString" value="0,0"/>
+     <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+     <Option name="offset_unit" type="QString" value="MM"/>
+     <Option name="outline_color" type="QString" value="35,35,35,255"/>
+     <Option name="outline_style" type="QString" value="no"/>
+     <Option name="outline_width" type="QString" value="0.26"/>
+     <Option name="outline_width_unit" type="QString" value="MM"/>
+     <Option name="style" type="QString" value="solid"/>
+    </Option>
+    <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
+    <prop v="255,255,255,255" k="color"/>
+    <prop v="miter" k="joinstyle"/>
+    <prop v="0,0" k="offset"/>
+    <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+    <prop v="MM" k="offset_unit"/>
+    <prop v="35,35,35,255" k="outline_color"/>
+    <prop v="no" k="outline_style"/>
+    <prop v="0.26" k="outline_width"/>
+    <prop v="MM" k="outline_width_unit"/>
+    <prop v="solid" k="style"/>
+    <data_defined_properties>
+     <Option type="Map">
+      <Option name="name" type="QString" value=""/>
+      <Option name="properties"/>
+      <Option name="type" type="QString" value="collection"/>
+     </Option>
+    </data_defined_properties>
+   </layer>
+  </symbol>
+  <LayoutItem frameJoinStyle="miter" positionLock="false" zValue="0" groupUuid="" blendMode="0" itemRotation="0" type="65638" id="" uuid="{d6946b98-ef05-41c8-aee3-4d31cd4cd51e}" opacity="1" visibility="1" referencePoint="0" position="0,0,mm" templateUuid="{d6946b98-ef05-41c8-aee3-4d31cd4cd51e}" frame="false" size="210,297,mm" excludeFromExports="0" positionOnPage="0,0,mm" outlineWidthM="0.3,mm" background="true">
+   <FrameColor blue="0" red="0" green="0" alpha="255"/>
+   <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+   <LayoutObject>
+    <dataDefinedProperties>
+     <Option type="Map">
+      <Option name="name" type="QString" value=""/>
+      <Option name="properties"/>
+      <Option name="type" type="QString" value="collection"/>
+     </Option>
+    </dataDefinedProperties>
+    <customproperties>
+     <Option/>
+    </customproperties>
+   </LayoutObject>
+   <symbol name="" force_rhr="0" type="fill" clip_to_extent="1" alpha="1">
+    <data_defined_properties>
+     <Option type="Map">
+      <Option name="name" type="QString" value=""/>
+      <Option name="properties"/>
+      <Option name="type" type="QString" value="collection"/>
+     </Option>
+    </data_defined_properties>
+    <layer class="SimpleFill" locked="0" pass="0" enabled="1">
+     <Option type="Map">
+      <Option name="border_width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+      <Option name="color" type="QString" value="255,255,255,255"/>
+      <Option name="joinstyle" type="QString" value="miter"/>
+      <Option name="offset" type="QString" value="0,0"/>
+      <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+      <Option name="offset_unit" type="QString" value="MM"/>
+      <Option name="outline_color" type="QString" value="35,35,35,255"/>
+      <Option name="outline_style" type="QString" value="no"/>
+      <Option name="outline_width" type="QString" value="0.26"/>
+      <Option name="outline_width_unit" type="QString" value="MM"/>
+      <Option name="style" type="QString" value="solid"/>
+     </Option>
+     <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
+     <prop v="255,255,255,255" k="color"/>
+     <prop v="miter" k="joinstyle"/>
+     <prop v="0,0" k="offset"/>
+     <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+     <prop v="MM" k="offset_unit"/>
+     <prop v="35,35,35,255" k="outline_color"/>
+     <prop v="no" k="outline_style"/>
+     <prop v="0.26" k="outline_width"/>
+     <prop v="MM" k="outline_width_unit"/>
+     <prop v="solid" k="style"/>
+     <data_defined_properties>
+      <Option type="Map">
+       <Option name="name" type="QString" value=""/>
+       <Option name="properties"/>
+       <Option name="type" type="QString" value="collection"/>
+      </Option>
+     </data_defined_properties>
+    </layer>
+   </symbol>
+  </LayoutItem>
+  <GuideCollection visible="1"/>
+ </PageCollection>
+ <LayoutItem resizeMode="0" anchorPoint="4" frameJoinStyle="miter" northOffset="0" positionLock="false" svgBorderWidth="0.2" zValue="403" groupUuid="{f4e80f91-aa01-430f-8a7d-4b66230b5416}" blendMode="0" pictureRotation="0" svgBorderColor="0,0,0,255" itemRotation="0" type="65640" id="Logo Exp" uuid="{b8403a9b-737a-4b12-aef3-3cb0c5fc2e7d}" opacity="1" file="" visibility="1" referencePoint="0" position="144.55,9,mm" templateUuid="{b8403a9b-737a-4b12-aef3-3cb0c5fc2e7d}" mapUuid="" northMode="0" frame="false" size="55.3,20,mm" pictureHeight="9.77164" excludeFromExports="0" pictureWidth="55.3" mode="1" positionOnPage="144.55,9,mm" svgFillColor="255,255,255,255" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties" type="Map">
+      <Option name="dataDefinedSource" type="Map">
+       <Option name="active" type="bool" value="true"/>
+       <Option name="expression" type="QString" value="concat('D:/GeoSIG/aGrae/IMAGENES_BASE/LOGOS/', '00_AGRAE','.png')"/>
+       <Option name="type" type="int" value="3"/>
+      </Option>
+     </Option>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" marginX="0" valign="128" positionLock="false" zValue="402" groupUuid="{f4e80f91-aa01-430f-8a7d-4b66230b5416}" blendMode="0" itemRotation="0" type="65641" id="Nombre Agricultor" uuid="{0ccf4818-4a99-42a0-9b0f-d902d1de6c5f}" opacity="1" visibility="0" referencePoint="0" position="144.55,48.8,mm" halign="4" templateUuid="{0ccf4818-4a99-42a0-9b0f-d902d1de6c5f}" frame="false" size="55.3,10,mm" excludeFromExports="0" htmlState="0" labelText="[%title( &quot;nombre_agricultor&quot; )%]" positionOnPage="144.55,48.8,mm" marginY="0" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <LabelFont description="MS Shell Dlg 2,10,-1,5,50,0,0,0,0,0,Normal" style="Normal"/>
+  <FontColor blue="0" red="0" green="0" alpha="255"/>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" marginX="0" valign="128" positionLock="false" zValue="401" groupUuid="{f4e80f91-aa01-430f-8a7d-4b66230b5416}" blendMode="0" itemRotation="0" type="65641" id="Nombre Lote" uuid="{802fd38e-871b-49a2-ba78-74e31c046a7d}" opacity="1" visibility="1" referencePoint="0" position="144.55,38.8,mm" halign="4" templateUuid="{802fd38e-871b-49a2-ba78-74e31c046a7d}" frame="false" size="55.3,10,mm" excludeFromExports="0" htmlState="0" labelText="[%upper(&quot;NOMBRE&quot;)%]" positionOnPage="144.55,38.8,mm" marginY="0" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <LabelFont description="MS Shell Dlg 2,12,-1,5,75,0,0,0,0,0,Negrita" style="Bold"/>
+  <FontColor blue="0" red="0" green="0" alpha="255"/>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" marginX="0" valign="128" positionLock="false" zValue="400" groupUuid="{f4e80f91-aa01-430f-8a7d-4b66230b5416}" blendMode="0" itemRotation="0" type="65641" id="Direccion Envio" uuid="{140df71a-6b5c-4f6d-b816-fcf9821efb6d}" opacity="1" visibility="0" referencePoint="0" position="144.55,28.8,mm" halign="4" templateUuid="{140df71a-6b5c-4f6d-b816-fcf9821efb6d}" frame="false" size="55.3,10,mm" excludeFromExports="0" htmlState="0" labelText="[%title(&quot;direccionenvio&quot;)%]" positionOnPage="144.55,28.8,mm" marginY="0" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <LabelFont description="MS Shell Dlg 2,10,-1,5,50,0,0,0,0,0" style=""/>
+  <FontColor blue="0" red="0" green="0" alpha="255"/>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" positionLock="false" zValue="319" groupUuid="" blendMode="0" itemRotation="0" type="65637" id="" uuid="{f4e80f91-aa01-430f-8a7d-4b66230b5416}" opacity="1" visibility="1" referencePoint="0" position="144.55,9,mm" templateUuid="{f4e80f91-aa01-430f-8a7d-4b66230b5416}" frame="false" size="55.3,50.15,mm" excludeFromExports="0" positionOnPage="144.55,9,mm" outlineWidthM="0.3,mm" background="true">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <ComposerItemGroupElement uuid="{0789880f-cc07-4853-ab5c-df48d7ca6e9b}"/>
+  <ComposerItemGroupElement uuid="{802fd38e-871b-49a2-ba78-74e31c046a7d}"/>
+  <ComposerItemGroupElement uuid="{b8403a9b-737a-4b12-aef3-3cb0c5fc2e7d}"/>
+  <ComposerItemGroupElement uuid="{0ccf4818-4a99-42a0-9b0f-d902d1de6c5f}"/>
+  <ComposerItemGroupElement uuid="{140df71a-6b5c-4f6d-b816-fcf9821efb6d}"/>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" positionLock="false" zValue="314" cornerRadiusMeasure="0,mm" groupUuid="{f4e80f91-aa01-430f-8a7d-4b66230b5416}" blendMode="0" shapeType="1" itemRotation="0" type="65643" id="Recuadro Datos Lote" uuid="{0789880f-cc07-4853-ab5c-df48d7ca6e9b}" opacity="1" visibility="1" referencePoint="0" position="144.85,9.15,mm" templateUuid="{0789880f-cc07-4853-ab5c-df48d7ca6e9b}" frame="false" size="55,50,mm" excludeFromExports="0" positionOnPage="144.85,9.15,mm" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <symbol name="" force_rhr="0" type="fill" clip_to_extent="1" alpha="1">
+   <data_defined_properties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </data_defined_properties>
+   <layer class="SimpleFill" locked="0" pass="0" enabled="1">
+    <Option type="Map">
+     <Option name="border_width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+     <Option name="color" type="QString" value="255,255,255,0"/>
+     <Option name="joinstyle" type="QString" value="miter"/>
+     <Option name="offset" type="QString" value="0,0"/>
+     <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+     <Option name="offset_unit" type="QString" value="MM"/>
+     <Option name="outline_color" type="QString" value="0,0,0,255"/>
+     <Option name="outline_style" type="QString" value="solid"/>
+     <Option name="outline_width" type="QString" value="0.3"/>
+     <Option name="outline_width_unit" type="QString" value="MM"/>
+     <Option name="style" type="QString" value="solid"/>
+    </Option>
+    <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
+    <prop v="255,255,255,0" k="color"/>
+    <prop v="miter" k="joinstyle"/>
+    <prop v="0,0" k="offset"/>
+    <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+    <prop v="MM" k="offset_unit"/>
+    <prop v="0,0,0,255" k="outline_color"/>
+    <prop v="solid" k="outline_style"/>
+    <prop v="0.3" k="outline_width"/>
+    <prop v="MM" k="outline_width_unit"/>
+    <prop v="solid" k="style"/>
+    <data_defined_properties>
+     <Option type="Map">
+      <Option name="name" type="QString" value=""/>
+      <Option name="properties"/>
+      <Option name="type" type="QString" value="collection"/>
+     </Option>
+    </data_defined_properties>
+   </layer>
+  </symbol>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" positionLock="false" mapFlags="0" zValue="293" groupUuid="" blendMode="0" keepLayerSet="false" itemRotation="0" followPreset="false" type="65639" id="map_aplicado" uuid="{b372fd57-70c3-4d9c-9961-d3db1a9ab9c0}" drawCanvasItems="true" opacity="1" mapRotation="0" visibility="1" referencePoint="0" position="10.46,162,mm" templateUuid="{b372fd57-70c3-4d9c-9961-d3db1a9ab9c0}" frame="true" size="130,130,mm" isTemporal="0" excludeFromExports="0" positionOnPage="10.46,162,mm" followPresetName="Aplicado" labelMargin="0,mm" outlineWidthM="2,mm" background="true">
+  <FrameColor blue="0" red="223" green="219" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <Extent ymin="4707775.30317526962608099" xmax="494390.12862046039663255" xmin="494082.61063115089200437" ymax="4708082.82116457913070917"/>
+  <LayerSet>
+   <Layer name="Aplicado" source="D:/GeoSIG/aGrae/Data/pruebas.gpkg|layername=Aplicado|subset=&quot;_ATLAS&quot; = 'COOP60' " provider="ogr">Aplicado_c9e56792_4e20_48cc_9cc7_e9e7cde1a48b</Layer>
+   <Layer name="Lotes" source="/vsizip/D:/GeoSIG/aGrae/Data/ATLAS_DISUELTO_COOP.zip/ATLAS_DISUELTO_COOP.shp|layername=ATLAS_DISUELTO_COOP" provider="ogr">ATLAS_DISUELTO_COOP_shp_c5852ef3_6362_446d_b806_f835047ef29d</Layer>
+  </LayerSet>
+  <AtlasMap scalingMode="2" margin="0.10000000000000001" atlasDriven="1"/>
+  <labelBlockingItems/>
+  <atlasClippingSettings restrictLayers="0" clippingType="1" forceLabelsInside="0" enabled="0">
+   <layersToClip/>
+  </atlasClippingSettings>
+  <itemClippingSettings clippingType="1" clipSource="" forceLabelsInside="0" enabled="0"/>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" positionLock="false" zValue="286" groupUuid="" blendMode="0" itemRotation="0" type="65637" id="" uuid="{6ebdcbfd-4631-4937-95a9-51bef3380ddd}" opacity="1" visibility="1" referencePoint="0" position="144.7,255.871,mm" templateUuid="{6ebdcbfd-4631-4937-95a9-51bef3380ddd}" frame="false" size="55.3,32.129,mm" excludeFromExports="0" positionOnPage="144.7,255.871,mm" outlineWidthM="0.3,mm" background="true">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <ComposerItemGroupElement uuid="{4ea255d0-d93b-498a-a73a-9b7896623fe9}"/>
+  <ComposerItemGroupElement uuid="{f3d350c0-b538-44ca-89f1-7749fd133334}"/>
+  <ComposerItemGroupElement uuid="{02766506-8477-4a0b-8fdf-73ad27f8673b}"/>
+  <ComposerItemGroupElement uuid="{07d39eb6-cdb2-4b74-af9f-2e849df08452}"/>
+  <ComposerItemGroupElement uuid="{5f577b1b-febe-4d5a-8e61-f64e144ae78e}"/>
+ </LayoutItem>
+ <LayoutItem fontColor="#000000" legendFilterByAtlas="0" columnSpace="3" splitLayer="0" rasterBorderColor="0,0,0,255" frameJoinStyle="miter" resizeToContents="0" title="Simbología" blendMode="0" position="144.7,62,mm" wrapChar="" symbolWidth="7" minSymbolSize="0" itemRotation="0" titleAlignment="4" columnCount="1" background="false" type="65642" referencePoint="0" symbolHeight="4" symbolAlignment="1" rasterBorder="1" opacity="1" groupUuid="" equalColumnWidth="0" uuid="{81d87578-503c-4db6-bd1d-f04b9ed7b5d1}" maxSymbolSize="0" visibility="1" positionOnPage="144.7,62,mm" map_uuid="{577b5e9d-c192-4e7a-9fdb-c072de6a9319}" frame="false" templateUuid="{81d87578-503c-4db6-bd1d-f04b9ed7b5d1}" outlineWidthM="0.3,mm" size="55.15,128.837,mm" lineSpacing="0.5" wmsLegendWidth="50" rasterBorderWidth="0" wmsLegendHeight="25" zValue="204" id="map_legend" excludeFromExports="0" positionLock="false" boxSpace="3">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <styles>
+   <style name="title" marginBottom="3" alignment="1" indent="0">
+    <styleFont description="MS Shell Dlg 2,14,-1,5,75,0,0,0,0,0,Negrita" style="Bold"/>
+   </style>
+   <style name="group" marginLeft="3" marginBottom="1" alignment="1" marginTop="4" indent="0">
+    <styleFont description="MS Shell Dlg 2,12,-1,5,50,0,0,0,0,0,Normal" style="Normal"/>
+   </style>
+   <style name="subgroup" alignment="1" marginTop="3" indent="0">
+    <styleFont description="MS Shell Dlg 2,12,-1,5,50,0,0,0,0,0" style=""/>
+   </style>
+   <style name="symbol" alignment="1" marginTop="1" indent="0">
+    <styleFont description="MS Shell Dlg 2,8.25,-1,5,50,0,0,0,0,0" style=""/>
+   </style>
+   <style name="symbolLabel" marginLeft="4" alignment="1" marginTop="1" indent="0">
+    <styleFont description="MS Shell Dlg 2,12,-1,5,50,0,0,0,0,0" style=""/>
+   </style>
+  </styles>
+  <layer-tree-group>
+   <customproperties>
+    <Option/>
+   </customproperties>
+   <custom-order enabled="0"/>
+  </layer-tree-group>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" positionLock="false" zValue="203" cornerRadiusMeasure="0,mm" groupUuid="" blendMode="0" shapeType="1" itemRotation="0" type="65643" id="" uuid="{f7644c3f-2b8c-4717-84ca-3b4dd85c3db7}" opacity="1" visibility="1" referencePoint="0" position="144.85,62.804,mm" templateUuid="{f7644c3f-2b8c-4717-84ca-3b4dd85c3db7}" frame="false" size="55,127.883,mm" excludeFromExports="0" positionOnPage="144.85,62.804,mm" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <symbol name="" force_rhr="0" type="fill" clip_to_extent="1" alpha="1">
+   <data_defined_properties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </data_defined_properties>
+   <layer class="SimpleFill" locked="0" pass="0" enabled="1">
+    <Option type="Map">
+     <Option name="border_width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+     <Option name="color" type="QString" value="255,255,255,255"/>
+     <Option name="joinstyle" type="QString" value="miter"/>
+     <Option name="offset" type="QString" value="0,0"/>
+     <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+     <Option name="offset_unit" type="QString" value="MM"/>
+     <Option name="outline_color" type="QString" value="0,0,0,255"/>
+     <Option name="outline_style" type="QString" value="solid"/>
+     <Option name="outline_width" type="QString" value="0.3"/>
+     <Option name="outline_width_unit" type="QString" value="MM"/>
+     <Option name="style" type="QString" value="solid"/>
+    </Option>
+    <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
+    <prop v="255,255,255,255" k="color"/>
+    <prop v="miter" k="joinstyle"/>
+    <prop v="0,0" k="offset"/>
+    <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+    <prop v="MM" k="offset_unit"/>
+    <prop v="0,0,0,255" k="outline_color"/>
+    <prop v="solid" k="outline_style"/>
+    <prop v="0.3" k="outline_width"/>
+    <prop v="MM" k="outline_width_unit"/>
+    <prop v="solid" k="style"/>
+    <data_defined_properties>
+     <Option type="Map">
+      <Option name="name" type="QString" value=""/>
+      <Option name="properties"/>
+      <Option name="type" type="QString" value="collection"/>
+     </Option>
+    </data_defined_properties>
+   </layer>
+  </symbol>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" marginX="3" valign="32" positionLock="false" zValue="181" groupUuid="" blendMode="0" itemRotation="0" type="65641" id="" uuid="{36c259c5-aff9-4ff7-8850-6fead08b0f7d}" opacity="1" visibility="1" referencePoint="0" position="144.853,206.332,mm" halign="1" templateUuid="{36c259c5-aff9-4ff7-8850-6fead08b0f7d}" frame="false" size="55.1472,45.0845,mm" excludeFromExports="0" htmlState="0" labelText="" positionOnPage="144.853,206.332,mm" marginY="1" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <LabelFont description="Arial,8,-1,5,50,0,0,0,0,0" style=""/>
+  <FontColor blue="0" red="0" green="0" alpha="255"/>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" marginX="1" valign="128" positionLock="false" zValue="180" groupUuid="" blendMode="0" itemRotation="0" type="65641" id="" uuid="{4b409d02-12f4-42de-921e-90b8a981c447}" opacity="1" visibility="1" referencePoint="0" position="144.853,194.814,mm" halign="4" templateUuid="{4b409d02-12f4-42de-921e-90b8a981c447}" frame="false" size="55.1472,11.5186,mm" excludeFromExports="0" htmlState="0" labelText="COMENTARIOS" positionOnPage="144.853,194.814,mm" marginY="1" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <LabelFont description="MS Shell Dlg 2,10,-1,5,75,0,0,0,0,0" style=""/>
+  <FontColor blue="0" red="0" green="0" alpha="255"/>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" positionLock="false" zValue="179" cornerRadiusMeasure="0,mm" groupUuid="" blendMode="0" shapeType="1" itemRotation="0" type="65643" id="" uuid="{b8b34212-356d-4805-a560-93bfc470a099}" opacity="1" visibility="1" referencePoint="0" position="144.83,194.944,mm" templateUuid="{b8b34212-356d-4805-a560-93bfc470a099}" frame="false" size="55.04,56.2521,mm" excludeFromExports="0" positionOnPage="144.83,194.944,mm" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <symbol name="" force_rhr="0" type="fill" clip_to_extent="1" alpha="1">
+   <data_defined_properties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </data_defined_properties>
+   <layer class="SimpleFill" locked="0" pass="0" enabled="1">
+    <Option type="Map">
+     <Option name="border_width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+     <Option name="color" type="QString" value="186,221,105,255"/>
+     <Option name="joinstyle" type="QString" value="bevel"/>
+     <Option name="offset" type="QString" value="0,0"/>
+     <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+     <Option name="offset_unit" type="QString" value="MM"/>
+     <Option name="outline_color" type="QString" value="0,0,0,255"/>
+     <Option name="outline_style" type="QString" value="solid"/>
+     <Option name="outline_width" type="QString" value="0.26"/>
+     <Option name="outline_width_unit" type="QString" value="MM"/>
+     <Option name="style" type="QString" value="no"/>
+    </Option>
+    <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
+    <prop v="186,221,105,255" k="color"/>
+    <prop v="bevel" k="joinstyle"/>
+    <prop v="0,0" k="offset"/>
+    <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+    <prop v="MM" k="offset_unit"/>
+    <prop v="0,0,0,255" k="outline_color"/>
+    <prop v="solid" k="outline_style"/>
+    <prop v="0.26" k="outline_width"/>
+    <prop v="MM" k="outline_width_unit"/>
+    <prop v="no" k="style"/>
+    <data_defined_properties>
+     <Option type="Map">
+      <Option name="name" type="QString" value=""/>
+      <Option name="properties"/>
+      <Option name="type" type="QString" value="collection"/>
+     </Option>
+    </data_defined_properties>
+   </layer>
+  </symbol>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" positionLock="false" zValue="77" cornerRadiusMeasure="0,mm" groupUuid="{6ebdcbfd-4631-4937-95a9-51bef3380ddd}" blendMode="0" shapeType="1" itemRotation="0" type="65643" id="Recuadro Agrae" uuid="{4ea255d0-d93b-498a-a73a-9b7896623fe9}" opacity="1" visibility="1" referencePoint="0" position="144.85,256.021,mm" templateUuid="{4ea255d0-d93b-498a-a73a-9b7896623fe9}" frame="false" size="55,31.8292,mm" excludeFromExports="0" positionOnPage="144.85,256.021,mm" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <symbol name="" force_rhr="0" type="fill" clip_to_extent="1" alpha="1">
+   <data_defined_properties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </data_defined_properties>
+   <layer class="SimpleFill" locked="0" pass="0" enabled="1">
+    <Option type="Map">
+     <Option name="border_width_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+     <Option name="color" type="QString" value="255,255,255,0"/>
+     <Option name="joinstyle" type="QString" value="miter"/>
+     <Option name="offset" type="QString" value="0,0"/>
+     <Option name="offset_map_unit_scale" type="QString" value="3x:0,0,0,0,0,0"/>
+     <Option name="offset_unit" type="QString" value="MM"/>
+     <Option name="outline_color" type="QString" value="0,0,0,255"/>
+     <Option name="outline_style" type="QString" value="solid"/>
+     <Option name="outline_width" type="QString" value="0.3"/>
+     <Option name="outline_width_unit" type="QString" value="MM"/>
+     <Option name="style" type="QString" value="solid"/>
+    </Option>
+    <prop v="3x:0,0,0,0,0,0" k="border_width_map_unit_scale"/>
+    <prop v="255,255,255,0" k="color"/>
+    <prop v="miter" k="joinstyle"/>
+    <prop v="0,0" k="offset"/>
+    <prop v="3x:0,0,0,0,0,0" k="offset_map_unit_scale"/>
+    <prop v="MM" k="offset_unit"/>
+    <prop v="0,0,0,255" k="outline_color"/>
+    <prop v="solid" k="outline_style"/>
+    <prop v="0.3" k="outline_width"/>
+    <prop v="MM" k="outline_width_unit"/>
+    <prop v="solid" k="style"/>
+    <data_defined_properties>
+     <Option type="Map">
+      <Option name="name" type="QString" value=""/>
+      <Option name="properties"/>
+      <Option name="type" type="QString" value="collection"/>
+     </Option>
+    </data_defined_properties>
+   </layer>
+  </symbol>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" marginX="3" valign="128" positionLock="false" zValue="76" groupUuid="{6ebdcbfd-4631-4937-95a9-51bef3380ddd}" blendMode="0" itemRotation="0" type="65641" id="REVISADO EL" uuid="{f3d350c0-b538-44ca-89f1-7749fd133334}" opacity="1" visibility="1" referencePoint="0" position="144.7,255.871,mm" halign="1" templateUuid="{f3d350c0-b538-44ca-89f1-7749fd133334}" frame="false" size="55.3,9.96668,mm" excludeFromExports="0" htmlState="0" labelText="Revisado el:  [%format_date(now(),'dd/MM/yyyy')%]" positionOnPage="144.7,255.871,mm" marginY="0" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <LabelFont description="MS Shell Dlg 2,8,-1,5,75,0,0,0,0,0,Negrita" style="Bold"/>
+  <FontColor blue="0" red="0" green="0" alpha="255"/>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" marginX="0" valign="32" positionLock="false" zValue="75" groupUuid="{6ebdcbfd-4631-4937-95a9-51bef3380ddd}" blendMode="0" itemRotation="0" type="65641" id="" uuid="{02766506-8477-4a0b-8fdf-73ad27f8673b}" opacity="1" visibility="1" referencePoint="0" position="144.7,283.325,mm" halign="4" templateUuid="{02766506-8477-4a0b-8fdf-73ad27f8673b}" frame="false" size="55.3,4.675,mm" excludeFromExports="0" htmlState="0" labelText="www.aGrae.es" positionOnPage="144.7,283.325,mm" marginY="0" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <LabelFont description="MS Shell Dlg 2,8,-1,5,75,0,0,0,0,0,Negrita" style="Bold"/>
+  <FontColor blue="0" red="0" green="0" alpha="255"/>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" marginX="3" valign="128" positionLock="false" zValue="74" groupUuid="{6ebdcbfd-4631-4937-95a9-51bef3380ddd}" blendMode="0" itemRotation="0" type="65641" id="" uuid="{07d39eb6-cdb2-4b74-af9f-2e849df08452}" opacity="1" visibility="1" referencePoint="0" position="144.7,268.175,mm" halign="1" templateUuid="{07d39eb6-cdb2-4b74-af9f-2e849df08452}" frame="false" size="31.2229,4.675,mm" excludeFromExports="0" htmlState="0" labelText="Elaborado por:" positionOnPage="144.7,268.175,mm" marginY="0" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <LabelFont description="MS Shell Dlg 2,8,-1,5,75,0,0,0,0,0,Negrita" style="Bold"/>
+  <FontColor blue="0" red="0" green="0" alpha="255"/>
+ </LayoutItem>
+ <LayoutItem resizeMode="0" anchorPoint="4" frameJoinStyle="miter" northOffset="0" positionLock="false" svgBorderWidth="0.2" zValue="73" groupUuid="{6ebdcbfd-4631-4937-95a9-51bef3380ddd}" blendMode="0" pictureRotation="0" svgBorderColor="0,0,0,255" itemRotation="0" type="65640" id="Logo Agrae" uuid="{5f577b1b-febe-4d5a-8e61-f64e144ae78e}" opacity="1" file="base64:iVBORw0KGgoAAAANSUhEUgAAAf0AAABaCAYAAACyoo9qAAAACXBIWXMAAC4jAAAuIwF4pT92AAA572lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS41LWMwMjEgNzkuMTU1NzcyLCAyMDE0LzAxLzEzLTE5OjQ0OjAwICAgICAgICAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIKICAgICAgICAgICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgICAgICAgICB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIKICAgICAgICAgICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIj4KICAgICAgICAgPHhtcDpDcmVhdG9yVG9vbD5BZG9iZSBQaG90b3Nob3AgQ0MgMjAxNCAoV2luZG93cyk8L3htcDpDcmVhdG9yVG9vbD4KICAgICAgICAgPHhtcDpDcmVhdGVEYXRlPjIwMTYtMTEtMTVUMTQ6NTk6NDUtMDM6MDA8L3htcDpDcmVhdGVEYXRlPgogICAgICAgICA8eG1wOk1vZGlmeURhdGU+MjAxNi0xMS0xNVQxNToxMDoxMC0wMzowMDwveG1wOk1vZGlmeURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMTYtMTEtMTVUMTU6MTA6MTAtMDM6MDA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2UvcG5nPC9kYzpmb3JtYXQ+CiAgICAgICAgIDxwaG90b3Nob3A6Q29sb3JNb2RlPjM8L3Bob3Rvc2hvcDpDb2xvck1vZGU+CiAgICAgICAgIDx4bXBNTTpJbnN0YW5jZUlEPnhtcC5paWQ6ZTdjYmY5MGYtMmNiMS01YTRkLWFlZjYtNmRlZTEwNmI2NGY5PC94bXBNTTpJbnN0YW5jZUlEPgogICAgICAgICA8eG1wTU06RG9jdW1lbnRJRD5hZG9iZTpkb2NpZDpwaG90b3Nob3A6YjFmZDcwMzYtYWI1ZS0xMWU2LThhZmItOTg2ZTFkYzYyMzZmPC94bXBNTTpEb2N1bWVudElEPgogICAgICAgICA8eG1wTU06T3JpZ2luYWxEb2N1bWVudElEPnhtcC5kaWQ6OWZlMjVkNGMtNTYxZi1iYzQ1LWE4YzUtY2EzNWYzMzZkNDIzPC94bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpIaXN0b3J5PgogICAgICAgICAgICA8cmRmOlNlcT4KICAgICAgICAgICAgICAgPHJkZjpsaSByZGY6cGFyc2VUeXBlPSJSZXNvdXJjZSI+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDphY3Rpb24+Y3JlYXRlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOjlmZTI1ZDRjLTU2MWYtYmM0NS1hOGM1LWNhMzVmMzM2ZDQyMzwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAxNi0xMS0xNVQxNDo1OTo0NS0wMzowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIENDIDIwMTQgKFdpbmRvd3MpPC9zdEV2dDpzb2Z0d2FyZUFnZW50PgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgICAgPHJkZjpsaSByZGY6cGFyc2VUeXBlPSJSZXNvdXJjZSI+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDphY3Rpb24+c2F2ZWQ8L3N0RXZ0OmFjdGlvbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0Omluc3RhbmNlSUQ+eG1wLmlpZDplN2NiZjkwZi0yY2IxLTVhNGQtYWVmNi02ZGVlMTA2YjY0Zjk8L3N0RXZ0Omluc3RhbmNlSUQ+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDp3aGVuPjIwMTYtMTEtMTVUMTU6MTA6MTAtMDM6MDA8L3N0RXZ0OndoZW4+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDpzb2Z0d2FyZUFnZW50PkFkb2JlIFBob3Rvc2hvcCBDQyAyMDE0IChXaW5kb3dzKTwvc3RFdnQ6c29mdHdhcmVBZ2VudD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmNoYW5nZWQ+Lzwvc3RFdnQ6Y2hhbmdlZD4KICAgICAgICAgICAgICAgPC9yZGY6bGk+CiAgICAgICAgICAgIDwvcmRmOlNlcT4KICAgICAgICAgPC94bXBNTTpIaXN0b3J5PgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpYUmVzb2x1dGlvbj4zMDAwMDAwLzEwMDAwPC90aWZmOlhSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpZUmVzb2x1dGlvbj4zMDAwMDAwLzEwMDAwPC90aWZmOllSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8ZXhpZjpDb2xvclNwYWNlPjY1NTM1PC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWERpbWVuc2lvbj41MDk8L2V4aWY6UGl4ZWxYRGltZW5zaW9uPgogICAgICAgICA8ZXhpZjpQaXhlbFlEaW1lbnNpb24+OTA8L2V4aWY6UGl4ZWxZRGltZW5zaW9uPgogICAgICA8L3JkZjpEZXNjcmlwdGlvbj4KICAgPC9yZGY6UkRGPgo8L3g6eG1wbWV0YT4KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAKPD94cGFja2V0IGVuZD0idyI/PtLIcekAAAAgY0hSTQAAeiUAAICDAAD5/wAAgOkAAHUwAADqYAAAOpgAABdvkl/FRgAAWr1JREFUeNrsvXd8XNWZ//8+997pXb1Y7jYY2xRTQze9l2yAJCQECJAAKbthd3+7yX63frPfLdnNlhQceugQIBASSighdGN6tw3uRX1UZjTt3vP745w7GsmSLNsjWTbz4TUvI2mkuffc85zP0x/x4suvsLdCCEEgEODZZ55m1apVRCIRKhgZUkrS6TTHHX88CxbsR29vLwAej4dcLseTTzxOTzKJz+/fk27LA+wL7Ae0APOARqAKqAH8QBDw6ffbQArIAl1AO9AJrAK2Au8Ca4DWyo6ZGnAch0I+z4knn0JLSwupVGrE95mWBY7D73//JG1tbQQCgcrijRN9fX3MmzefpSecwMDAAFLKEd8XjUZ5+aWXeP31FcRisc/M+gwMDFBTU8Mpp56GYRgUCoUpfb1WZUtXsBchDBwJHAscASwAmoqKzaCG42qFI/2NhP75HPfnw96VAT4GVgAv69cHlaWvoIIK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" visibility="1" referencePoint="0" position="144.7,272.85,mm" templateUuid="{5f577b1b-febe-4d5a-8e61-f64e144ae78e}" mapUuid="" northMode="0" frame="false" size="55.3,10.475,mm" pictureHeight="9.778" excludeFromExports="0" pictureWidth="55.3" mode="1" positionOnPage="144.7,272.85,mm" svgFillColor="255,255,255,255" outlineWidthM="0.3,mm" background="false">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties" type="Map">
+      <Option name="dataDefinedSource" type="Map">
+       <Option name="active" type="bool" value="false"/>
+       <Option name="type" type="int" value="1"/>
+       <Option name="val" type="QString" value=""/>
+      </Option>
+     </Option>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" marginX="3" valign="32" positionLock="false" zValue="20" groupUuid="" blendMode="0" itemRotation="0" type="65641" id="" uuid="{2f43fd94-fa77-4cca-bdd6-80fae77bfbc1}" opacity="1" visibility="1" referencePoint="0" position="10,154,mm" halign="8" templateUuid="{2f43fd94-fa77-4cca-bdd6-80fae77bfbc1}" frame="true" size="65,6,mm" excludeFromExports="0" htmlState="0" labelText="Dosis Aplicada" positionOnPage="10,154,mm" marginY="0" outlineWidthM="2,mm" background="true">
+  <FrameColor blue="0" red="223" green="219" alpha="255"/>
+  <BackgroundColor blue="0" red="223" green="219" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <LabelFont description="MS Shell Dlg 2,10,-1,5,75,0,0,0,0,0,Negrita" style="Bold"/>
+  <FontColor blue="0" red="0" green="0" alpha="255"/>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" marginX="3" valign="32" positionLock="false" zValue="17" groupUuid="" blendMode="0" itemRotation="0" type="65641" id="" uuid="{149228e9-7e9f-42e0-bc65-814646e91895}" opacity="1" visibility="1" referencePoint="0" position="10,20,mm" halign="8" templateUuid="{149228e9-7e9f-42e0-bc65-814646e91895}" frame="true" size="65,6,mm" excludeFromExports="0" htmlState="0" labelText="Dosis Preescrita" positionOnPage="10,20,mm" marginY="0" outlineWidthM="2,mm" background="true">
+  <FrameColor blue="0" red="223" green="219" alpha="255"/>
+  <BackgroundColor blue="0" red="223" green="219" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <LabelFont description="MS Shell Dlg 2,10,-1,5,75,0,0,0,0,0,Negrita" style="Bold"/>
+  <FontColor blue="0" red="0" green="0" alpha="255"/>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" marginX="5" valign="128" positionLock="false" zValue="16" groupUuid="" blendMode="0" itemRotation="0" type="65641" id="" uuid="{c514602b-323c-441a-95eb-cd2089d4d402}" opacity="1" visibility="1" referencePoint="0" position="10,10,mm" halign="1" templateUuid="{c514602b-323c-441a-95eb-cd2089d4d402}" frame="true" size="130,10,mm" excludeFromExports="0" htmlState="0" labelText="18. Dosificación" positionOnPage="10,10,mm" marginY="0" outlineWidthM="2,mm" background="true">
+  <FrameColor blue="0" red="223" green="219" alpha="255"/>
+  <BackgroundColor blue="0" red="223" green="219" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <LabelFont description="MS Shell Dlg 2,12,-1,5,75,0,0,0,0,0,Negrita" style="Bold"/>
+  <FontColor blue="0" red="0" green="0" alpha="255"/>
+ </LayoutItem>
+ <LayoutItem frameJoinStyle="miter" positionLock="false" mapFlags="0" zValue="15" groupUuid="" blendMode="0" keepLayerSet="false" itemRotation="0" followPreset="false" type="65639" id="map_dosis" uuid="{577b5e9d-c192-4e7a-9fdb-c072de6a9319}" drawCanvasItems="true" opacity="1" mapRotation="0" visibility="1" referencePoint="0" position="10,26,mm" templateUuid="{577b5e9d-c192-4e7a-9fdb-c072de6a9319}" frame="true" size="130,130,mm" isTemporal="0" excludeFromExports="0" positionOnPage="10,26,mm" followPresetName="Dosis" labelMargin="0,mm" outlineWidthM="2,mm" background="true">
+  <FrameColor blue="0" red="223" green="219" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" type="QString" value=""/>
+     <Option name="properties"/>
+     <Option name="type" type="QString" value="collection"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <Extent ymin="4707775.30317526962608099" xmax="494390.12862046039663255" xmin="494082.61063115089200437" ymax="4708082.82116457913070917"/>
+  <LayerSet>
+   <Layer name="Dosis" source="D:/GeoSIG/aGrae/Data/pruebas.gpkg|layername=Dosis|subset=&quot;_ATLAS&quot; = 'COOP60' " provider="ogr">Capa_unida_c6004a1a_11f9_4bee_9061_2b0ebdeafd54</Layer>
+   <Layer name="Lotes" source="/vsizip/D:/GeoSIG/aGrae/Data/ATLAS_DISUELTO_COOP.zip/ATLAS_DISUELTO_COOP.shp|layername=ATLAS_DISUELTO_COOP" provider="ogr">ATLAS_DISUELTO_COOP_shp_c5852ef3_6362_446d_b806_f835047ef29d</Layer>
+  </LayerSet>
+  <AtlasMap scalingMode="2" margin="0.10000000000000001" atlasDriven="1"/>
+  <labelBlockingItems/>
+  <atlasClippingSettings restrictLayers="0" clippingType="1" forceLabelsInside="0" enabled="0">
+   <layersToClip/>
+  </atlasClippingSettings>
+  <itemClippingSettings clippingType="1" clipSource="" forceLabelsInside="0" enabled="0"/>
+ </LayoutItem>
+ <customproperties>
+  <Option type="Map">
+   <Option name="atlasRasterFormat" type="QString" value="png"/>
+   <Option name="singleFile" type="bool" value="true"/>
+  </Option>
+ </customproperties>
+ <Atlas coverageLayerProvider="ogr" sortFeatures="0" coverageLayer="ATLAS_DISUELTO_COOP_shp_c5852ef3_6362_446d_b806_f835047ef29d" pageNameExpression="ATLAS" coverageLayerName="Lotes" filterFeatures="0" coverageLayerSource="/vsizip/D:/GeoSIG/aGrae/Data/ATLAS_DISUELTO_COOP.zip/ATLAS_DISUELTO_COOP.shp|layername=ATLAS_DISUELTO_COOP" enabled="1" hideCoverage="0" filenamePattern="CEREZO"/>
+</Layout>

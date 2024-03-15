@@ -266,7 +266,7 @@ class aGraeTools():
             d.extraccionresiduok, 
             d.prod_esperada from data d join agrae.lotes l on d.idlote = l.idlote ),
         ambientes as (select distinct l.nombre as lote,a.idambiente,a.ambiente,a.ndvimax,st_collectionextract(st_multi(st_intersection(l.geom,a.geometria)),3) as geom, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_intersects(l.geom,a.geometria))
-        select row_number() over () as id ,idambiente,ambiente,ndvimax::numeric,(geom) as geom from ambientes
+        select row_number() over () as id , lote,idambiente,ambiente,ndvimax::numeric,(geom) as geom from ambientes
         '''.format(idcampania,idexplotacion)
 
         uri = QgsDataSourceUri() 
@@ -584,4 +584,12 @@ class aGraeTools():
         layers  = [l for l in self.instance.mapLayers().values() if group_name in l.name()]
         for l in layers:
             if name_layer in l.name():
-                return l 
+                return l
+            
+    
+    def getBaseMap(self,name:str,basemaps:dict) -> QgsRasterLayer:
+        basemap = basemaps[name]
+        url = basemap['url']
+        options = basemap['options']
+        urlWithParams = 'url={}&{}'.format(url,options)
+        return QgsRasterLayer(urlWithParams,name,'wms')

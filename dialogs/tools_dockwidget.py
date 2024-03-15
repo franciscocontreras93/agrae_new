@@ -1,18 +1,14 @@
 import os
-import csv
-import requests
-import json
 
-import time
 import psycopg2
 
-# from datetime import date
-from psycopg2 import InterfaceError, errors, extras
+
+from psycopg2 import extras
 
 from qgis.PyQt import QtWidgets, uic
-from qgis.PyQt.QtCore import pyqtSignal, QSettings, QVariant, Qt,QDate,QSize, QUrl
-from qgis.PyQt.QtGui import QColor, QIcon, QPixmap
-# from qgis.PyQt.QtXml import QDomDocument
+from qgis.PyQt.QtCore import pyqtSignal, Qt,QDate,QSize
+from qgis.PyQt.QtGui import QIcon
+
 from qgis.core import *
 from qgis.utils import iface
 from qgis.gui import QgsMapToolIdentify,QgsMapMouseEvent
@@ -30,6 +26,7 @@ from .gestion_personas import GestionPersonasDialog
 from .gestion_distribuidor import GestionDistribuidorDialog
 from .gestion_agricultor import GestionAgricultorDialog
 from .datos_base_dialog import GestionDatosBaseDialog
+from .composer_dialog import agraeComposer
 
 from .plots_dialog import agraePlotsDialog
 
@@ -67,6 +64,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         
         iface.addDockWidget(Qt.RightDockWidgetArea,self)
+        self.atlasLayers = dict()
         # iface.mapCanvas().contextMenuAboutToShow.connect(self.populateContextMenu)
         pass
 
@@ -87,7 +85,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             c.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
 
         self.combo_campania.currentIndexChanged.connect(lambda: self.getExplotacionData(self.combo_campania.currentData()))
-        self.combo_explotacion.currentIndexChanged.connect(self.updateLotesLayer)
+        self.combo_explotacion.currentIndexChanged.connect(self.getLotesLayer)
         self.combo_cultivo_2.currentIndexChanged.connect(self.clearAplicacion)
         # icon = agraeGUI().getIcon('edit')
         
@@ -97,6 +95,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.CargarCapasExplotacion = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar capas de Explotacion',self)
         self.CargarCapasExplotacion.triggered.connect(self.generarCapasExplotacion)
         self.GenerarReporteFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('printer'),'Generar Reporte de Fertiliacion',self)
+        self.GenerarReporteFertilizacion.triggered.connect(self.generateComposerDialog)
 
         actions_exp = [self.CargarCapasExplotacion,self.GenerarReporteFertilizacion]
         self.tools.settingsToolsButtons(self.tool_exp_2,actions_exp,icon=agraeGUI().getIcon('tools'),setMainIcon=True)
@@ -318,6 +317,16 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         dlg.exec()
         
         pass
+
+    def generateComposerDialog(self):
+        group  = '{}-{}'.format(self.combo_campania.currentText()[2:],self.combo_explotacion.currentText())
+        
+
+       
+
+        dlg = agraeComposer(self.atlasLayers,self.combo_campania.currentData(),self.combo_explotacion.currentData())
+        dlg.exec()
+
     # FUCNTIONS
     def identify(self):
         self.identifyTool = selectTool(self.layer)
@@ -335,7 +344,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                     data = self.tools.checkData(data)
                 return data
             except Exception as ex:
-                print(ex)
+                # print(ex)
                 self.conn.close()
 
     def afterLotesCreated(self,idexp):
@@ -446,15 +455,11 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
               
             #   print(ex)
     
-    def updateLotesLayer(self):
+    def getLotesLayer(self):
        
 
         sql = aGraeSQLTools().getSql('view_lotes.sql')
-        # try:
-        #     layer = QgsProject.instance().mapLayersByName('aGrae Lotes')[0]
-        #     QgsProject.instance().removeMapLayer(layer.id())
-        # except IndexError:
-        #     raise IndexError
+
 
         try:
             sql = sql.format(self.combo_campania.currentData())
@@ -471,6 +476,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
 
         except Exception as ex:
+            self.conn.rollback()
             print(ex)
 
                 
@@ -534,7 +540,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                     self.combo_campania.addItem(e[0],e[1])
                 
                 self.getExplotacionData(self.combo_campania.currentData())
-                self.updateLotesLayer()
+                self.getLotesLayer()
             
             except Exception as ex:
                 self.conn.rollback()
@@ -618,7 +624,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 print(ex)
 
             self.updateComboExp()
-            self.updateLotesLayer()
+            self.getLotesLayer()
 
             try:
                 cursor.execute('SELECT DISTINCT UPPER(nombre), idcultivo  FROM agrae.cultivo ORDER BY UPPER(nombre)')
@@ -935,6 +941,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             dlg.exec()
         
     def generarCapasExplotacion(self):
+        self.atlasLayers = {}
+        self.atlasLayers['Atlas'] = self.layer.clone()
+
         name_camp = self.combo_campania.currentText()[2:]
         name_exp = self.combo_explotacion.currentText()
         queries = {
@@ -965,24 +974,32 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             'Materia Organica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,organi,st_asText(geom) as geom from segm_analitica;'''),
             'Relacion CN': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,rel_cn,st_asText(geom) as geom from segm_analitica;'''),
             'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
+            'Fert Variable Parcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
+            'Ceap36 Textura': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
+            'Ceap36 Infiltracion': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
+            'Ceap90 Textura': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
+            'Ceap90 Infiltracion': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             
         }
 
         
-        # queries = { 
-        #     'Ambientes': aGraeSQLTools().getSql('ambientes_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
-        # }
-        # print(queries['Ambientes'])
 
         for q in reversed(queries):
             name = '{}-{}-{}'.format(name_camp,name_exp,q)
             # print(name)
-            layer = self.tools.getDataBaseLayer(queries[q],name,q)
+            if 'Textura' in q:
+                layer = self.tools.getDataBaseLayer(queries[q],name,'ceap_textura')
+            elif 'Infiltracion' in q:
+                layer = self.tools.getDataBaseLayer(queries[q],name,'ceap_infiltracion')
+            else:
+                layer = self.tools.getDataBaseLayer(queries[q],name,q)
+                
             if layer.isValid():
-
+                self.atlasLayers[q] = layer
                 QgsProject.instance().addMapLayer(layer)
 
         ambientes = self.tools.getDataBaseLayerUri(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'{}-{}'.format(name_camp,name_exp))
+        self.atlasLayers['Ambientes'] = ambientes
         QgsProject.instance().addMapLayer(ambientes)
 
         
