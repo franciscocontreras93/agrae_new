@@ -325,19 +325,21 @@ class aGraeTools():
                 
                 lyr.commitChanges()
                 lyr.loadNamedStyle(styleUri)
+
+
                 
                 if lyr.isValid():
                     # print(lyr.isValid())
                     QgsMessageLog.logMessage('Capa: <b>{}</b> CORRECTA'.format(lyr.name()), self.plugin_name, level=Qgis.Info)
                     return lyr
                 else:
-                    # print(lyr.isValid())
+                    print(lyr.isValid())
                     QgsMessageLog.logMessage('Capa: <b>{}</b> INCORRECTA'.format(lyr.name()), self.plugin_name, level=Qgis.Warning)
                     # return lyr
             
             except Exception as ex:
                 iface.messageBar().pushMessage("Error:", "Ocurrio un Error, revisa el panel de mensajes del Registro", level=Qgis.Critical)
-                # print(ex)
+                print(ex)
                 QgsMessageLog.logMessage('{}'.format(ex), self.plugin_name, level=Qgis.Critical)
 
     def crearFormatoAnalitica(self,idcampania:int,idexplotacion:int,name:str):

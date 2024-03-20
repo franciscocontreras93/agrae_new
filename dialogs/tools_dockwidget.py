@@ -33,7 +33,9 @@ from .plots_dialog import agraePlotsDialog
 toolsDialog, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui/agrae_tools.ui'))
 
 class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
-    def __init__(self,layer:QgsVectorLayer,parent=None):
+    def __init__(self,
+                 layer:QgsVectorLayer,
+                 parent=None):
         super(agraeToolsDockwidget,self).__init__(parent)
         self.instance = QgsProject.instance()
         self.setupUi(self)

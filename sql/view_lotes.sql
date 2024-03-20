@@ -12,6 +12,7 @@ cult.nombre cultivo,
 d.prod_esperada::int,reg.nombre regimen, 
 d.fechasiembra , 
 d.fechacosecha , 
+(st_area(st_transform(l.geom,8857)) / 10000) area_ha,
 st_asText(l.geom) geom from agrae.lotes l 
 join campaign.data d on d.idlote = l.idlote
 join campaign.campanias c on d.idcampania = c.id
