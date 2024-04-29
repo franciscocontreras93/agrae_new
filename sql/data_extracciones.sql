@@ -40,7 +40,7 @@ lotes as (select l.*,
 	d.extraccionresiduop,
 	d.extraccionresiduok, 
 	d.prod_esperada from data d join agrae.lotes l on d.idlote = l.idlote ),	
-segmentos as (select distinct s.*, l.idlote, l.iddata, l.regimen from agrae.segmentos s join lotes l on st_contains(st_buffer(CAST(l.geom AS geography),4)::geometry,s.geometria)),
+segmentos as (select distinct s.idsegmento,s.ceap,s.segmento,st_multi(st_intersection(s.geometria,l.geom)) as geometria, l.idlote, l.iddata, l.regimen from agrae.segmentos s join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),4)::geometry,s.geometria)),
 segm_analitica as (select 
 	m.codigo,
 	s.idsegmento,

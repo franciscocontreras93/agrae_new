@@ -8,6 +8,7 @@ from .dialogs.lotes_dialog import LotesMainWindow
 from .dialogs.tools_dockwidget import *
 
 from .db import agraeDataBaseDriver
+from .tools import aGraeTools
 
 
 
@@ -20,6 +21,8 @@ class aGraeToolbox:
         
 
         self.actions = []
+
+        self.tools = aGraeTools()
 
         
     
@@ -143,9 +146,10 @@ class aGraeToolbox:
         self.mainWindowDialog.show()
 
     def agraeGestionLotes(self):
-        self.lotesDialog = LotesMainWindow()
-        self.lotesDialog.closingPlugin.connect(lambda: self.onClosePluginMain(self.lotesDialog))
-        self.lotesDialog.show()
+        # self.lotesDialog = LotesMainWindow()
+        # self.lotesDialog.closingPlugin.connect(lambda: self.onClosePluginMain(self.lotesDialog))
+        # self.lotesDialog.show()
+        self.tools.getLotesLayer()
 
     def agraeDock(self):
         try:

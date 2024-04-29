@@ -5,8 +5,10 @@ from psycopg2 import errors,  Binary
 
 
 from qgis.PyQt.QtWidgets import *
+# from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtCore import pyqtSignal, QSize, QDate
 from qgis.core import *
+from qgis.gui import * 
 from qgis.PyQt import uic
 
 from ..gui import agraeGUI
@@ -30,15 +32,22 @@ class GestionDatosBaseDialog(QDialog,agraeDatosBaseDialog):
         # print(self.layers_segmento.currentLayer())
 
     def UIComponents(self):
+        self.layers_ce.layerChanged.connect(self.updateCEFields)
         self.layers_segmento.layerChanged.connect(self.updateSegmentosField)
         self.layers_ambiente.layerChanged.connect(self.updateAmbientesField)
-        self.field_segmento.setFilters(QgsFieldProxyModel.Numeric)
-        self.field_ambiente.setFilters(QgsFieldProxyModel.Numeric)
-        self.field_ndvi.setFilters(QgsFieldProxyModel.Numeric)
+        # self.field_segmento.setFilters(QgsFieldProxyModel.Numeric)
+        # self.field_ambiente.setFilters(QgsFieldProxyModel.Numeric)
+        # self.field_ndvi.setFilters(QgsFieldProxyModel.Numeric)
 
+        self.btn_create_ce.clicked.connect(self.loadCE)
         self.btn_create_segmentos.clicked.connect(self.loadSegmentos)
         self.btn_create_ambientes.clicked.connect(self.loadAmbientes)
 
+        pass
+    
+    def updateCEFields(self,layer):
+        for w in [self.field_ce36, self.field_ce90]:
+            w.setLayer(layer)
         pass
 
     def updateSegmentosField(self,layer):
@@ -49,6 +58,8 @@ class GestionDatosBaseDialog(QDialog,agraeDatosBaseDialog):
         for w in [self.field_ambiente, self.field_ndvi]:
             w.setLayer(layer)
         pass
+
+    
 
     def loadSegmentos(self):
         self.tools.crearSegmento(
@@ -61,5 +72,102 @@ class GestionDatosBaseDialog(QDialog,agraeDatosBaseDialog):
                                  field_ndvi = self.field_ndvi.currentField())
         pass
 
+    def loadCE(self):
+         self.tools.crearCE(layer = self.layers_ce.currentLayer(),
+                                 field_ce36= self.field_ce36.currentField(),
+                                 field_ce90 = self.field_ce36.currentField())
 
+
+class CrearLotesDialog(QDialog):
+    closingPlugin = pyqtSignal()
+    # idExplotacionSignal = pyqtSignal(list)
+    def __init__(self, layer: QgsVectorLayer):
+        super().__init__()
+        self.layer = layer
+        self.setWindowTitle('Cargar Lotes desde la capa {}'.format(self.layer.name()))
+        self.agraeSql = aGraeSQLTools()
+
+        self.conn = agraeDataBaseDriver().connection()
+
+        self.UIComponents()
+
+    def UIComponents(self):
+        self.layout = QGridLayout()
+        
+        self.groupBoxLayout = QGridLayout()
+        self.groupBox = QGroupBox()
+        self.groupBox.setTitle('Cargar Lotes al Sistema aGrae')
+
+        self.label_1 = QLabel('Seleccionar Campo Nombre del Lote')
+        self.label_1.setMaximumSize(QSize(250,15))
+        
+        self.combo_nombre = QgsFieldComboBox()
+        self.combo_nombre.setLayer(self.layer)
+
+        self.btn_cargar = QPushButton('Cargar Lotes')
+        self.btn_cargar.clicked.connect(self.loadLotes)
+        
+
+        self.groupBoxLayout.addWidget(self.label_1,0,0)
+        self.groupBoxLayout.addWidget(self.combo_nombre,1,0)
+        self.groupBoxLayout.addWidget(self.btn_cargar,2,0)
+
+
+        self.groupBox.setLayout(self.groupBoxLayout)
+        self.layout.addWidget(self.groupBox)
+        self.setLayout(self.layout)
+
+        pass
+
+    def loadLotes(self):
+
+        # layer = iface.activeLayer()
+        # sourceCrs = layer.crs()
+        # crsBase = QgsCoordinateReferenceSystem(4326)
+        # tr = QgsCoordinateTransform(sourceCrs, crsBase, QgsProject.instance())
+
+        # for f in iter(layer.getSelectedFeatures()):
+        #     geom = f.geometry()
+        #     geom.transform(tr)
+        #     print(geom)
+        
+        sourceCrs = self.layer.crs()
+        crsBase = QgsCoordinateReferenceSystem(4326)
+        tr = QgsCoordinateTransform(sourceCrs, crsBase, QgsProject.instance())
+        selection = [f for f in self.layer.getSelectedFeatures()]
+        sql = self.agraeSql.getSql('create_lote.sql')
+        # reply = QtWidgets.QMessageBox.question(None,'aGrae Toolbox',question,QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        # if reply == QtWidgets.QMessageBox.Yes:
+        #     return action
+
+        for f in selection: 
+            nombre = f[self.combo_nombre.currentField()]
+            geom = f.geometry()
+            if sourceCrs != crsBase:
+                geom.transform(tr)
+            
+            query = sql.format(nombre,geom.asWkt())
+            # print(query)
+
+
+            
+            with self.conn.cursor() as cursor: 
+                try:
+                    cursor.execute(query)
+                    response = cursor.fetchone()
+
+                    # print(response)
+                    if len(response) > 0:
+                        QgsMessageLog.logMessage('Lote: {} cargado correctamente as la Base de Datos'.format(response[0]), 'aGrae Logs', 3)
+                        self.conn.commit()
+                    else: 
+                        QgsMessageLog.logMessage('Lote: {} ya existe en la Base de Datos'.format(nombre), 'aGrae Logs', 1)
+                        self.conn.rollback()
+                except Exception as ex:
+                    print(ex)
+                    self.conn.rollback()
+            # print(query) 
+        
+    
+    
 

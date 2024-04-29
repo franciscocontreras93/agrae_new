@@ -768,7 +768,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
                 'fertilizacion': _reduccion  #_reduccion 
                 } 
 
-                # print(self.dataHuellaCarbono)
+                print(self.dataHuellaCarbono)
             except Exception as ex:
                 QgsMessageLog.logMessage(f'{ex}', 'aGrae GIS', level=1)
 

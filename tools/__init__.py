@@ -73,6 +73,11 @@ class aGraeTools():
             widget.setChecked(False)
             self.enableElements(widget,actions)
 
+    def question(self,question,action):
+        reply = QtWidgets.QMessageBox.question(None,'aGrae Toolbox',question,QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            return action
+
 
 
         pass
@@ -171,12 +176,12 @@ class aGraeTools():
             with self.conn.cursor() as cursor:
                 try: 
                     for f in features :
-                        segm = f[field] 
+                        segm = f[field_segmento] 
                         geometria = f.geometry() .asWkt()
                         sql = sql + f""" ({segm},st_multi(st_force2d(st_transform(st_geomfromtext('{geometria}',{srid}),4326)))),\n"""                   
                     # print(sql)
-                    # cursor.execute(sql[:-2])   
-                    # self.conn.commit() 
+                    cursor.execute(sql[:-2])   
+                    self.conn.commit() 
                     QMessageBox.about(None, 'aGrae GIS', 'Segmentos Cargados Correctamente \na la base de datos')
 
                 except Exception as ex:
@@ -198,16 +203,16 @@ class aGraeTools():
             with self.conn.cursor() as cursor:
                 try: 
                     for f in features :
-                        amb = f[field_ambiente]
-                        ndvimax = f[field_ndvi]
+                        amb = int(f[field_ambiente])
+                        ndvimax = float(f[field_ndvi])
 
                         geometria = f.geometry() .asWkt()
                         sql = sql + f'''({amb},{ndvimax}, st_multi(st_force2d(st_transform(st_geomfromtext('{geometria}',{srid}),4326)))),\n'''                  
                     
                     # print(sql)
-                    # cursor.execute(sql[:-2])   
-                    # self.conn.commit() 
-                    QMessageBox.about(None, 'aGrae GIS', 'Segmentos Cargados Correctamente \na la base de datos')
+                    cursor.execute(sql[:-2])   
+                    self.conn.commit() 
+                    QMessageBox.about(None, 'aGrae GIS', 'Ambientes Cargados Correctamente \na la base de datos')
 
                 except Exception as ex:
 
@@ -219,6 +224,56 @@ class aGraeTools():
             self.conn.rollback()
 
         pass
+
+    def crearCE(self,layer,field_ce36, field_ce90):
+        def kf(value):
+            if value > 0: return round( 2.0014 * value ** -1.514, 4)
+            else :  return 0
+        
+    
+        lyr = layer
+        srid = lyr.crs().authid()[5:]
+        sql = """ insert into agrae.ce(ce36, kf36, ce90, kf90 ,geometria) values """
+        if len(lyr.selectedFeatures()) > 0: features = lyr.selectedFeatures() 
+        else: features = lyr.getFeatures()
+        try:
+            reply = QtWidgets.QMessageBox.question(None,'aGrae Toolbox','Se cargaran {} poligonos a la base de datos,\n este proceso puede tardar. Quiere Continuar?'.format(len(features)),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
+            
+                with self.conn.cursor() as cursor:
+                    try: 
+                        for f in features :
+                            ce36 = f[field_ce36]
+                            kf36 = kf(f[field_ce36])
+                            ce90 = f[field_ce90]
+                            kf90 = kf(f[field_ce90])
+
+                            geometria = f.geometry() .asWkt()
+                            sql = sql + f'''({ce36},{kf36},{ce90},{kf90}, st_multi(st_force2d(st_transform(st_geomfromtext('{geometria}',{srid}),4326)))),\n'''                  
+                        
+                        # print(sql)
+                        cursor.execute(sql[:-2])   
+                        self.conn.commit() 
+                        QMessageBox.about(None, 'aGrae GIS', 'CE Cargados Correctamente \na la base de datos')
+
+                    except Exception as ex:
+
+                        QgsMessageLog.logMessage(f'{ex}', 'aGrae GIS', level=1)
+                        self.conn.rollback()
+    
+        except Exception as ex: 
+            QgsMessageLog.logMessage(f'{ex}', 'aGrae GIS', level=1)
+            self.conn.rollback()
+
+        pass
+        
+    def getLotesLayer(self):
+        sql = aGraeSQLTools().getSql('lotes_layer.sql')
+        layer = self.getDataBaseLayer(sql,layername='aGrae Lotes',styleName='lotes_asignados',memory=False)
+        QgsProject.instance().addMapLayer(layer)
+        iface.actionSelect().trigger()
+        iface.setActiveLayer(layer)
+
 
     def getDataBaseLayerUri(self,idcampania,idexplotacion,name):
         dns = agraeDataBaseDriver().getDSN()
@@ -277,7 +332,7 @@ class aGraeTools():
         lyrAmbientes.loadNamedStyle(styleUri)
         return lyrAmbientes
     
-    def getDataBaseLayer(self, sql:str, layername:str ='Resultados' ,styleName:str ='') -> QgsVectorLayer:
+    def getDataBaseLayer(self, sql:str, layername:str ='Resultados' ,styleName:str ='',memory=True) -> QgsVectorLayer:
         col_types = {
             20 : QVariant.Int,
             21: QVariant.Int,
@@ -293,52 +348,62 @@ class aGraeTools():
 
         styleUri = os.path.join(os.path.dirname(__file__), 'styles/{}.qml'.format(estilo))
 
-
         with self.conn.cursor(cursor_factory=extras.RealDictCursor) as cursor:
-            lyr = QgsVectorLayer('MultiPolygon?crs=epsg:4326&index=yes'.format(type),layername,'memory')
-            provider = lyr.dataProvider()
-            try:
-                lyr.startEditing()
-                cursor.execute(sql)
-                coldesc = tuple(c for c in cursor.description if c[0] != 'geom')
-                # print(coldesc)
-                # QgsMessageLog.logMessage('{}'.format(sql), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
-                # QgsMessageLog.logMessage('{}'.format(coldesc), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
-                data = cursor.fetchall()
-                # print(data)
-                fields = [QgsField(c[0],col_types[c[1]]) for c in coldesc]
-                provider.addAttributes(fields)
-                lyr.updateFields()
-                geom = QgsGeometry()
-                features = []
-                for r in data:
-                    # print(r['geom'])
-                    feat = QgsFeature()
-                    feat.setFields(lyr.fields())
-                    for c in fields:
-                        feat.setAttribute(c.name(),r[c.name()])
-                    feat.setGeometry(geom.fromWkt(r['geom']))
-                    features.append(feat)
-                    # print(feat.geometry().asWkt())
-                    # QgsMessageLog.logMessage('{}'.format(feat.geometry().asWkt()), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
-                    provider.addFeatures([feat])
+            if memory:
+                lyr = QgsVectorLayer('MultiPolygon?crs=epsg:4326&index=yes'.format(type),layername,'memory')
+                provider = lyr.dataProvider()
+                try:
+                    lyr.startEditing()
+                    cursor.execute(sql)
+                    coldesc = tuple(c for c in cursor.description if c[0] != 'geom')
+                    # print(coldesc)
+                    # QgsMessageLog.logMessage('{}'.format(sql), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
+                    # QgsMessageLog.logMessage('{}'.format(coldesc), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
+                    data = cursor.fetchall()
+                    # print(data)
+                    fields = [QgsField(c[0],col_types[c[1]]) for c in coldesc]
+                    provider.addAttributes(fields)
+                    lyr.updateFields()
+                    geom = QgsGeometry()
+                    features = []
+                    for r in data:
+                        # print(r['geom'])
+                        feat = QgsFeature()
+                        feat.setFields(lyr.fields())
+                        for c in fields:
+                            feat.setAttribute(c.name(),r[c.name()])
+                        feat.setGeometry(geom.fromWkt(r['geom']))
+                        features.append(feat)
+                        # print(feat.geometry().asWkt())
+                        # QgsMessageLog.logMessage('{}'.format(feat.geometry().asWkt()), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
+                        provider.addFeatures([feat])
+                    
+                    lyr.commitChanges()
+                    lyr.loadNamedStyle(styleUri)
+                    
+                    if lyr.isValid():
+                        # print(lyr.isValid())
+                        QgsMessageLog.logMessage('Capa: <b>{}</b> CORRECTA'.format(lyr.name()), self.plugin_name, level=Qgis.Info)
+                        return lyr
+                    else:
+                        # print(lyr.isValid())
+                        QgsMessageLog.logMessage('Capa: <b>{}</b> INCORRECTA'.format(lyr.name()), self.plugin_name, level=Qgis.Warning)
+                        # return lyr
                 
-                lyr.commitChanges()
-                lyr.loadNamedStyle(styleUri)
-                
-                if lyr.isValid():
-                    # print(lyr.isValid())
-                    QgsMessageLog.logMessage('Capa: <b>{}</b> CORRECTA'.format(lyr.name()), self.plugin_name, level=Qgis.Info)
-                    return lyr
-                else:
-                    # print(lyr.isValid())
-                    QgsMessageLog.logMessage('Capa: <b>{}</b> INCORRECTA'.format(lyr.name()), self.plugin_name, level=Qgis.Warning)
-                    # return lyr
-            
-            except Exception as ex:
-                iface.messageBar().pushMessage("Error:", "Ocurrio un Error, revisa el panel de mensajes del Registro", level=Qgis.Critical)
-                # print(ex)
-                QgsMessageLog.logMessage('{}'.format(ex), self.plugin_name, level=Qgis.Critical)
+                except Exception as ex:
+                    iface.messageBar().pushMessage("Error:", "Ocurrio un Error, revisa el panel de mensajes del Registro", level=Qgis.Critical)
+                    # print(ex)
+                    QgsMessageLog.logMessage('{}'.format(ex), self.plugin_name, level=Qgis.Critical)
+
+            else:
+                dns = agraeDataBaseDriver().getDSN()
+                uri = QgsDataSourceUri() 
+                uri.setConnection(dns['host'], dns['port'], dns['dbname'], dns['user'], dns['password'])
+                uri.setDataSource('', f'({sql})', 'geom', '', 'id')
+                    # uriUnidades.setDataSource('public', 'unidades', 'geometria', f'"idlotecampania" = {idlotecampania}', 'id')
+                lyrAmbientes = QgsVectorLayer(uri.uri(), '{}'.format(layername), 'postgres')
+                lyrAmbientes.loadNamedStyle(styleUri)
+                return lyrAmbientes
 
     def crearFormatoAnalitica(self,idcampania:int,idexplotacion:int,name:str):
         s = QSettings('agrae','dbConnection')
@@ -351,15 +416,15 @@ class aGraeTools():
             with open(os.path.join(path,'{}.csv'.format(name)),'w',newline='') as file: 
                 csv_writer = csv.writer(file,delimiter=';')          
                 csv_writer.writerow(header)
-                with self.conn:
-                    # cursor = self.conn.cursor(cursor_factory=extras.DictCursor)
-                    cursor = self.conn.cursor() 
+                with self.conn.cursor() as cursor:
                     cursor.execute(sql)
                     data = cursor.fetchall()
+                    print(sql)
                     csv_writer.writerows([r for r in list(data)])
             self.messages('aGrae GIS','Archivo Creado Correctamente <a href="{}">{}</a>'.format(os.path.join(path,'{}.csv'.format(name)),os.path.join(path,'{}.csv'.format(name))),3,5)
 
         except Exception as ex:
+            print(ex)
             self.messages('aGrae GIS','Ocurrio un error: {}'.format(ex),2,3)
             pass
         
@@ -586,7 +651,6 @@ class aGraeTools():
             if name_layer in l.name():
                 return l
             
-    
     def getBaseMap(self,name:str,basemaps:dict) -> QgsRasterLayer:
         basemap = basemaps[name]
         url = basemap['url']

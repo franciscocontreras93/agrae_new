@@ -19,6 +19,100 @@
      <property name="currentIndex">
       <number>0</number>
      </property>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>Cargar CE desde Capa</string>
+      </attribute>
+      <widget class="QGroupBox" name="groupBox_5">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>14</y>
+         <width>457</width>
+         <height>69</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Seleccionar Archivo o Capa</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_6">
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_13">
+          <property name="maximumSize">
+           <size>
+            <width>200</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Seleccionar Capa o Archivo</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QgsMapLayerComboBox" name="layers_ce"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QGroupBox" name="groupBox_6">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>90</y>
+         <width>457</width>
+         <height>85</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Mapeo de Campos</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_7">
+        <item row="1" column="0">
+         <widget class="QgsFieldComboBox" name="field_ce36">
+          <property name="allowEmptyFieldName">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_9">
+          <property name="text">
+           <string>Seleccionar Campo CE36</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QgsFieldComboBox" name="field_ce90"/>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>Seleccionar Campo CE90</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QPushButton" name="btn_create_ce">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>180</y>
+         <width>457</width>
+         <height>28</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Cargar CE</string>
+       </property>
+      </widget>
+     </widget>
      <widget class="QWidget" name="tab_1">
       <attribute name="title">
        <string>Cargar Segmentos desde Capa</string>
