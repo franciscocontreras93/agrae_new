@@ -24,7 +24,7 @@ with data as (select distinct
 	d.prod_esperada 
 	from campaign.data d 
 	join agrae.cultivo c on c.idcultivo = d.idcultivo
-	where d.iddata = {}),
+	where d.idcampania = {} and d.idexplotacion = {}),
 lotes as (select l.*, 
 	d.iddata,
 	d.idcampania,
@@ -136,7 +136,7 @@ segm_analitica as (select
 	LEFT JOIN analytic.sodio na ON na.suelo = txt.grupo AND a.na >= na.limite_inferior AND a.na <= na.limite_superior
 	),
 --ambientes as (select distinct a.idambiente,a.ambiente,a.ndvimax,a.geometria, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_contains(st_buffer(CAST(l.geom AS geography),4)::geometry,a.geometria)),
-ambientes as (select distinct a.idambiente,a.ambiente,a.ndvimax,st_intersection(l.geom,a.geometria) as geometria, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_intersects(l.geom,a.geometria)),
+ambientes as (select distinct a.idambiente,a.ambiente,a.ndvimax,st_multi(st_intersection(l.geom,a.geometria)) as geometria, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_intersects(l.geom,a.geometria)),
 amb_40 as (select distinct a.idlote,avg(a.ndvimax) as ndvimed from ambientes a where a.ambiente = 40 group by a.idlote),
 producciones as ( -- CALCULO PRODUCCIONES PONDERADAS
 	select a.idambiente,
@@ -197,7 +197,7 @@ uf as (select
 	round(max((a.extraccioncosechan + a.extraccionresiduon) + (1 + s.n_inc))) necesidad_n,
 	round(max((a.extraccioncosechap + a.extraccionresiduop) + (1 + s.p_inc))) necesidad_p,
 	max((a.extraccioncosechak + a.extraccionresiduok) + (1 + s.n_inc)) necesidad_k,
-	st_asText(st_multi(st_union(st_multi(ST_CollectionExtract(st_intersection(a.geometria,s.geometria),3))))) as geom
+	(st_multi(st_union(st_multi(ST_CollectionExtract(st_intersection(a.geometria,s.geometria),3))))) as geom
 	from extracciones a 
 	join segm_analitica s on st_intersects(s.geometria , a.geometria)
 	group by a.idlote, a.ambiente, s.segmento, a.iddata
@@ -359,16 +359,87 @@ join necesidades_f nf using(idlote, iddata, uf, uf_etiqueta)
 ),
 aportes as (
 select
-(n.necesidad_n + (-1*n.necesidad_nf))  as n,
-(n.necesidad_p + (-1*n.necesidad_pf))  as p,
-(n.necesidad_k + (-1*n.necesidad_kf))  as k,
-round((st_area(st_transform(st_setsrid(n.geom,4326),3857)) / 10000)::numeric,2) area
+n.idlote, n.iddata, n.uf, n.uf_etiqueta,
+concat(n.necesidad_n,'-',n.necesidad_p,'-',n.necesidad_k) necesidades_iniciales,
+coalesce(d.fertilizantefondoformula,'Sin Informacion') fertilizantefondoformula,
+	(CASE
+            WHEN d.fertilizantefondoajustado::text ~~* 'n'::text AND n.necesidad_n > 0::double precision THEN round(n.necesidad_n / NULLIF((string_to_array(d.fertilizantefondoformula, '-'::text))[1]::double precision / 100::double precision, 0::double precision))
+            WHEN d.fertilizantefondoajustado::text ~~* 'p'::text AND n.necesidad_p > 0::double precision THEN round(n.necesidad_p / NULLIF((string_to_array(d.fertilizantefondoformula, '-'::text))[2]::double precision / 100::double precision, 0::double precision))
+            WHEN d.fertilizantefondoajustado::text ~~* 'k'::text AND n.necesidad_k > 0::double precision THEN round(n.necesidad_k / NULLIF((string_to_array(d.fertilizantefondoformula, '-'::text))[3]::double precision / 100::double precision, 0::double precision))
+            WHEN d.fertilizantefondoajustado::text ~~* 'pk'::text AND n.necesidad_p > 0::double precision OR n.necesidad_k > 0::double precision THEN round((n.necesidad_p / NULLIF((string_to_array(d.fertilizantefondoformula, '-'::text))[2]::double precision / 100::double precision, 0::double precision) + n.necesidad_k / NULLIF((string_to_array(d.fertilizantefondoformula, '-'::text))[3]::double precision / 100::double precision, 0::double precision)) / 2::double precision)
+            ELSE 0::double precision
+        end) AS fertilizantefondocalculado,
+coalesce(d.fertilizantecob1formula,'Sin Informacion') fertilizantecob1formula,
+(CASE
+            WHEN d.fertilizantecob1ajustado::text ~~* 'n'::text AND n.necesidad_ni > 0::double precision THEN round(n.necesidad_ni / NULLIF((string_to_array(d.fertilizantecob1formula, '-'::text))[1]::double precision / 100::double precision, 0::double precision))
+            WHEN d.fertilizantecob1ajustado::text ~~* 'p'::text AND n.necesidad_pi > 0::double precision THEN round(n.necesidad_pi / NULLIF((string_to_array(d.fertilizantecob1formula, '-'::text))[2]::double precision / 100::double precision, 0::double precision))
+            WHEN d.fertilizantecob1ajustado::text ~~* 'k'::text AND n.necesidad_ki > 0::double precision THEN round(n.necesidad_ki / NULLIF((string_to_array(d.fertilizantecob1formula, '-'::text))[3]::double precision / 100::double precision, 0::double precision))
+            WHEN d.fertilizantecob1ajustado::text ~~* 'pk'::text AND n.necesidad_pi > 0::double precision OR n.necesidad_ki > 0::double precision THEN round((n.necesidad_pi / NULLIF((string_to_array(d.fertilizantecob1formula, '-'::text))[2]::double precision / 100::double precision, 0::double precision) + n.necesidad_ki / NULLIF((string_to_array(d.fertilizantecob1formula, '-'::text))[3]::double precision / 100::double precision, 0::double precision)) / 2::double precision)
+            ELSE 0::double precision
+        end) AS fertilizantecob1calculado,
+coalesce(d.fertilizantecob2formula,'Sin Informacion') fertilizantecob2formula,
+(CASE
+            WHEN d.fertilizantecob2ajustado::text ~~* 'n'::text AND n.necesidad_nii > 0::double precision THEN round(n.necesidad_nii / NULLIF((string_to_array(d.fertilizantecob2formula, '-'::text))[1]::double precision / 100::double precision, 0::double precision))
+            WHEN d.fertilizantecob2ajustado::text ~~* 'p'::text AND n.necesidad_pii > 0::double precision THEN round(n.necesidad_pii / NULLIF((string_to_array(d.fertilizantecob2formula, '-'::text))[2]::double precision / 100::double precision, 0::double precision))
+            WHEN d.fertilizantecob2ajustado::text ~~* 'k'::text AND n.necesidad_kii > 0::double precision THEN round(n.necesidad_kii / NULLIF((string_to_array(d.fertilizantecob2formula, '-'::text))[3]::double precision / 100::double precision, 0::double precision))
+            WHEN d.fertilizantecob2ajustado::text ~~* 'pk'::text AND n.necesidad_pii > 0::double precision OR n.necesidad_kii > 0::double precision THEN round((n.necesidad_pii / NULLIF((string_to_array(d.fertilizantecob2formula, '-'::text))[2]::double precision / 100::double precision, 0::double precision) + n.necesidad_kii / NULLIF((string_to_array(d.fertilizantecob2formula, '-'::text))[3]::double precision / 100::double precision, 0::double precision)) / 2::double precision)
+            ELSE 0::double precision
+        end) AS fertilizantecob2calculado,
+coalesce(d.fertilizantecob3formula,'Sin Informacion') fertilizantecob3formula,
+(CASE
+            WHEN d.fertilizantecob3ajustado::text ~~* 'n'::text AND n.necesidad_niii > 0::double precision THEN round(n.necesidad_niii / NULLIF((string_to_array(d.fertilizantecob3formula, '-'::text))[1]::double precision / 100::double precision, 0::double precision))
+            WHEN d.fertilizantecob3ajustado::text ~~* 'p'::text AND n.necesidad_piii > 0::double precision THEN round(n.necesidad_piii / NULLIF((string_to_array(d.fertilizantecob3formula, '-'::text))[2]::double precision / 100::double precision, 0::double precision))
+            WHEN d.fertilizantecob3ajustado::text ~~* 'k'::text AND n.necesidad_kiii > 0::double precision THEN round(n.necesidad_kiii / NULLIF((string_to_array(d.fertilizantecob3formula, '-'::text))[3]::double precision / 100::double precision, 0::double precision))
+            WHEN d.fertilizantecob3ajustado::text ~~* 'pk'::text AND n.necesidad_piii > 0::double precision OR n.necesidad_kiii > 0::double precision THEN round((n.necesidad_piii / NULLIF((string_to_array(d.fertilizantecob3formula, '-'::text))[2]::double precision / 100::double precision, 0::double precision) + n.necesidad_kiii / NULLIF((string_to_array(d.fertilizantecob3formula, '-'::text))[3]::double precision / 100::double precision, 0::double precision)) / 2::double precision)
+            ELSE 0::double precision
+        end) AS fertilizantecob3calculado,
+concat(n.necesidad_nf,'-',n.necesidad_pf,'-',n.necesidad_kf) necesidades_finales, n.geom
 from necesidades n
 join data d using (iddata)
-)
-select  
-a.n,
-a.p,
-a.k,
-a.area
+),
+uf_final as (select l.nombre as lote, 
+a.uf, 
+a.uf_etiqueta, 
+a.necesidades_iniciales, 
+a.fertilizantefondoformula, 
+a.fertilizantefondocalculado,
+a.fertilizantecob1formula, 
+a.fertilizantecob1calculado,
+a.fertilizantecob2formula, 
+a.fertilizantecob2calculado,
+a.fertilizantecob3formula, 
+a.fertilizantecob3calculado,
+a.necesidades_finales,
+-- round((st_area(st_transform(a.geom,8857)) / 10000)::numeric,2) area,
+st_multi(st_union(a.geom)) as geom
 from aportes a
+join lotes l on a.idlote = l.idlote
+where  round((st_area(st_transform(st_setsrid(a.geom,4326),8857)) / 10000)::numeric,2) > 0
+group by 
+l.nombre,
+a.uf,
+a.uf_etiqueta, 
+a.necesidades_iniciales, 
+a.fertilizantefondoformula, 
+a.fertilizantefondocalculado,
+a.fertilizantecob1formula, 
+a.fertilizantecob1calculado,
+a.fertilizantecob2formula, 
+a.fertilizantecob2calculado,
+a.fertilizantecob3formula, 
+a.fertilizantecob3calculado,
+a.necesidades_finales)
+select uf, 
+uf_etiqueta, 
+necesidades_iniciales, 
+fertilizantefondoformula, 
+fertilizantefondocalculado,
+fertilizantecob1formula, 
+fertilizantecob1calculado,
+fertilizantecob2formula, 
+fertilizantecob2calculado,
+fertilizantecob3formula, 
+fertilizantecob3calculado,
+-- round((st_area(st_transform(geom,8857)) / 10000)::numeric,2)::numeric area,
+st_asText(geom) as geom from uf_final uf
+-- select * from uf_final

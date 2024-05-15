@@ -332,7 +332,7 @@ class aGraeTools():
         lyrAmbientes.loadNamedStyle(styleUri)
         return lyrAmbientes
     
-    def getDataBaseLayer(self, sql:str, layername:str ='Resultados' ,styleName:str ='',memory=True) -> QgsVectorLayer:
+    def getDataBaseLayer(self, sql:str, layername:str ='Resultados' ,styleName:str ='',memory=True,debug=False) -> QgsVectorLayer:
         col_types = {
             20 : QVariant.Int,
             21: QVariant.Int,
@@ -356,25 +356,30 @@ class aGraeTools():
                     lyr.startEditing()
                     cursor.execute(sql)
                     coldesc = tuple(c for c in cursor.description if c[0] != 'geom')
-                    # print(coldesc)
+
+                    
+                    data = cursor.fetchall()
+                    if debug:
+                        # print(data)
+                        print(coldesc)
                     # QgsMessageLog.logMessage('{}'.format(sql), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
                     # QgsMessageLog.logMessage('{}'.format(coldesc), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
-                    data = cursor.fetchall()
-                    # print(data)
                     fields = [QgsField(c[0],col_types[c[1]]) for c in coldesc]
                     provider.addAttributes(fields)
                     lyr.updateFields()
                     geom = QgsGeometry()
                     features = []
                     for r in data:
-                        # print(r['geom'])
+                        # if debug:
+                        #     print(r['geom'])
                         feat = QgsFeature()
                         feat.setFields(lyr.fields())
                         for c in fields:
                             feat.setAttribute(c.name(),r[c.name()])
                         feat.setGeometry(geom.fromWkt(r['geom']))
                         features.append(feat)
-                        # print(feat.geometry().asWkt())
+                        if debug:
+                            print(feat)
                         # QgsMessageLog.logMessage('{}'.format(feat.geometry().asWkt()), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
                         provider.addFeatures([feat])
                     
@@ -382,11 +387,11 @@ class aGraeTools():
                     lyr.loadNamedStyle(styleUri)
                     
                     if lyr.isValid():
-                        # print(lyr.isValid())
+                        print(lyr.isValid())
                         QgsMessageLog.logMessage('Capa: <b>{}</b> CORRECTA'.format(lyr.name()), self.plugin_name, level=Qgis.Info)
                         return lyr
                     else:
-                        # print(lyr.isValid())
+                        print(lyr.isValid())
                         QgsMessageLog.logMessage('Capa: <b>{}</b> INCORRECTA'.format(lyr.name()), self.plugin_name, level=Qgis.Warning)
                         # return lyr
                 
@@ -409,6 +414,7 @@ class aGraeTools():
         s = QSettings('agrae','dbConnection')
         path = s.value('analisis_path')
         sql = aGraeSQLTools().getSql('csv_report_data.sql').format(idcampania,idexplotacion)
+        sql_verify = aGraeSQLTools().getSql('csv_report_verify.sql').format(idcampania,idexplotacion)
         try:
             with open(os.path.join(os.path.dirname(__file__), 'extras/reporte.csv'),'r',newline='') as base: 
                 csv_reader = csv.reader(base,delimiter=';')
@@ -419,8 +425,12 @@ class aGraeTools():
                 with self.conn.cursor() as cursor:
                     cursor.execute(sql)
                     data = cursor.fetchall()
-                    print(sql)
                     csv_writer.writerows([r for r in list(data)])
+
+                    # cursor.execute(sql_verify)
+                    # data_2 = cursor.fetchall()
+                    # print(data_2)
+
             self.messages('aGrae GIS','Archivo Creado Correctamente <a href="{}">{}</a>'.format(os.path.join(path,'{}.csv'.format(name)),os.path.join(path,'{}.csv'.format(name))),3,5)
 
         except Exception as ex:

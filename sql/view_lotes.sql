@@ -11,7 +11,8 @@ l.nombre lote ,
 cult.nombre cultivo,
 d.prod_esperada::int,reg.nombre regimen, 
 d.fechasiembra , 
-d.fechacosecha , 
+d.fechacosecha ,
+round((st_area(st_transform(l.geom,8857)) / 10000)::numeric,2) as area_ha,
 l.geom from agrae.lotes l 
 join campaign.data d on d.idlote = l.idlote
 join campaign.campanias c on d.idcampania = c.id

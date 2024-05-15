@@ -86,6 +86,7 @@ class CrearLotesDialog(QDialog):
         self.layer = layer
         self.setWindowTitle('Cargar Lotes desde la capa {}'.format(self.layer.name()))
         self.agraeSql = aGraeSQLTools()
+        self.tools = aGraeTools()
 
         self.conn = agraeDataBaseDriver().connection()
 
@@ -159,8 +160,10 @@ class CrearLotesDialog(QDialog):
                     # print(response)
                     if len(response) > 0:
                         QgsMessageLog.logMessage('Lote: {} cargado correctamente as la Base de Datos'.format(response[0]), 'aGrae Logs', 3)
+                        self.tools.messages('aGrae Toolbox','Lote: {} cargado correctamente as la Base de Datos'.format(response[0]),3)
                         self.conn.commit()
                     else: 
+                        self.tools.messages('Lote: {} ya existe en la Base de Datos'.format(nombre),1)
                         QgsMessageLog.logMessage('Lote: {} ya existe en la Base de Datos'.format(nombre), 'aGrae Logs', 1)
                         self.conn.rollback()
                 except Exception as ex:

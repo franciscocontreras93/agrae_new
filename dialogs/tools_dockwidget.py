@@ -117,7 +117,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.GenerarReporteFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('printer'),'Generar Reporte de Fertiliacion',self)
         self.GenerarReporteFertilizacion.triggered.connect(self.generateComposerDialog)
 
-        actions_exp = [self.AsignarLotesExplotacion,self.CargarCapasExplotacion,self.GenerarReporteFertilizacion]
+        #TODO
+        self.GenerarUnidadesFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('tractor'),'Exportar Archivo UFS',self)
+        #TODO
+        self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Fertiliacion',self)
+
+        actions_exp = [self.AsignarLotesExplotacion,self.CargarCapasExplotacion,self.GenerarReporteFertilizacion,self.GenerarUnidadesFertilizacion,self.GenerarResumenFertilizacion]
         self.tools.settingsToolsButtons(self.tool_exp_2,actions_exp,icon=agraeGUI().getIcon('tools'),setMainIcon=True)
 
         # TOOL_LAB
@@ -1069,9 +1074,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         name_exp = self.combo_explotacion.currentText()
         queries = {
             'Segmentos': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,segmento,ceap,st_asText(geom) as geom from segm_analitica;'''),
-            'Nitrogeno': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,n,lower(n_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
-            'Fosforo': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,p,lower(p_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
-            'Potasio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,k,lower(k_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
+            'Nitrogeno': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,n,lower(n_tipo) as tipo, n_inc as incremento, st_asText(geom) as geom from segm_analitica;'''),
+            'Fosforo': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,p,lower(p_tipo) as tipo, p_inc as incremento,st_asText(geom) as geom from segm_analitica;'''),
+            'Potasio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,k,lower(k_tipo) as tipo, k_inc as incremento,st_asText(geom) as geom from segm_analitica;'''),
             'PH': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,ph as valor,lower(ph_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
             'Conductividad Electrica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,ce ,st_asText(geom) as geom from segm_analitica;'''),
             'Calcio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,ca,lower(ca_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
@@ -1094,7 +1099,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             'Cobre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,cu,st_asText(geom) as geom from segm_analitica;'''),
             'Materia Organica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,organi,st_asText(geom) as geom from segm_analitica;'''),
             'Relacion CN': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,rel_cn,st_asText(geom) as geom from segm_analitica;'''),
-            'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
+            'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('new_uf_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Fert Variable Parcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap36 Textura': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap36 Infiltracion': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
@@ -1112,6 +1117,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 layer = self.tools.getDataBaseLayer(queries[q],name,'ceap_textura')
             elif 'Infiltracion' in q:
                 layer = self.tools.getDataBaseLayer(queries[q],name,'ceap_infiltracion')
+            
+            elif 'Intraparcelaria' in q:
+                layer = self.tools.getDataBaseLayer(queries[q],name,q,debug=False)
+
             else:
                 layer = self.tools.getDataBaseLayer(queries[q],name,q)
                 
