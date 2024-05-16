@@ -40,6 +40,7 @@ class agraeGUI():
          'printer' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\print-solid.svg')),
          'selection' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\arrow.svg')),
          'tractor' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\tractor-solid.svg')),
+         'pois' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\pois.svg')),
 
         }
         

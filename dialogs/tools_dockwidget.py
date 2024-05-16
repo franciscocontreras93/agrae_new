@@ -126,11 +126,16 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.tools.settingsToolsButtons(self.tool_exp_2,actions_exp,icon=agraeGUI().getIcon('tools'),setMainIcon=True)
 
         # TOOL_LAB
+        #TODO 
+        self.CargarCapaMuestras = QtWidgets.QAction(agraeGUI().getIcon('pois'),'Cargar Capa de Muestras',self)
+        # self.CargarCapaMuestras.triggered.connect(self.crearFormatoAnalitica)
+        
+
         self.CrearArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Crear Archivo de Laboratorio',self)
         self.CrearArchivoAnalisis.triggered.connect(self.crearFormatoAnalitica)
         self.ImportarArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('import'),'Cargar Archivo de Laboratorio',self)
         self.ImportarArchivoAnalisis.triggered.connect(self.cargarAnalitica)
-        actions_lab = [self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis]
+        actions_lab = [self.CargarCapaMuestras,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis]
         self.tools.settingsToolsButtons(self.tool_lab,actions_lab,icon=agraeGUI().getIcon('matraz'),setMainIcon=True)
         # TOOL_DATA
         self.GestionarPersonas = QtWidgets.QAction(agraeGUI().getIcon('users'),'Gestionar Personas',self)

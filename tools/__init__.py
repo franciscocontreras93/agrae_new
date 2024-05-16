@@ -414,7 +414,7 @@ class aGraeTools():
         s = QSettings('agrae','dbConnection')
         path = s.value('analisis_path')
         sql = aGraeSQLTools().getSql('csv_report_data.sql').format(idcampania,idexplotacion)
-        sql_verify = aGraeSQLTools().getSql('csv_report_verify.sql').format(idcampania,idexplotacion)
+        # sql_verify = aGraeSQLTools().getSql('csv_report_verify.sql').format(idcampania,idexplotacion)
         try:
             with open(os.path.join(os.path.dirname(__file__), 'extras/reporte.csv'),'r',newline='') as base: 
                 csv_reader = csv.reader(base,delimiter=';')
@@ -458,32 +458,47 @@ class aGraeTools():
         # df1 = df1.astype(object).replace(np.nan, 'NULL')
         df1 = df
         columns = [c for c in df1.columns]
-        _SQL = '''INSERT INTO analytic.analitica (cod,ceap,ph,ce,carbon,caliza,ca,mg,k,na,n,p,organi,al,b,fe,mn,cu,zn,s,mo,arcilla,limo,arena,ni,co,ti,"as",pb,cr,metodo) VALUES\n'''
+        # sql = aGraeSQLTools().getSql('csv_report_verify.sql').format(idcampania,idexplotacion)
+        # _SQL_INSERT = '''INSERT INTO analytic.analitica (cod,ceap,ph,ce,carbon,caliza,ca,mg,k,na,n,p,organi,al,b,fe,mn,cu,zn,s,mo,arcilla,limo,arena,ni,co,ti,"as",pb,cr,metodo) VALUES\n'''
         _VALUES = list()
         # print(columns)   
-        with self.conn: 
-            cursor = self.conn.cursor()      
-            for index, row in df1.iterrows():
-                values = f'''('{row['COD']}',{row['ceap']},{row['PH']},{row['CE']},{row['CARBON']},{row['CALIZA']},{row['CA']},{row['MG']},{row['K']},{row['NA']},{row['N']},{row['P']},{row['ORGANI']},{row['AL']},{row['B']},{row['FE']},{row['MN']},{row['CU']},{row['ZN']},{row['S']},{row['MO']},{row['ARCILLA']},{row['LIMO']},{row['ARENA']},{row['NI']},{row['CO']},{row['TI']},{row['AS']},{row['PB']},{row['CR']},{row['METODO_P']})'''
-
-                _VALUES.append(values)
-            try:     
-                cursor.execute(_SQL + ' ,\n'.join(_VALUES))
-                self.conn.commit()
-                # self.tools.actualizarNecesidades()
-                iface.messageBar().pushMessage(self.plugin_name, 'Analitica Cargada Correctamente', level=Qgis.Success)
-                QgsMessageLog.logMessage('Analitica Cargada Correctamente', self.plugin_name, level=Qgis.Success)
+        with self.conn.cursor() as cursor:
+            try:   
+                for index, r in df1.iterrows():
+                    sql = aGraeSQLTools().getSql('csv_report_create.sql').format(r['COD'],r['ceap'],r['PH'],r['CE'],r['CARBON'],r['CALIZA'],r['CA'],r['MG'],r['K'],r['NA'],r['N'],r['P'],r['ORGANI'],r['AL'],r['B'],r['FE'],r['MN'],r['CU'],r['ZN'],r['S'],r['MO'],r['ARCILLA'],r['LIMO'],r['ARENA'],r['NI'],r['CO'],r['TI'],r['AS'],r['PB'],r['CR'],r['METODO_P'])
                     
-
-            except errors.lookup('23505'):
-                QMessageBox.about(None, self.plugin_name,'El analisis con codigo: {} ya existe en la base de datos.\nComprueba la informacion'.format(row['COD']))
-                QgsMessageLog.logMessage('El analisis con codigo: {} ya existe en la base de datos.\nComprueba la informacion'.format(row['COD']), self.plugin_name, level=Qgis.Warning)
-                self.conn.rollback()
-            
+                    try:
+                        cursor.execute(sql)
+                        QgsMessageLog.logMessage('Analitica ({}) Cargada Correctamente'.format(r['COD']), 'aGrae Laboratorio', level=Qgis.Success)
+                        self.conn.commit()
+                    except Exception as ex:
+                        self.conn.rollback()
+                        raise Exception('Ocurrio un Error: {}'.format(ex))
+                    
             except Exception as ex:
                 QMessageBox.about(None, self.plugin_name, 'Ocurrio un error, revisa el panel de registros para más información')
                 QgsMessageLog.logMessage(f'{ex}', self.plugin_name, level=1)
                 self.conn.rollback()
+            # try:     
+            #     cursor.execute(_SQL_INSERT + ' ,\n'.join(_VALUES))
+            #     self.conn.commit()
+            #     # self.tools.actualizarNecesidades()
+            #     iface.messageBar().pushMessage(self.plugin_name, 'Analitica Cargada Correctamente', level=Qgis.Success)
+            #     QgsMessageLog.logMessage('Analitica Cargada Correctamente', self.plugin_name, level=Qgis.Success)
+                    
+
+            # except errors.lookup('23505'):
+            #     # QMessageBox.about(None, self.plugin_name,'El analisis con codigo: {} ya existe en la base de datos.\nComprueba la informacion'.format(row['COD']))
+            #     # QgsMessageLog.logMessage('El analisis con codigo: {} ya existe en la base de datos.\nComprueba la informacion'.format(row['COD']), self.plugin_name, level=Qgis.Warning)
+            #     # self.conn.rollback()
+            #     _SQL_UPDATE = '''UPDATE analytic.analitica
+            #     SET             idanalitica=nextval('analytic.analitica_idanalitica_seq'::regclass), ceap=0, ph=0, ce=0, carbon=0, caliza=0, ca=0, mg=0, k=0, na=0, n=0, p=0, organi=0, cox=0, rel_cn=0, ca_eq=0, mg_eq=0, k_eq=0, na_eq=0, cic=0, ca_f=0, mg_f=0, k_f=0, na_f=0, al=0, b=0, fe=0, mn=0, cu=0, zn=0, s=0, mo=0, arcilla=0, limo=0, arena=0, ni=0, co=0, ti=0, "as"=0, pb=0, cr=0, metodo=0
+            #     WHERE cod='';'''
+            
+            # except Exception as ex:
+            #     QMessageBox.about(None, self.plugin_name, 'Ocurrio un error, revisa el panel de registros para más información')
+            #     QgsMessageLog.logMessage(f'{ex}', self.plugin_name, level=1)
+            #     self.conn.rollback()
 
             # self.an_save_bd.setEnabled(False)
             # QMessageBox.about(self, f"aGrae GIS:",f"Analitica almacenada correctamente")
