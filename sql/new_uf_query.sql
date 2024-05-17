@@ -429,7 +429,9 @@ a.fertilizantecob2calculado,
 a.fertilizantecob3formula, 
 a.fertilizantecob3calculado,
 a.necesidades_finales)
-select uf, 
+select 
+lote,
+uf, 
 uf_etiqueta, 
 necesidades_iniciales, 
 fertilizantefondoformula, 
@@ -440,6 +442,6 @@ fertilizantecob2formula,
 fertilizantecob2calculado,
 fertilizantecob3formula, 
 fertilizantecob3calculado,
--- round((st_area(st_transform(geom,8857)) / 10000)::numeric,2)::numeric area,
+round((st_area(st_transform(geom,8857)) / 10000)::numeric,2)::double precision area_ha,
 st_asText(geom) as geom from uf_final uf
 -- select * from uf_final
