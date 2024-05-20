@@ -387,11 +387,11 @@ class aGraeTools():
                     lyr.loadNamedStyle(styleUri)
                     
                     if lyr.isValid():
-                        print(lyr.isValid())
+                        # print(lyr.isValid())
                         QgsMessageLog.logMessage('Capa: <b>{}</b> CORRECTA'.format(lyr.name()), self.plugin_name, level=Qgis.Info)
                         return lyr
                     else:
-                        print(lyr.isValid())
+                        # print(lyr.isValid())
                         QgsMessageLog.logMessage('Capa: <b>{}</b> INCORRECTA'.format(lyr.name()), self.plugin_name, level=Qgis.Warning)
                         # return lyr
                 

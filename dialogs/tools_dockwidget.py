@@ -319,9 +319,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 print(ex)
         data_suelo = self.getData('data_suelo.sql')
 
-        data_extracciones = sorted(self.getData('data_extracciones.sql',True))
-
-                    
+        data_extracciones = sorted(self.getData('data_extracciones.sql',True))            
         dlg = agraePlotsDialog(iddata=self.idData,lote=self.nombreLote,cultivo=cultivo, produccion_esperada=produccion,dataSuelo=data_suelo,dataExtraccion=data_extracciones,ic=ic,biomasa=biomasa,residuo=residuo,ccosecha=ccosecha,cresiduo=cresiduo)
         dlg.exec()
 

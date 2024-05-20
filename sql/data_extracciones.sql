@@ -215,7 +215,7 @@ uf as (select
 	a.extraccionresiduok
 	)
 select  u.uf_etiqueta, 
-        u.prod_ponderada,
+        u.prod_ponderada::integer,
         (u.extraccioncosechan || ' / ' ||
         u.extraccioncosechap || ' / ' ||
         u.extraccioncosechak) cos_npk,
