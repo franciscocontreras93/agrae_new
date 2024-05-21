@@ -652,6 +652,8 @@ class aGraeTools():
                             csv_writer = csv.writer(file,delimiter=';')          
                             csv_writer.writerow(header)
                             csv_writer.writerows(data)
+                    
+                    self.messages('aGrae GIS','Se ha generado el archivo de Resumen correctamente.',3,alert=True)
                 except Exception as ex: print(ex)
         except Exception as ex: print(ex)
 
