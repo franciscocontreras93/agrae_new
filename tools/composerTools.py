@@ -43,6 +43,10 @@ class aGraeComposerTools():
             'PNOA Ortofoto' : {
                 'url': 'contextualWMSLegend=0&crs=EPSG:4326&dpiMode=7&featureCount=10&format=image/png&layers=OI.OrthoimageCoverage&styles' ,
                 'options': 'url=https://www.ign.es/wms-inspire/pnoa-ma'
+            },
+            'Parcelas Catastro' : {
+                'url': 'contextualWMSLegend=1&crs=EPSG:4326&dpiMode=7&featureCount=10&format=image/png&layers=CP.CadastralParcel&styles' ,
+                'options': 'url=http://ovc.catastro.meh.es/cartografia/INSPIRE/spadgcwms.aspx'
             }
 
         }

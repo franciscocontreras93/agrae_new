@@ -119,8 +119,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         #TODO
         self.GenerarUnidadesFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('tractor'),'Exportar Archivo UFS',self)
+        self.GenerarUnidadesFertilizacion.triggered.connect(self.exportarUFS)
         #TODO
         self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Fertiliacion',self)
+        self.GenerarResumenFertilizacion.triggered.connect(self.exportarResumen)
 
         actions_exp = [self.AsignarLotesExplotacion,self.CargarCapasExplotacion,self.GenerarReporteFertilizacion,self.GenerarUnidadesFertilizacion,self.GenerarResumenFertilizacion]
         self.tools.settingsToolsButtons(self.tool_exp_2,actions_exp,icon=agraeGUI().getIcon('tools'),setMainIcon=True)
@@ -254,7 +256,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.ActualizarFertilizacionAction.setEnabled(False)
         self.ActualizarFertilizacionAction.setToolTip('Guardar Datos de Fertilizacion')
 
-        self.EditarFertilizacionAction.triggered.connect(lambda: self.tools.enableElements(self.EditarFertilizacionAction,[self.line_formula,self.line_precio,self.combo_ajuste,self.date_aplicacion,]))
+        self.EditarFertilizacionAction.triggered.connect(lambda: self.tools.enableElements(self.EditarFertilizacionAction,[self.line_formula,self.line_precio,self.combo_ajuste,self.date_aplicacion,self.ActualizarFertilizacionAction]))
         self.ActualizarFertilizacionAction.triggered.connect(self.saveDataCampania)
 
         self.settingsToolsButtons(self.tool_fert,[self.EditarFertilizacionAction,self.ActualizarFertilizacionAction])
@@ -1016,7 +1018,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                   with self.conn.cursor() as cursor:
                         cursor.execute(sql)
                         self.conn.commit()
-                        self.tools.messages('aGrae Tools','Datos de fertilizacion cargados correctamente',3)
+                        self.tools.messages('aGrae Tools','Datos de fertilizacion guardados correctamente',3,alert=True)
 
                 except  Exception as ex:
                     self.conn.rollback()
@@ -1102,8 +1104,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             'Cobre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,cu,st_asText(geom) as geom from segm_analitica;'''),
             'Materia Organica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,organi,st_asText(geom) as geom from segm_analitica;'''),
             'Relacion CN': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,rel_cn,st_asText(geom) as geom from segm_analitica;'''),
-            'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('new_uf_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
-            'Fert Variable Parcelaria': aGraeSQLTools().getSql('new_uf_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
+            'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select lote,uf, uf_etiqueta, necesidades_iniciales, fertilizantefondoformula, fertilizantefondocalculado,fertilizantecob1formula, fertilizantecob1calculado,fertilizantecob2formula, fertilizantecob2calculado,fertilizantecob3formula, fertilizantecob3calculado,area_ha,st_asText(geom) as geom from uf_final uf'''),
+            'Fert Variable Parcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct lote,fertilizantefondoformula,round(sum(fertilizantefondocalculado * area_ha))::integer dosisfondo,fertilizantecob1formula,round(sum(fertilizantecob1calculado * area_ha))::integer dosiscob1,fertilizantecob2formula,round(sum(fertilizantecob2calculado * area_ha))::integer dosiscob2,fertilizantecob3formula,round(sum(fertilizantecob3calculado * area_ha))::integer dosiscob3,sum(area_ha) area_ha,st_asText(st_union(geom)) geom from uf_final group by lote,fertilizantefondoformula,fertilizantecob1formula,fertilizantecob2formula,fertilizantecob3formula'''),
             'Ceap36 Textura': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap36 Infiltracion': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap90 Textura': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
@@ -1150,8 +1152,18 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         # except Exception as ex:
         #     print(ex)
         
-
+    def exportarUFS(self):
+        idcampania = self.combo_campania.currentData()
+        idexplotacion = self.combo_explotacion.currentData()
+        nameExp = str(self.combo_explotacion.currentText()).replace(' ','_')
+        self.tools.exportarUFS(idcampania,idexplotacion,nameExp)
     
+    def exportarResumen(self):
+        idcampania = self.combo_campania.currentData()
+        idexplotacion = self.combo_explotacion.currentData()
+        nameExp = str(self.combo_explotacion.currentText()).replace(' ','_')
+        self.tools.exportarResumenFertilizacion(idcampania,idexplotacion,nameExp)
+
     #* DESACTIVADA
     def populateContextMenu(self,menu: QtWidgets.QMenu, event: QgsMapMouseEvent):
         self.subMenu = menu.addMenu('aGrae')

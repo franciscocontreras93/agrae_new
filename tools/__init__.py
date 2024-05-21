@@ -3,15 +3,14 @@ import pandas as pd
 import numpy as np
 from io import BytesIO
 from PIL import Image
-import sys
 
-from psycopg2 import OperationalError, InterfaceError, errors, extras,connect, Binary
+from psycopg2 import extras, Binary
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtWidgets import *
-from qgis.PyQt.QtGui import QColor, QIcon, QPixmap
+from qgis.PyQt.QtGui import QIcon
 from qgis.utils import iface 
 from qgis.core import *
-from qgis.PyQt.QtCore import  QVariant, QSettings, QSize
+from qgis.PyQt.QtCore import  QVariant, QSettings, QSize,QDateTime
 
 
 from ..db import agraeDataBaseDriver
@@ -48,7 +47,7 @@ class aGraeTools():
             toolbutton.setDefaultAction(actions[0])
 
 
-    def messages(self,title:str,text:str,level,duration:int=2):
+    def messages(self,title:str,text:str,level,duration:int=2,alert=False):
         """Levels:\n
         0.  Info\n
         1.  Warning\n
@@ -56,6 +55,8 @@ class aGraeTools():
         3.  Success\n
         """        
         iface.messageBar().pushMessage(title,text,level,duration)
+        if alert:
+            QtWidgets.QMessageBox.about(None, title, text)
         QgsMessageLog.logMessage(text, title, level)
     
     def deleteAction(self,question:str,sql:str,widget=None,actions:list=None,):
@@ -121,7 +122,6 @@ class aGraeTools():
                     pass
     
     def enableElements(self,widget,elements:list):
-       
         if widget.isChecked():
             for e in elements:
                 if isinstance(e,QCheckBox):
@@ -332,7 +332,7 @@ class aGraeTools():
         lyrAmbientes.loadNamedStyle(styleUri)
         return lyrAmbientes
     
-    def getDataBaseLayer(self, sql:str, layername:str ='Resultados' ,styleName:str ='',memory=True,debug=False) -> QgsVectorLayer:
+    def getDataBaseLayer(self, sql:str, layername:str ='Resultados' ,styleName:str ='',memory=True,save=False,debug=False) -> QgsVectorLayer:
         col_types = {
             20 : QVariant.Int,
             21: QVariant.Int,
@@ -389,6 +389,12 @@ class aGraeTools():
                     if lyr.isValid():
                         # print(lyr.isValid())
                         QgsMessageLog.logMessage('Capa: <b>{}</b> CORRECTA'.format(lyr.name()), self.plugin_name, level=Qgis.Info)
+                        # if save:
+                        #     s = QSettings('agrae','dbConnection')
+                        #     path = s.value('ufs_path')
+                        #     fn = os.path.join(path,'UFS_{}.shp'.format(layername))
+                        #     self.saveLayer(lyr,fn,layername)
+
                         return lyr
                     else:
                         # print(lyr.isValid())
@@ -568,6 +574,93 @@ class aGraeTools():
             # print('Debe Seleccionar al menos un segmento')
             pass
 
+    def exportarUFS(self,idcampania:int,idexplotacion:int,nameExp:str):
+        s = QSettings('agrae','dbConnection')
+        path = s.value('ufs_path')
+        fn = os.path.join(path,'UFS_{}.shp'.format(nameExp))
+        print(fn)
+        q = '''select distinct 
+        row_number() OVER (ORDER BY (st_dump(geom)).geom) as id,
+        uf,
+        uf_etiqueta,
+        lote, prod_esperada, prod_ponderada, 
+        fertilizantefondoformula for_1, 
+        fertilizantefondocalculado dos_1,
+        fertilizantecob1formula for_2, 
+        fertilizantecob1calculado dos_2,
+        fertilizantecob2formula for_3, 
+        fertilizantecob2calculado dos_3,
+        fertilizantecob3formula for_4, 
+        fertilizantecob3calculado dos_4,
+        round((st_area(st_transform(((st_dump(geom)).geom),8857))/10000)::numeric,2)::double precision area_ha,
+        st_asText(st_multi((st_dump(geom)).geom)) as geom
+        from uf_final;'''
+        query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,q)
+        layer = self.getDataBaseLayer(query,'UFS_{}'.format(nameExp),styleName='Fert Variable Intraparcelaria',memory=True)
+        try:
+            self.saveLayer(layer,fn,nameExp)
+            self.messages('aGrae GIS','Se ha generado el archivo UFS correctamente.',3,alert=True)
+        except Exception as ex:
+
+            print(ex)
+
+       
+    def exportarResumenFertilizacion(self,idcampania:int,idexplotacion:int,nameExp:str):
+        s = QSettings('agrae','dbConnection')
+        path = s.value('reporte_path')
+        q = '''select 
+        lote,
+        cultivo,
+        agricultor,
+        area_lote,
+        prod_esperada,
+        fertilizantefondoformula, 
+        sum(round((fertilizantefondocalculado * area_ha))) as fertilizantefondoaplicado,
+        round(sum((fertilizantefondocalculado * area_ha) / area_lote)) as fertilizantefondomedia,
+        fertilizantecob1formula, 
+        sum(round((fertilizantecob1calculado * area_ha))) as fertilizantecob1aplicado,
+        round(sum((fertilizantecob1calculado * area_ha) / area_lote)) as fertilizantecob1media,
+        fertilizantecob2formula, 
+        sum(round((fertilizantecob2calculado * area_ha))) as fertilizantecob2aplicado,
+        round(sum((fertilizantecob2calculado * area_ha) / area_lote)) as fertilizantecob2media,
+        fertilizantecob3formula, 
+        sum(round((fertilizantecob3calculado * area_ha))) as fertilizantecob3aplicado,
+        round(sum((fertilizantecob3calculado * area_ha) / area_lote)) as fertilizantecob3media
+        from uf_final
+        group by
+        lote,
+        cultivo,
+        agricultor,
+        area_lote,
+        prod_esperada,
+        fertilizantefondoformula, 
+        fertilizantecob1formula,
+        fertilizantecob2formula, 
+        fertilizantecob3formula;'''
+        query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,q)
+        try: 
+            with self.conn.cursor() as cursor:  
+                cursor.execute(query) 
+                data = [r for r in list(cursor.fetchall())]
+                # expName = list(set([r[0] for r in data]))
+                # print(expName[0])
+                try: 
+                    with open(os.path.join(os.path.dirname(__file__), 'extras/resumen.csv'),'r',newline='') as base:
+                        csv_reader = csv.reader(base,delimiter=';')
+                        header = next(csv_reader)
+                    with open(os.path.join(path, 'resumen_{}_{}.csv'.format(nameExp,QDateTime.currentDateTime().toString('yyyyMMddHHmmss'))),'w',newline='') as file:
+                            csv_writer = csv.writer(file,delimiter=';')          
+                            csv_writer.writerow(header)
+                            csv_writer.writerows(data)
+                except Exception as ex: print(ex)
+        except Exception as ex: print(ex)
+
+        
+
+
+
+        pass
+    
     def styleSheetPlotDialog(self) -> str:
         style = '''QTabBar::tab:selected {background : green ; color : white ; border-color : white }
                    QTabBar::tab {padding : 4px ; margin : 2px ;  border-radius : 2px  ; border: 1px solid #000 ; heigth: 15px }
@@ -682,3 +775,23 @@ class aGraeTools():
         options = basemap['options']
         urlWithParams = 'url={}&{}'.format(url,options)
         return QgsRasterLayer(urlWithParams,name,'wms')
+    
+    def saveLayer(self,layer,dir:str,fileName:str,driver:str='ESRI Shapefile'):
+        # print('saving')
+        options = QgsVectorFileWriter.SaveVectorOptions()
+        options.driverName = driver
+        options.layerName = fileName
+        options.fileEncoding = 'utf-8'
+        fileName = fileName.lower()
+        fileName = fileName.replace(' ','_')
+        if driver == 'ESRI Shapefile':
+            fileName = '{}.shp'.format(fileName)
+        elif driver == 'CSV':
+            fileName = '{}.csv'.format(fileName)
+
+        fn = os.path.join(dir)
+        try:
+            QgsVectorFileWriter.writeAsVectorFormatV3(layer,fn,QgsCoordinateTransformContext(),options)
+            
+        except Exception as ex:
+            print(ex)
