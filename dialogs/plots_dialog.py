@@ -165,10 +165,10 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         
         #TODO 
 
-        self.line_cantidad_1.textChanged.connect(lambda t, c=self.combo_ajuste_1: self.enableCombo(t,c))
-        self.line_cantidad_2.textChanged.connect(lambda t, c=self.combo_ajuste_2: self.enableCombo(t,c))
-        self.line_cantidad_3.textChanged.connect(lambda t, c=self.combo_ajuste_3: self.enableCombo(t,c))
-        self.line_cantidad_4.textChanged.connect(lambda t, c=self.combo_ajuste_4: self.enableCombo(t,c))
+        # self.line_cantidad_1.textChanged.connect(lambda t, c=self.combo_ajuste_1: self.enableCombo(t,c))
+        # self.line_cantidad_2.textChanged.connect(lambda t, c=self.combo_ajuste_2: self.enableCombo(t,c))
+        # self.line_cantidad_3.textChanged.connect(lambda t, c=self.combo_ajuste_3: self.enableCombo(t,c))
+        # self.line_cantidad_4.textChanged.connect(lambda t, c=self.combo_ajuste_4: self.enableCombo(t,c))
         
         # #TODO END
         # # self.btn_ok_1.clicked.connect(lambda c=self.line_cantidad_5.text(): self.fertTradicional(c))
@@ -365,13 +365,16 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
             datagen = ([f[col] for col in cols] for f in d)
             df = pd.DataFrame.from_records(data=datagen, columns=cols)
             # df.style.format({index: '{:.1f} Kg/Ha'})
-            model = TableModel(df)
-            table.setModel(model)
-            table.setColumnWidth(0, 35)
-            table.setColumnWidth(1, 35)
-            os.chdir(os.path.join('../',os.path.dirname(__file__)))
-            os.chdir('../')
-            table.grab().save(os.path.join(os.getcwd(), r'tools\img\tf{}.png'.format(i)))
+            try:
+                model = TableModel(df)
+                table.setModel(model)
+                table.setColumnWidth(0, 35)
+                table.setColumnWidth(1, 35)
+                os.chdir(os.path.join('../',os.path.dirname(__file__)))
+                os.chdir('../')
+                table.grab().save(os.path.join(os.getcwd(), r'tools\img\tf{}.png'.format(i)))
+            except:
+                raise Exception('Ocurrio un Error')
 
 
             d = self.ajustesFertilizantes(n=n, x=f_n, p=p, y=f_p, k=k, z=f_k)
@@ -403,10 +406,14 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
             self._precio_ton.append(int(precio))
 
         except ValueError as ve: 
-            QgsMessageLog.logMessage(f'{ve}', 'aGrae GIS', level=1)
+            # QgsMessageLog.logMessage(f'{ve}', 'aGrae GIS', level=1)
+            table.setModel(None)
+            l_peso.setText('')
+            l_precio.setText('')
 
-            pass
-
+        except Exception as ex:
+            print(ex)
+        
     def balanceNutrientes(self,valores:list,dosis_n:float,dosis_p:float,dosis_k:float):
 
 
@@ -619,30 +626,35 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         for e in range(len(ajustes)):
             if ajustes[e].currentIndex() != 0:
                 datos[e] = {
-                'formula': str(formulas[e].text()),
-                'precio': int(round(float(precios[e].text()))),
-                'ajuste': str(ajustes[e].currentText())
+                'formula': "'{}'".format(str(formulas[e].text())),
+                'precio': "{}".format(int(round(float(precios[e].text())))),
+                'ajuste': "'{}'".format(str(ajustes[e].currentText()))
             }
+            else: 
+                datos[e] = {
+                'formula': 'NULL',
+                'precio': 'NULL::double precision',
+                'ajuste': 'NULL' }
 
         
         for d in datos:
             if d is 0:
-                query = '''fertilizantefondoformula='{}', fertilizantefondoprecio={}, fertilizantefondoajustado='{}', '''.format(
+                query = '''fertilizantefondoformula={}, fertilizantefondoprecio={}, fertilizantefondoajustado={}, '''.format(
                     datos[d]['formula'],
                     datos[d]['precio'],
                     datos[d]['ajuste'])
             elif d is 1:
-                query = query + '''fertilizantecob1formula='{}', fertilizantecob1precio={}, fertilizantecob1ajustado='{}','''.format(
+                query = query + '''fertilizantecob1formula={}, fertilizantecob1precio={}, fertilizantecob1ajustado={},'''.format(
                     datos[d]['formula'],
                     datos[d]['precio'],
                     datos[d]['ajuste'])
             elif d is 2:
-                query = query + '''fertilizantecob2formula='{}', fertilizantecob2precio={}, fertilizantecob2ajustado='{}','''.format(
+                query = query + '''fertilizantecob2formula={}, fertilizantecob2precio={}, fertilizantecob2ajustado={},'''.format(
                     datos[d]['formula'],
                     datos[d]['precio'],
                     datos[d]['ajuste'])
             elif d is 3:
-                query = query + '''fertilizantecob3formula='{}', fertilizantecob3precio={}, fertilizantecob3ajustado='{}','''.format(
+                query = query + '''fertilizantecob3formula={}, fertilizantecob3precio={}, fertilizantecob3ajustado={},'''.format(
                     datos[d]['formula'],
                     datos[d]['precio'],
                     datos[d]['ajuste'])
@@ -652,7 +664,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
 
         with self.conn.cursor() as cursor: 
             try:
-                    
+                # print(query)
                 cursor.execute(query)
                 self.conn.commit()
                 QMessageBox.about(self, "", "Datos de Fertilizacion guardados correctamente")

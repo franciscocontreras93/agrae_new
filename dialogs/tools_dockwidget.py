@@ -241,8 +241,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.GenerarPanelesDialogAction.triggered.connect(self.loteAnliticDialog)
 
         self.EditarLoteAction.triggered.connect(lambda: self.tools.enableElements(self.EditarLoteAction,[self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.ActualizarLoteAction,self.EliminarLoteAction, self.check_siembra, self.check_cosecha]))
-        actions_lote = [self.EditarLoteAction,self.ActualizarLoteAction,self.ClimaLoteAction,self.GenerarPanelesDialogAction,self.EliminarLoteAction]
-        self.settingsToolsButtons(self.tool_lote, actions_lote)
+        actions_lote = [self.GenerarPanelesDialogAction,self.EditarLoteAction,self.ActualizarLoteAction,self.ClimaLoteAction,self.EliminarLoteAction]
+        self.tools.settingsToolsButtons(self.tool_lote, actions_lote)
 
         # TOOL_FERT
         
@@ -254,7 +254,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.ActualizarFertilizacionAction.setEnabled(False)
         self.ActualizarFertilizacionAction.setToolTip('Guardar Datos de Fertilizacion')
 
-        self.EditarFertilizacionAction.triggered.connect(lambda: self.tools.enableElements(self.EditarFertilizacionAction,[self.line_formula,self.line_precio,self.combo_ajuste,self.date_aplicacion,self.ActualizarFertilizacionAction]))
+        self.EditarFertilizacionAction.triggered.connect(lambda: self.tools.enableElements(self.EditarFertilizacionAction,[self.line_formula,self.line_precio,self.combo_ajuste,self.date_aplicacion,]))
         self.ActualizarFertilizacionAction.triggered.connect(self.saveDataCampania)
 
         self.settingsToolsButtons(self.tool_fert,[self.EditarFertilizacionAction,self.ActualizarFertilizacionAction])

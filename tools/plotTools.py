@@ -11,9 +11,7 @@ from datetime import datetime
 from qgis.utils import iface
 from qgis.core import *
 
-import pandas as pd
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+
 
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -42,8 +40,11 @@ class TableModel(QtCore.QAbstractTableModel):
                 return int(0)
         if role == Qt.BackgroundRole and index.column() == 0:
             value = self._data.iloc[index.row()][0]
-            if value in self.colors.keys():
-                return QtGui.QColor(self.colors[value])
+            try:
+                if value in self.colors.keys():
+                    return QtGui.QColor(self.colors[value])
+            except:
+                pass
         
 
         if role == Qt.FontRole:                     
