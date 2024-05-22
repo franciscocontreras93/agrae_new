@@ -4,6 +4,7 @@
         
         <file>gui\icons\icon.svg</file>
 
+        <file>gui\icons\arrow.svg</file>
         <file>gui\icons\pen-solid.svg</file>
         <file>gui\icons\pen-to-square-solid.svg</file>
         <file>gui\icons\trash-solid.svg</file>
@@ -26,6 +27,7 @@
         <file>gui\icons\upload-db.svg</file>
         <file>gui\icons\chart-bar-solid.svg</file>
         <file>gui\icons\farmer-solid.svg</file>
+        <file>gui\icons\tractor-solid.svg</file>
         <file>gui\icons\user-solid.svg</file>
         <file>gui\icons\users-solid.svg</file>
         <file>gui\icons\handshake-solid.svg</file>
@@ -37,6 +39,7 @@
         <file>gui\icons\map-solid.svg</file>
         <file>gui\icons\circle-info-solid.svg</file>
         <file>gui\icons\print-solid.svg</file>
+        <file>gui\icons\pois.svg</file>
 
         <!-- PLOT GRAPHS -->
         <file>gui\base\lgnd1.svg</file>

@@ -145,7 +145,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         self.btn_save_data.setIcon(agraeGUI().getIcon('save'))
         self.btn_save_data.setIconSize(QtCore.QSize(20, 20))
         self.btn_save_data.setToolTip('Guardar Datos')
-        # self.btn_save_data.clicked.connect(self.saveFertData)
+        self.btn_save_data.clicked.connect(self.saveFertData)
 
 
         # self.btn_ajuste_auto.clicked.connect(self.execAutoFert)
@@ -165,10 +165,10 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         
         #TODO 
 
-        self.line_cantidad_1.textChanged.connect(lambda t, c=self.combo_ajuste_1: self.enableCombo(t,c))
-        self.line_cantidad_2.textChanged.connect(lambda t, c=self.combo_ajuste_2: self.enableCombo(t,c))
-        self.line_cantidad_3.textChanged.connect(lambda t, c=self.combo_ajuste_3: self.enableCombo(t,c))
-        self.line_cantidad_4.textChanged.connect(lambda t, c=self.combo_ajuste_4: self.enableCombo(t,c))
+        # self.line_cantidad_1.textChanged.connect(lambda t, c=self.combo_ajuste_1: self.enableCombo(t,c))
+        # self.line_cantidad_2.textChanged.connect(lambda t, c=self.combo_ajuste_2: self.enableCombo(t,c))
+        # self.line_cantidad_3.textChanged.connect(lambda t, c=self.combo_ajuste_3: self.enableCombo(t,c))
+        # self.line_cantidad_4.textChanged.connect(lambda t, c=self.combo_ajuste_4: self.enableCombo(t,c))
         
         # #TODO END
         # # self.btn_ok_1.clicked.connect(lambda c=self.line_cantidad_5.text(): self.fertTradicional(c))
@@ -192,10 +192,15 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         self.tableView.setModel(model)
         self.tableView.setColumnWidth(0,35)
         self.tableView.setColumnWidth(5,35)
-        # self.tableView.grab().save(os.path.join(
-        #     os.path.dirname(__file__), r'ui\img\tabla.png'))
-        # self.sc.saveImage(os.path.join(
-        # os.path.dirname(__file__), r'ui\img\chart.png'))
+        os.chdir(os.path.join('../',os.path.dirname(__file__)))
+        os.chdir('../')
+        # print(os.getcwd())
+        self.tableView.grab().save(os.path.join(
+            os.getcwd(), r'tools\img\tabla.png'))
+        self.sc.saveImage(os.path.join(
+        os.getcwd(), r'tools\img\chart.png'))
+
+        
 
         uf = [e[0] for e in self.dataExtraccion]
         area = [float(e[5]) for e in self.dataExtraccion]
@@ -301,6 +306,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         zpk = zip(uf,pk1)
         tpk = sum(pk1)
         dataPK = {k:v for k,v in zpk}
+        
 
         totales = [tn,tp,tk,tpk]
 
@@ -348,9 +354,9 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
 
 
 
-            f_n = int(self.formula[0])/100
-            f_p = int(self.formula[1])/100
-            f_k = int(self.formula[2])/100
+            f_n = int(self.formula[0])/100 # FACTOR NITROGENO EN DOSIS APLICADA
+            f_p = int(self.formula[1])/100 # FACTOR FOSFORO EN DOSIS APLICADA
+            f_k = int(self.formula[2])/100 # FACTOR POTASIO EN DOSIS APLICADA
 
 
             cols = [0,(index)]
@@ -359,11 +365,16 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
             datagen = ([f[col] for col in cols] for f in d)
             df = pd.DataFrame.from_records(data=datagen, columns=cols)
             # df.style.format({index: '{:.1f} Kg/Ha'})
-            model = TableModel(df)
-            table.setModel(model)
-            table.setColumnWidth(0, 35)
-            table.setColumnWidth(1, 35)
-            table.grab().save(os.path.join(os.path.dirname(__file__), r'ui\img\tf{}.png'.format(i)))
+            try:
+                model = TableModel(df)
+                table.setModel(model)
+                table.setColumnWidth(0, 35)
+                table.setColumnWidth(1, 35)
+                os.chdir(os.path.join('../',os.path.dirname(__file__)))
+                os.chdir('../')
+                table.grab().save(os.path.join(os.getcwd(), r'tools\img\tf{}.png'.format(i)))
+            except:
+                raise Exception('Ocurrio un Error')
 
 
             d = self.ajustesFertilizantes(n=n, x=f_n, p=p, y=f_p, k=k, z=f_k)
@@ -395,10 +406,14 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
             self._precio_ton.append(int(precio))
 
         except ValueError as ve: 
-            QgsMessageLog.logMessage(f'{ve}', 'aGrae GIS', level=1)
+            # QgsMessageLog.logMessage(f'{ve}', 'aGrae GIS', level=1)
+            table.setModel(None)
+            l_peso.setText('')
+            l_precio.setText('')
 
-            pass
-
+        except Exception as ex:
+            print(ex)
+        
     def balanceNutrientes(self,valores:list,dosis_n:float,dosis_p:float,dosis_k:float):
 
 
@@ -601,86 +616,63 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         QMessageBox.about(self, "", "Paneles Generados Correctamente")
     
     def saveFertData(self):
-        sql = []
-        
-        if self.combo_ajuste_1.currentIndex() != 0:
-            f1 = str(self.line_formula_1.text())
-            # print(f1)
-            p1 = int(round(float(self.line_precio_1.text())))
-            a1 = str(self.combo_ajuste_1.currentText())
-            sql1= ''' update campania 
-            set fertilizantefondoformula = '{}',
-            fertilizantefondoprecio = {},
-            fertilizantefondoajustado = '{}'
-            from (select idcampania id  from lotecampania lc
-            where lc.idlotecampania = {} ) sq
-            where idcampania = sq.id '''.format(f1, p1, a1, self.iddata)
-            sql.append(sql1)
-            # print(sql1)
-        
+        datos = {}
+        sql_base = '''UPDATE campaign."data" \nSET\n'''
+        query = ''
+        ajustes = [self.combo_ajuste_1,self.combo_ajuste_2,self.combo_ajuste_3,self.combo_ajuste_4]
+        formulas = [self.line_formula_1,self.line_formula_2,self.line_formula_3,self.line_formula_4]
+        precios = [self.line_precio_1,self.line_precio_2,self.line_precio_3,self.line_precio_4]
+
+        for e in range(len(ajustes)):
+            if ajustes[e].currentIndex() != 0:
+                datos[e] = {
+                'formula': "'{}'".format(str(formulas[e].text())),
+                'precio': "{}".format(int(round(float(precios[e].text())))),
+                'ajuste': "'{}'".format(str(ajustes[e].currentText()))
+            }
+            else: 
+                datos[e] = {
+                'formula': 'NULL',
+                'precio': 'NULL::double precision',
+                'ajuste': 'NULL' }
 
         
+        for d in datos:
+            if d is 0:
+                query = '''fertilizantefondoformula={}, fertilizantefondoprecio={}, fertilizantefondoajustado={}, '''.format(
+                    datos[d]['formula'],
+                    datos[d]['precio'],
+                    datos[d]['ajuste'])
+            elif d is 1:
+                query = query + '''fertilizantecob1formula={}, fertilizantecob1precio={}, fertilizantecob1ajustado={},'''.format(
+                    datos[d]['formula'],
+                    datos[d]['precio'],
+                    datos[d]['ajuste'])
+            elif d is 2:
+                query = query + '''fertilizantecob2formula={}, fertilizantecob2precio={}, fertilizantecob2ajustado={},'''.format(
+                    datos[d]['formula'],
+                    datos[d]['precio'],
+                    datos[d]['ajuste'])
+            elif d is 3:
+                query = query + '''fertilizantecob3formula={}, fertilizantecob3precio={}, fertilizantecob3ajustado={},'''.format(
+                    datos[d]['formula'],
+                    datos[d]['precio'],
+                    datos[d]['ajuste'])
+            
+        query = sql_base + query[:-1] + '\nWHERE iddata = {}'.format(self.iddata)
+            
 
-        if self.combo_ajuste_2.currentIndex() != 0:
-            f2 = str(self.line_formula_2.text())
-            p2 = int(round(float(self.line_precio_2.text())))
-            a2 = str(self.combo_ajuste_2.currentText())
-            sql2= ''' update campania 
-            set fertilizantecob1formula ='{}',
-            fertilizantecob1precio = {},
-            fertilizantecob1ajustado = '{}'
-            from (select idcampania id  from lotecampania lc
-            where lc.idlotecampania = {} ) sq
-            where idcampania = sq.id '''.format(f2, p2, a2,  self.iddata)
-            sql.append(sql2)
-
-
-        if self.combo_ajuste_3.currentIndex() != 0:
-            f3 = str(self.line_formula_3.text())
-            p3 = int(round(float(self.line_precio_3.text())))
-            a3 = str(self.combo_ajuste_3.currentText())
-            sql3= ''' update campania 
-            set fertilizantecob2formula ='{}',
-            fertilizantecob2precio = {},
-            fertilizantecob2ajustado = '{}'
-            from (select idcampania id  from lotecampania lc
-            where lc.idlotecampania = {} ) sq
-            where idcampania = sq.id '''.format(f3, p3, a3, self.iddata)
-            sql.append(sql3)
-
-        if self.combo_ajuste_4.currentIndex() != 0:
-            f4 = str(self.line_formula_4.text())
-            p4 = int(round(float(self.line_precio_4.text())))
-            a4 = str(self.combo_ajuste_4.currentText())
-            sql4 = ''' update campania 
-            set fertilizantecob4formula ='{}',
-            fertilizantecob4precio = {},
-            fertilizantecob4ajustado = '{}'
-            from (select idcampania id  from lotecampania lc
-            where lc.idlotecampania = {} ) sq
-            where idcampania = sq.id '''.format(f4, p4, a4, self.iddata)
-            sql.append(sql4)
-
-        if self.combo_status.currentIndex() != 0:
-            status = self.combo_status.currentText()
-            # print(status)
-            sql_status = ''' update campania 
-            set fert_status = sq.a_status
-            from (select idcampania id, '{}' a_status  from lotecampania lc
-            where lc.idlotecampania = {} ) sq
-            where idcampania = sq.id '''.format(status, self.iddata)
-            sql.append(sql_status)
-        with self.conn: 
-            cursor = self.conn.cursor()
+        with self.conn.cursor() as cursor: 
             try:
-                for q in sql:
-                    # print(q)          
-                    cursor.execute(q)
-                    self.conn.commit()
+                # print(query)
+                cursor.execute(query)
+                self.conn.commit()
+                QMessageBox.about(self, "", "Datos de Fertilizacion guardados correctamente")
                     
                 # self.close()
-                self.huellaCarbono()
+                # self.huellaCarbono()
             except Exception as ex:
+                print(ex)
                 QgsMessageLog.logMessage(f'{ex}', 'aGrae GIS', level=1)
 
     def huellaCarbono(self):

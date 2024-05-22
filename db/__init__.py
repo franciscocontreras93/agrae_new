@@ -16,7 +16,7 @@ class agraeDataBaseDriver():
         #     'port': self.s.value('dbport')
         # }
         self.dsn = {
-            'dbname': 'agrae_migrate',
+            'dbname': self.s.value('dbname'),
             'user': self.s.value('dbuser'),
             'password': self.s.value('dbpass'),
             'host': self.s.value('dbhost'),

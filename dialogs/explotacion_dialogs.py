@@ -10,6 +10,7 @@ from psycopg2 import InterfaceError, errors, extras
 from qgis.PyQt.QtWidgets import *
 from qgis.PyQt.QtCore import pyqtSignal, QSettings, QVariant, Qt, QSize
 from qgis.core import *
+from qgis.gui import * 
 from qgis.utils import iface
 from qgis.PyQt.QtXml import QDomDocument
 from qgis.PyQt import uic
@@ -306,6 +307,44 @@ class CopyExplotacionDialog(QDialog):
                     QgsMessageLog.logMessage('aGrae Toolbox', ex)
                     self.conn.rollback()
 
+class AsignarLotesExplotacion(QDialog):
+    closingPlugin = pyqtSignal()
+    # idExplotacionSignal = pyqtSignal(list)
+    def __init__(self, layer: QgsVectorLayer):
+        super().__init__()
+        self.layer = layer
+        self.setWindowTitle('Asignar Lotes')
+
+        self.UIComponents()
+
+    def UIComponents(self):
+        self.layout = QGridLayout()
+        
+        self.groupBoxLayout = QGridLayout()
+        self.groupBox = QGroupBox()
+        self.groupBox.setTitle('Asignar Lotes a Explotacion')
+
+        self.label_1 = QLabel('Seleccionar Campo Nombre del Lote')
+        self.label_1.setMaximumSize(QSize(250,15))
+        
+        self.combo_nombre = QgsFieldComboBox()
+        self.combo_nombre.setLayer(self.layer)
+
+        self.btn_asignar = QPushButton('Copiar Explotacion')
+        # self.btn_upadte.clicked.connect(self.copyExplotacion)
+        
+
+        self.groupBoxLayout.addWidget(self.label_1,0,0)
+        self.groupBoxLayout.addWidget(self.combo_nombre,1,0)
+        self.groupBoxLayout.addWidget(self.btn_asignar,2,0)
+
+
+        self.groupBox.setLayout(self.groupBoxLayout)
+        self.layout.addWidget(self.groupBox)
+        self.setLayout(self.layout)
+
+        pass
+
 
 
 
@@ -409,6 +448,7 @@ class GestionExplotacionDialog(QDialog):
                 self.ln_name.setText(data[0])
                 self.ln_dir.setPlainText(data[1])
                 
+                
 
 
             except Exception as ex:
@@ -485,6 +525,12 @@ class GestionExplotacionDialog(QDialog):
          name = self.tableWidget.item(row,1).text()
          self.idExplotacionSignal.emit([int(id),name])
          self.close()
+
+    def getExplotacionCampania(self):
+        row = self.tableWidget.currentRow()
+        id = self.tableWidget.item(row,0).text()
+        self.idExplotacionSignal.emit([int(id)])
+        self.close()
 
         
 

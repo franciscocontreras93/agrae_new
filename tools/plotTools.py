@@ -11,9 +11,7 @@ from datetime import datetime
 from qgis.utils import iface
 from qgis.core import *
 
-import pandas as pd
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+
 
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -42,8 +40,11 @@ class TableModel(QtCore.QAbstractTableModel):
                 return int(0)
         if role == Qt.BackgroundRole and index.column() == 0:
             value = self._data.iloc[index.row()][0]
-            if value in self.colors.keys():
-                return QtGui.QColor(self.colors[value])
+            try:
+                if value in self.colors.keys():
+                    return QtGui.QColor(self.colors[value])
+            except:
+                pass
         
 
         if role == Qt.FontRole:                     
@@ -241,6 +242,8 @@ class PanelRender():
         formulas = ''
 
         total_peso = sum(pesos)
+        # print(pesos)
+        # print(total_peso)
         coste_unitario = sum(precios)
 
         coste_total = round((coste_unitario * self.area),2)
@@ -342,6 +345,7 @@ class PanelRender():
             return f[:-1]
 
         pesos = self._pesos_aplicados
+        # print(pesos)
         precios = self._precios_ton
         x = 150
         y = 105
@@ -371,6 +375,7 @@ class PanelRender():
                 t1),self.moneda, round(pesos[0])), font=font2, fill=color, align='center', spacing=8)
             total_unitario = total_unitario + round(
                 t1)
+            print(total_unitario)
             
 
         if len(pesos) >= 2:
@@ -383,6 +388,8 @@ class PanelRender():
                 t2), self.moneda, round(pesos[1])), font=font2, fill=color, align='center', spacing=8)
             total_unitario = total_unitario + round(
                 t2)
+            print(total_unitario)
+            
            
 
         if len(pesos) >= 3:
@@ -395,6 +402,8 @@ class PanelRender():
                 t3), self.moneda, round(pesos[2])), font=font2, fill=color, align='center', spacing=8)
             total_unitario = total_unitario + round(
                 t3)
+            print(total_unitario)
+            
 
         if len(pesos) > 3:
             f4 = self.formulas[3]
@@ -406,6 +415,8 @@ class PanelRender():
                 t4), self.moneda, round(pesos[3])), font=font2, fill=color, align='center', spacing=8)
             total_unitario = total_unitario + round(
                 t4)
+            print(total_unitario)
+            
 
         draw.text((340, 295),
                   '{:,} {}/ha'.format(total_unitario,self.moneda),

@@ -123,7 +123,7 @@ class LotesMainWindow(QDialog,lotesDialogUI):
                 regimen = ''
 
 
-            sql = self.agraeSql.getSql('new_lote.sql') 
+            sql = self.agraeSql.getSql('new_lote_assign.sql') 
             geom = f.geometry().asWkt()
             sql = sql.format(campania,exp,nombre,cultivo,regimen,produccion,geom)
             with self.conn.cursor() as cursor:

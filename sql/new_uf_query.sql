@@ -25,13 +25,11 @@ with data as (select distinct
 	from campaign.data d 
 	join agrae.cultivo c on c.idcultivo = d.idcultivo
 	where d.idcampania = {} and d.idexplotacion = {}),
-lotes as (select l.*,round((st_area(st_transform(l.geom,8857)) / 10000)::numeric,2) area_lote, 
+lotes as (select l.*, 
 	d.iddata,
 	d.idcampania,
 	d.idexplotacion,
 	d.idcultivo,
-	cult.nombre as cultivo,
-	per.nombre || ' ' || per.apellidos as agricultor,
 	d.idregimen as regimen,
 	d.ms_cosecha,
 	d.extraccioncosechan,
@@ -41,11 +39,7 @@ lotes as (select l.*,round((st_area(st_transform(l.geom,8857)) / 10000)::numeric
 	d.extraccionresiduon,
 	d.extraccionresiduop,
 	d.extraccionresiduok, 
-	d.prod_esperada from data d 
-	join agrae.lotes l on d.idlote = l.idlote
-	join agrae.cultivo cult on d.idcultivo = cult.idcultivo
-	join agrae.agricultor ag on d.idexplotacion = ag.idexplotacion
-	join agrae.persona per on per.idpersona = ag.idpersona),	
+	d.prod_esperada from data d join agrae.lotes l on d.idlote = l.idlote ),	
 segmentos as (select distinct s.idsegmento,s.ceap,s.segmento,st_multi(st_intersection(s.geometria,l.geom)) as geometria, l.idlote, l.iddata, l.regimen from agrae.segmentos s join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),4)::geometry,s.geometria)),
 segm_analitica as (select 
 	m.codigo,
@@ -365,7 +359,7 @@ join necesidades_f nf using(idlote, iddata, uf, uf_etiqueta)
 ),
 aportes as (
 select
-n.idlote, n.iddata, n.uf, n.uf_etiqueta,n.prod_ponderada,
+n.idlote, n.iddata, n.uf, n.uf_etiqueta,
 concat(n.necesidad_n,'-',n.necesidad_p,'-',n.necesidad_k) necesidades_iniciales,
 coalesce(d.fertilizantefondoformula,'Sin Informacion') fertilizantefondoformula,
 	(CASE
@@ -403,12 +397,7 @@ concat(n.necesidad_nf,'-',n.necesidad_pf,'-',n.necesidad_kf) necesidades_finales
 from necesidades n
 join data d using (iddata)
 ),
-uf_final as (select l.nombre as lote,
-l.area_lote,
-l.prod_esperada,
-l.cultivo,
-l.agricultor,
-a.prod_ponderada,
+uf_final as (select l.nombre as lote, 
 a.uf, 
 a.uf_etiqueta, 
 a.necesidades_iniciales, 
@@ -421,18 +410,13 @@ a.fertilizantecob2calculado,
 a.fertilizantecob3formula, 
 a.fertilizantecob3calculado,
 a.necesidades_finales,
-round((st_area(st_transform(a.geom,8857)) / 10000)::numeric,2)::double precision area_ha,
+-- round((st_area(st_transform(a.geom,8857)) / 10000)::numeric,2) area,
 st_multi(st_union(a.geom)) as geom
 from aportes a
 join lotes l on a.idlote = l.idlote
-where  round((st_area(st_transform(a.geom,8857)) / 10000)::numeric,2) > 0
+where  round((st_area(st_transform(st_setsrid(a.geom,4326),8857)) / 10000)::numeric,2) > 0
 group by 
 l.nombre,
-l.area_lote,
-l.prod_esperada,
-l.cultivo,
-l.agricultor,
-a.prod_ponderada,
 a.uf,
 a.uf_etiqueta, 
 a.necesidades_iniciales, 
@@ -444,6 +428,20 @@ a.fertilizantecob2formula,
 a.fertilizantecob2calculado,
 a.fertilizantecob3formula, 
 a.fertilizantecob3calculado,
-a.necesidades_finales,
-a.geom)
-{}
+a.necesidades_finales)
+select 
+lote,
+uf, 
+uf_etiqueta, 
+necesidades_iniciales, 
+fertilizantefondoformula, 
+fertilizantefondocalculado,
+fertilizantecob1formula, 
+fertilizantecob1calculado,
+fertilizantecob2formula, 
+fertilizantecob2calculado,
+fertilizantecob3formula, 
+fertilizantecob3calculado,
+round((st_area(st_transform(geom,8857)) / 10000)::numeric,2)::double precision area_ha,
+st_asText(geom) as geom from uf_final uf
+-- select * from uf_final
