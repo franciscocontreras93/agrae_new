@@ -1,9 +1,9 @@
 [general]
-name=Minimal
-description=Minimal plugin
-about=About this minimal plugin
+name=aGrae GIS
+description=Sistema de gestion agricola, aGrae GIS
+about=Este software es de uso privado y requiere la implementacion de una base de datos especifica desarrollada por la empresa.
 version=1.0
-qgisMinimumVersion=3.0
-author=Martin Dobias
-email=wonder.sk@gmail.com
+qgisMinimumVersion=3.28
+author= AGRAE SOLUTIONS SL
+email=info@agrae.es
 repository=URL to the code repository
