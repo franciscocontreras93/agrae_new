@@ -20,10 +20,13 @@ from ..sql import aGraeSQLTools
 class aGraeTools():
     def __init__(self):
         self.instance = QgsProject.instance()
-        self.conn = agraeDataBaseDriver().connection()
+        try:
+            self.conn = agraeDataBaseDriver().connection()
+        except Exception as ex:
+            print(ex)
+            self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-    
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
 
@@ -56,7 +59,15 @@ class aGraeTools():
         """        
         iface.messageBar().pushMessage(title,text,level,duration)
         if alert:
-            QtWidgets.QMessageBox.about(None, title, text)
+            if level== 0:
+                QtWidgets.QMessageBox.information(None, title, text)
+            elif level == 1: 
+                QtWidgets.QMessageBox.warning(None, title, text)
+            elif level == 2:
+                QtWidgets.QMessageBox.critical(None, title, text)
+            elif level == 3:
+                QtWidgets.QMessageBox.about(None, title, text)
+            
         QgsMessageLog.logMessage(text, title, level)
     
     def deleteAction(self,question:str,sql:str,widget=None,actions:list=None,):
@@ -151,6 +162,15 @@ class aGraeTools():
             return fileName
         else: 
             return None
+        
+    def getDirectory(self):
+        # options = QFileDialog.options()
+
+        dirname = QFileDialog.getExistingDirectory(None, "Selecciona una Carpeta")
+        return dirname
+
+        
+
      
     def processImageToBytea(self,path):
         try:

@@ -26,14 +26,17 @@ class agraeDataBaseDriver():
         pass
 
     def connection(self):
-        self.conn = psycopg2.connect(
-            database=self.dsn['dbname'], 
-            user = self.dsn['user'], 
-            password = self.dsn['password'], 
-            host = self.dsn['host'], 
-            port = self.dsn['port'])
-        if self.conn != None: 
-            return self.conn
+        try:
+            self.conn = psycopg2.connect(
+                database=self.dsn['dbname'], 
+                user = self.dsn['user'], 
+                password = self.dsn['password'], 
+                host = self.dsn['host'], 
+                port = self.dsn['port'])
+            if self.conn != None: 
+                return self.conn
+        except psycopg2.OperationalError:
+            raise Exception('Error de conexion a la Base de datos')
         
     def getDSN(self):
         return self.dsn

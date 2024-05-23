@@ -2,10 +2,13 @@ from PyQt5.QtWidgets import QAction, QMessageBox
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QCoreApplication, Qt
 
+
 from .gui import agraeGUI
 from .dialogs.main import agraeMainWidget
 from .dialogs.lotes_dialog import LotesMainWindow
 from .dialogs.tools_dockwidget import *
+from .dialogs.config_dialog import agraeConfigDialog
+
 
 from .db import agraeDataBaseDriver
 from .tools import aGraeTools
@@ -118,8 +121,9 @@ class aGraeToolbox:
         # self.action = QAction('Go!', self.iface.mainWindow())
         # self.action.triggered.connect(self.run)
         # self.iface.addToolBarIcon(self.action)
-        self.add_action(agraeGUI().getIcon('lotes'),'Gestion de Lotes',self.agraeGestionLotes,add_to_toolbar=True)
-        self.add_action(agraeGUI().getIcon('main'),'Informacion',self.agraeDock,add_to_toolbar=True)
+        self.add_action(agraeGUI().getIcon('lotes'),'Cargar Lotes',self.agraeGestionLotes,add_to_menu=False,add_to_toolbar=True)
+        self.add_action(agraeGUI().getIcon('main'),'aGrae GIS',self.agraeDock,add_to_toolbar=True)
+        self.add_action(agraeGUI().getIcon('settings'),'Configuracion del Complemento',self.agraeConfig,add_to_menu=True,add_to_toolbar=False)
 
     def unload(self):
         for action in self.actions:
@@ -165,3 +169,7 @@ class aGraeToolbox:
         self.dock = agraeToolsDockwidget(self.lotesLayer)
 
         # self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dock)
+
+    def agraeConfig(self):
+        dialog = agraeConfigDialog()
+        dialog.exec()
