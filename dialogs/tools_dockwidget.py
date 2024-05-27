@@ -158,7 +158,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.GestionarParametros = QtWidgets.QAction(agraeGUI().getIcon('matraz'),'Gestionar Parametros',self)
         self.GestionarParametros.triggered.connect(self.gestionParametrosDialog)
 
-        actions_data = [self.GestionarExplotaciones,self.GestionarPersonas,self.GestionarAgricultores,self.GestionarDistribuidores,self.GestionarCultivos,self.GestionarParametros]
+        actions_data = [self.GestionarExplotaciones,self.GestionarPersonas,self.GestionarAgricultores,self.GestionarDistribuidores,self.GestionarCultivos] # DELETE FROM MASTER
+        # actions_data = [self.GestionarExplotaciones,self.GestionarPersonas,self.GestionarAgricultores,self.GestionarDistribuidores,self.GestionarCultivos,self.GestionarParametros]
         
         self.tools.settingsToolsButtons(self.tool_data,actions_data,icon=agraeGUI().getIcon('list-check'),setMainIcon=True)
 
