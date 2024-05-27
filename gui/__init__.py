@@ -11,6 +11,7 @@ class agraeGUI():
          'npk' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\npk.png')),
          'lotes' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\search-lotes.svg')),
          'add' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\plus-solid.svg')),
+         'minus' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\minus-solid.svg')),
          'trash' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\trash-solid.svg')),
          'edit' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\pen-solid.svg')),
          'pen-to-square' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\pen-to-square-solid.svg')),

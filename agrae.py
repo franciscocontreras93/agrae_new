@@ -123,7 +123,7 @@ class aGraeToolbox:
         # self.iface.addToolBarIcon(self.action)
         self.add_action(agraeGUI().getIcon('lotes'),'Cargar Lotes',self.agraeGestionLotes,add_to_menu=False,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('main'),'aGrae GIS',self.agraeDock,add_to_toolbar=True)
-        self.add_action(agraeGUI().getIcon('settings'),'Configuracion del Complemento',self.agraeConfig,add_to_menu=True,add_to_toolbar=False)
+        self.add_action(agraeGUI().getIcon('settings'),'Ajustes aGrae GIS',self.agraeConfig,add_to_menu=True,add_to_toolbar=False)
 
     def unload(self):
         for action in self.actions:

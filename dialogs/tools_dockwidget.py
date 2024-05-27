@@ -27,7 +27,8 @@ from .gestion_distribuidor import GestionDistribuidorDialog
 from .gestion_agricultor import GestionAgricultorDialog
 from .datos_base_dialog import GestionDatosBaseDialog, CrearLotesDialog
 from .composer_dialog import agraeComposer
-
+from .cultivos_dialog import GestionarCultivosDialog
+from .parametros_dialog import GestionarParametrosDialog
 from .plots_dialog import agraePlotsDialog
 
 toolsDialog, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui/agrae_tools.ui'))
@@ -120,14 +121,14 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.GenerarReporteFertilizacion.triggered.connect(self.generateComposerDialog)
 
         #TODO
-        self.GenerarUnidadesFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('tractor'),'Exportar Archivo UFS',self)
+        self.GenerarUnidadesFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('tractor'),'Exportar Unidades de Fertilizacion',self)
         self.GenerarUnidadesFertilizacion.triggered.connect(self.exportarUFS)
         #TODO
         self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Fertiliacion',self)
         self.GenerarResumenFertilizacion.triggered.connect(self.exportarResumen)
 
         actions_exp = [self.AsignarLotesExplotacion,self.CargarCapasExplotacion,self.GenerarReporteFertilizacion,self.GenerarUnidadesFertilizacion,self.GenerarResumenFertilizacion]
-        self.tools.settingsToolsButtons(self.tool_exp_2,actions_exp,icon=agraeGUI().getIcon('tools'),setMainIcon=True)
+        self.tools.settingsToolsButtons(self.tool_exp_2,actions_exp,icon=agraeGUI().getIcon('explotacion'),setMainIcon=True)
 
         # TOOL_LAB
         #TODO 
@@ -152,7 +153,13 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.GestionarAgricultores.triggered.connect(self.gestionAgricultorDialog)
         self.GestionarDistribuidores = QtWidgets.QAction(agraeGUI().getIcon('handshake'),'Gestionar Distribuidores',self)
         self.GestionarDistribuidores.triggered.connect(self.gestionDistribuidorDialog)
-        actions_data = [self.GestionarExplotaciones,self.GestionarPersonas,self.GestionarAgricultores,self.GestionarDistribuidores]
+        self.GestionarCultivos = QtWidgets.QAction(agraeGUI().getIcon('cultivo'),'Gestionar Cultivos',self)
+        self.GestionarCultivos.triggered.connect(self.gestionCultivosDialog)
+        self.GestionarParametros = QtWidgets.QAction(agraeGUI().getIcon('matraz'),'Gestionar Parametros',self)
+        self.GestionarParametros.triggered.connect(self.gestionParametrosDialog)
+
+        actions_data = [self.GestionarExplotaciones,self.GestionarPersonas,self.GestionarAgricultores,self.GestionarDistribuidores,self.GestionarCultivos,self.GestionarParametros]
+        
         self.tools.settingsToolsButtons(self.tool_data,actions_data,icon=agraeGUI().getIcon('list-check'),setMainIcon=True)
 
 
@@ -357,7 +364,15 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     def gestionAgricultorDialog(self):
         dlg = GestionAgricultorDialog()
         dlg.exec()
+
+    def gestionCultivosDialog(self):
+        dlg = GestionarCultivosDialog()
+        dlg.exec()
     
+    def gestionParametrosDialog(self):
+        dlg = GestionarParametrosDialog()
+        dlg.exec()
+
     def gestionarDatosBaseDialog(self,i):
         dlg = GestionDatosBaseDialog()
         dlg.tabWidget.setCurrentIndex(i)

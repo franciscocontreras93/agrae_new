@@ -41,6 +41,7 @@
         <file>gui\icons\print-solid.svg</file>
         <file>gui\icons\pois.svg</file>
         <file>gui\icons\gear-solid.svg</file>
+        <file>gui\icons\minus-solid.svg</file>
 
         <!-- PLOT GRAPHS -->
         <file>gui\base\lgnd1.svg</file>

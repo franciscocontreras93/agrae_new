@@ -1,18 +1,12 @@
 import os
-import csv
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import time
+
 
 
 # from datetime import date
 import psycopg2
-from PyQt5.QtCore import QRegExp, QDate, QDateTime, QThreadPool
-from PyQt5.QtGui import QRegExpValidator, QIcon, QPixmap
 from PyQt5.QtWidgets import *
 from qgis.PyQt import QtWidgets, uic
-from qgis.PyQt.QtCore import pyqtSignal, QSettings, QVariant
+from qgis.PyQt.QtCore import pyqtSignal, QSettings
 
 from ..gui import agraeGUI
 from ..tools import aGraeTools
@@ -108,7 +102,7 @@ class agraeConfigDialog(QtWidgets.QDialog,dialog):
         for k in params:
             self.settings.setValue(k,params[k])
 
-        self.tools.messages('aGrae GIS','Parametros guardaros correctamente.',3,alert=True)
+        self.tools.messages('aGrae GIS','Conexion establecida correctamente.',3,alert=True)
 
 
 

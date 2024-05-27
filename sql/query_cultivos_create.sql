@@ -1,0 +1,51 @@
+with SOURCE_TABLE as (
+select '{nombre}' as nombre,
+{n_cos}::double precision extraccioncosechan, 
+{p_cos}::double precision extraccioncosechap, 
+{k_cos}::double precision extraccioncosechak, 
+{s_cos}::double precision extraccioncosechas, 
+{ca_cos}::double precision extraccioncosechaca, 
+{mg_cos}::double precision extraccioncosechamg, 
+{b_cos}::double precision extraccioncosechab, 
+{c_cos}::double precision contenidocosechac, 
+{n_res}::double precision extraccionresiduon, 
+{p_res}::double precision extraccionresiduop, 
+{k_res}::double precision extraccionresiduok, 
+{s_res}::double precision extraccionresiduos, 
+{ca_res}::double precision extraccionresiduoca, 
+{mg_res}::double precision extraccionresiduomg, 
+{b_res}::double precision extraccionresiduob, 
+{c_res}::double precision contenidoresiduoc,  
+{ic}::double precision indice_cosecha, 
+{ms_cos}::double precision ms_cosecha, 
+{ms_res}::double precision ms_residuo, 
+{humedad}::double precision humedad, 
+{precio}::double precision precio)
+INSERT INTO agrae.cultivo
+(nombre, 
+extraccioncosechan, 
+extraccioncosechap, 
+extraccioncosechak, 
+extraccioncosechas, 
+extraccioncosechaca, 
+extraccioncosechamg, 
+extraccioncosechab, 
+contenidocosechac, 
+extraccionresiduon, 
+extraccionresiduop, 
+extraccionresiduok, 
+extraccionresiduos, 
+extraccionresiduoca, 
+extraccionresiduomg, 
+extraccionresiduob, 
+contenidoresiduoc,  
+indice_cosecha, 
+ms_cosecha, 
+ms_residuo, 
+humedad, 
+precio)
+SELECT src.nombre, src.extraccioncosechan, src.extraccioncosechap, src.extraccioncosechak, src.extraccioncosechas, src.extraccioncosechaca, src.extraccioncosechamg, src.extraccioncosechab, src.contenidocosechac, src.extraccionresiduon, src.extraccionresiduop, src.extraccionresiduok, src.extraccionresiduos, src.extraccionresiduoca, src.extraccionresiduomg, src.extraccionresiduob, src.contenidoresiduoc, src.indice_cosecha, src.ms_cosecha, src.ms_residuo, src.humedad, src.precio
+FROM SOURCE_TABLE AS src
+ON CONFLICT (nombre)
+DO UPDATE 
+SET nombre=EXCLUDED.nombre, extraccioncosechan=EXCLUDED.extraccioncosechan, extraccioncosechap=EXCLUDED.extraccioncosechap, extraccioncosechak=EXCLUDED.extraccioncosechak, extraccioncosechas=EXCLUDED.extraccioncosechas, extraccioncosechaca=EXCLUDED.extraccioncosechaca, extraccioncosechamg=EXCLUDED.extraccioncosechamg, extraccioncosechab=EXCLUDED.extraccioncosechab, contenidocosechac=EXCLUDED.contenidocosechac, extraccionresiduon=EXCLUDED.extraccionresiduon, extraccionresiduop=EXCLUDED.extraccionresiduop, extraccionresiduok=EXCLUDED.extraccionresiduok, extraccionresiduos=EXCLUDED.extraccionresiduos, extraccionresiduoca=EXCLUDED.extraccionresiduoca, extraccionresiduomg=EXCLUDED.extraccionresiduomg, extraccionresiduob=EXCLUDED.extraccionresiduob, contenidoresiduoc=EXCLUDED.contenidoresiduoc, indice_cosecha=EXCLUDED.indice_cosecha, ms_cosecha=EXCLUDED.ms_cosecha, ms_residuo=EXCLUDED.ms_residuo, humedad=EXCLUDED.humedad, precio=EXCLUDED.precio;

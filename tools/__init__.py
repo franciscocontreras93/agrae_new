@@ -107,6 +107,31 @@ class aGraeTools():
             completer.setCaseSensitivity(False)
             return completer
     
+    def searchGetData(self,lineWidget:QLineEdit,tableWidget:QTableWidget,param:str,query_empty:str,query_param:str):
+        if param == '':
+            sql =  query_empty
+            try:
+                self.populateTable(sql, tableWidget)
+            except IndexError as ie:
+                self.conn.rollback()
+                pass
+            except Exception as ex:
+                self.conn.rollback()
+                print(ex)
+        else:
+            sql = query_param
+            try:
+                # print(sql)
+                self.populateTable(sql, tableWidget)
+            except IndexError as ie:
+                print(ie)
+                self.conn.rollback()
+                pass
+            except Exception as ex:
+                print(ex)
+                self.conn.rollback()
+
+
     def populateTable(self,sql:str,tableWidget:QtWidgets.QTableWidget, action=False):
         with self.conn.cursor() as cursor:
                 try:
