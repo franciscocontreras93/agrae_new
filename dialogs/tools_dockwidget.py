@@ -74,7 +74,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     def UIComponents(self):
         self.setWindowIcon(agraeGUI().getIcon('main'))
         self.date_siembra.dateChanged.connect(self.dateSiembraChanged)
-        self.date_cosecha.dateChanged.connect(self.dateCosechaChanged)
+        # self.date_cosecha.dateChanged.connect(self.dateCosechaChanged)
         self.toolBox.setCurrentIndex(0)
         # self.toolBox.setItemIcon(0,agraeGUI().getIcon('main'))
         self.toolBox.setItemIcon(0,agraeGUI().getIcon('info'))
@@ -453,7 +453,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             toolbutton.setDefaultAction(actions[0])
 
     def dateSiembraChanged(self,e):
-        self.fechaSiembra = self.date_siembra.date()
+        self.fechaSiembra = QDate(self.date_siembra.date())
         self.date_cosecha.setMinimumDate(self.date_siembra.date().addDays(15))
         
     def dateCosechaChanged(self,e):
@@ -829,7 +829,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.featureLote = feat
 
         self.date_siembra.setDate(self.FechaDesde)
-        self.date_cosecha.setDate(self.FechaDesde)
+        self.date_cosecha.setDate(self.FechaHasta)
 
         self.toolBox.setCurrentIndex(0)
 
@@ -885,28 +885,29 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         produccion = self.line_produccion.value()
         fechaSiembra = ''
         fechaCosecha = ''
-        if self.fechaSiembra != '':
-            fechaSiembra = self.fechaSiembra.toString('yyyy-MM-dd')
-        
-        if self.fechaCosecha != '':
-            fechaCosecha = self.fechaCosecha.toString('yyyy-MM-dd')
+        if self.check_siembra.isChecked():
+            fechaSiembra = self.date_siembra.date().toString('yyyy-MM-dd')
+       
+        if self.check_cosecha.isChecked():
+            fechaCosecha = self.date_cosecha.date().toString('yyyy-MM-dd')
         
         sql_lote = '''update agrae.lotes set nombre = '{}' where idlote = {}'''.format(nombre,self.idLote)
 
         sql_data = '''update campaign.data set idcultivo = {}, idregimen = {}, fechasiembra = nullif('{}','')::date, fechacosecha = nullif('{}','')::date, prod_esperada = {} where iddata = {} '''.format(cultivo,regimen,fechaSiembra,fechaCosecha,produccion,self.idData)
-       
+        # print(sql_data)
         with self.conn.cursor() as cursor:
             try:
                 if self.nombreLote != self.line_nombre.text():
                     cursor.execute(sql_lote)
                     self.conn.commit()
-                if  self.idCultivo != cultivo or self.idRegimen != regimen or self.prodEsperada != produccion or self.fechaSiembra != '' or self.fechaCosecha != '':
-                
-                    cursor.execute(sql_data)
-                    self.conn.commit()
-                    self.tools.messages('aGrae Tools','Lote actualizado correctamente',3)
-                    # self.updateLotesLayer()
-                    self.reloadLayer()
+                # if  self.idCultivo != cultivo or self.idRegimen != regimen or self.prodEsperada != produccion:
+                # if  self.idCultivo != cultivo or self.idRegimen != regimen or self.prodEsperada != produccion or self.fechaSiembra != '' or self.fechaCosecha != '':
+                   
+                cursor.execute(sql_data)
+                self.conn.commit()
+                self.tools.messages('aGrae Tools','Lote actualizado correctamente',3)
+                # self.updateLotesLayer()
+                self.reloadLayer()
             
             except Exception as ex:
                 self.conn.rollback()

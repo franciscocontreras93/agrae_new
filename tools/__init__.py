@@ -162,7 +162,7 @@ class aGraeTools():
             for e in elements:
                 if isinstance(e,QCheckBox):
                     # print('is checkBox')
-                    e.setChecked(False)
+                    e.setChecked(True)
                 e.setEnabled(True)
         else:
             for e in elements:
