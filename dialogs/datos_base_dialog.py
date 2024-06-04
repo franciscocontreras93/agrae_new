@@ -142,7 +142,10 @@ class CrearLotesDialog(QDialog):
         #     return action
 
         for f in selection: 
-            nombre = f[self.combo_nombre.currentField()]
+            nombre = str(f[self.combo_nombre.currentField()])
+            for e in ['/','-']:
+                nombre.replace(e,'_')
+                
             geom = f.geometry()
             if sourceCrs != crsBase:
                 geom.transform(tr)

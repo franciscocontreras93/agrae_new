@@ -15,6 +15,8 @@ from qgis.utils import iface
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..tools import aGraeTools
+from ..gui import agraeGUI
+from ..gui.CustomLineEdit import CustomLineEdit
 
 
 class CreateCampaniaDialog(QDialog):
@@ -32,7 +34,7 @@ class CreateCampaniaDialog(QDialog):
 
         self.UIComponents()
 
-        self.setFixedSize(QSize(400,250))
+        self.setFixedSize(agraeGUI()._DIALOG_SIZE)
 
         self.date_test = 'NULL'
 
@@ -44,7 +46,8 @@ class CreateCampaniaDialog(QDialog):
         self.groupBox.setTitle('Crear Nueva Campaña')
         self.label_1 = QLabel('Nombre de la nueva Campaña')
         self.label_1.setMaximumSize(QSize(200,15))
-        self.line_nombre = QLineEdit()
+        self.line_nombre = CustomLineEdit()
+        
 
         self.label_4 = QLabel('Prefijo de Campaña')
         self.prefixCombo = QComboBox()
@@ -138,7 +141,7 @@ class UpdateCampaniaDialog(QDialog):
         self.UIComponents()
         
 
-        self.setFixedSize(QSize(350,200))
+        self.setFixedSize(agraeGUI()._DIALOG_SIZE)
 
         
 
@@ -153,7 +156,14 @@ class UpdateCampaniaDialog(QDialog):
         self.groupBox.setTitle('Actualizar Campaña')
         self.label_1 = QLabel('Nombre de la Campaña')
         self.label_1.setMaximumSize(QSize(200,15))
-        self.line_nombre = QLineEdit()
+        self.line_nombre = CustomLineEdit()
+        # self.line_nombre.textChanged.connect(lambda v: agraeGUI().formatUpper(self.line_nombre,v))
+
+        self.label_4 = QLabel('Prefijo de Campaña')
+        self.prefixCombo = QComboBox()
+        self.prefixCombo.addItem('Seleccionar...')
+        self.prefixCombo.addItems(list(string.ascii_uppercase))
+
 
         self.label_2 = QLabel('Fecha Desde')
         self.label_2.setMaximumSize(QSize(200,15))
@@ -174,11 +184,13 @@ class UpdateCampaniaDialog(QDialog):
 
         self.groupBoxLayout.addWidget(self.label_1,0,0,1,0)
         self.groupBoxLayout.addWidget(self.line_nombre,1,0,1,0)
-        self.groupBoxLayout.addWidget(self.label_2,2,0)
-        self.groupBoxLayout.addWidget(self.label_3,2,1)
-        self.groupBoxLayout.addWidget(self.date_desde,3,0)
-        self.groupBoxLayout.addWidget(self.date_hasta,3,1)
-        self.groupBoxLayout.addWidget(self.btn_create,4,0,1,0)
+        self.groupBoxLayout.addWidget(self.label_4,2,0,1,0)
+        self.groupBoxLayout.addWidget(self.prefixCombo,3,0,1,0)
+        self.groupBoxLayout.addWidget(self.label_2,4,0)
+        self.groupBoxLayout.addWidget(self.label_3,4,1)
+        self.groupBoxLayout.addWidget(self.date_desde,5,0)
+        self.groupBoxLayout.addWidget(self.date_hasta,5,1)
+        self.groupBoxLayout.addWidget(self.btn_create,6,0,1,0)
 
         self.groupBox.setLayout(self.groupBoxLayout)
         self.layout.addWidget(self.groupBox)
@@ -192,7 +204,7 @@ class UpdateCampaniaDialog(QDialog):
 
 
     def getCampaniaData(self):
-        sql = '''select nombre,fecha_desde,fecha_hasta from campaign.campanias where id = {}'''.format(self.idCampania)
+        sql = '''select nombre, fecha_desde,fecha_hasta, prefix from campaign.campanias where id = {}'''.format(self.idCampania)
         # print(sql)
         with self.conn.cursor() as cursor:
             try:
@@ -202,6 +214,7 @@ class UpdateCampaniaDialog(QDialog):
                 self.line_nombre.setText(data[0])
                 self.date_desde.setDate(data[1])
                 self.date_hasta.setDate(data[2])
+                self.prefixCombo.setCurrentText(data[3])
             except Exception as ex:
               print(ex)
               self.conn.rollback()
@@ -210,10 +223,11 @@ class UpdateCampaniaDialog(QDialog):
         nombre = str(self.line_nombre.text()).upper()
         desde = self.date_desde.date().toString('yyyy-MM-dd')
         hasta = self.date_hasta.date().toString('yyyy-MM-dd')
+        prefix = str(self.prefixCombo.currentText())
         sql = '''UPDATE campaign.campanias
-        SET nombre='{}', fecha_desde='{}', fecha_hasta='{}'
+        SET nombre='{}', fecha_desde='{}', fecha_hasta='{}', prefix = '{}'
         WHERE id={}
-        '''.format(nombre,desde,hasta,self.idCampania)
+        '''.format(nombre,desde,hasta,prefix,self.idCampania)
 
         with self.conn.cursor() as cursor:
             try:
@@ -242,7 +256,7 @@ class CloneCampaniaDialog(QDialog):
         self.UIComponents()
         
 
-        self.setFixedSize(QSize(350,300))
+        self.setFixedSize(agraeGUI()._DIALOG_SIZE)
         self.getCampaniasData()
         
 
@@ -263,7 +277,9 @@ class CloneCampaniaDialog(QDialog):
 
         self.label_1 = QLabel('Ingrese el Nombre de la campaña')
         self.label_1.setMaximumSize(QSize(200,15))
-        self.line_nombre = QLineEdit()
+        self.line_nombre = CustomLineEdit()
+        # self.line_nombre.textChanged.connect(lambda v: agraeGUI().formatUpper(self.line_nombre,v))
+        
         self.label_2 = QLabel('Fecha Desde')
         self.label_2.setMaximumSize(QSize(200,15))
         self.date_desde = QDateEdit()
@@ -277,6 +293,10 @@ class CloneCampaniaDialog(QDialog):
         self.date_hasta.setDate(self.currentDate.addMonths(5))
         self.date_hasta.setMinimumDate(self.currentDate)
         
+        self.label_4 = QLabel('Prefijo de Campaña')
+        self.prefixCombo = QComboBox()
+        self.prefixCombo.addItem('Seleccionar...')
+        self.prefixCombo.addItems(list(string.ascii_uppercase))
 
         self.date_desde.dateChanged.connect(self.setMinimumDate)
 
@@ -288,11 +308,14 @@ class CloneCampaniaDialog(QDialog):
         self.groupBoxLayout.addWidget(self.combo_campanias,1,0,1,0)
         self.groupBoxLayout.addWidget(self.label_1,2,0,1,0)
         self.groupBoxLayout.addWidget(self.line_nombre,3,0,1,0)
-        self.groupBoxLayout.addWidget(self.label_2,4,0)
-        self.groupBoxLayout.addWidget(self.label_3,4,1)
-        self.groupBoxLayout.addWidget(self.date_desde,5,0)
-        self.groupBoxLayout.addWidget(self.date_hasta,5,1)
-        self.groupBoxLayout.addWidget(self.btn_create,6,0,1,0)
+        self.groupBoxLayout.addWidget(self.label_4,4,0,1,0)
+        self.groupBoxLayout.addWidget(self.prefixCombo,5,0,1,0)
+        
+        self.groupBoxLayout.addWidget(self.label_2,6,0)
+        self.groupBoxLayout.addWidget(self.label_3,6,1)
+        self.groupBoxLayout.addWidget(self.date_desde,7,0)
+        self.groupBoxLayout.addWidget(self.date_hasta,7,1)
+        self.groupBoxLayout.addWidget(self.btn_create,8,0,1,0)
 
         self.groupBox.setLayout(self.groupBoxLayout)
         self.layout.addWidget(self.groupBox)
@@ -328,11 +351,12 @@ class CloneCampaniaDialog(QDialog):
         nombre = str(self.line_nombre.text()).upper()
         desde = self.date_desde.date().toString('yyyy-MM-dd')
         hasta = self.date_hasta.date().toString('yyyy-MM-dd')
+        prefix = str(self.prefixCombo.currentText())
         sql = '''with 
         select_data as (select idexplotacion,idlote from campaign.data where idcampania = {}),
-        new_campaign as (insert into campaign.campanias (nombre,fecha_desde,fecha_hasta) values('{}', '{}', '{}' ) returning id)
+        new_campaign as (insert into campaign.campanias (nombre,fecha_desde,fecha_hasta,prefix) values('{}', '{}', '{}', '{}') returning id)
         insert into campaign.data (idcampania,idexplotacion,idlote) 
-        select (select id from new_campaign), * from select_data'''.format(idCampania,nombre,desde,hasta)
+        select (select id from new_campaign), * from select_data'''.format(idCampania,nombre,desde,hasta,prefix)
 
         with self.conn.cursor() as cursor:
             reply = QMessageBox.question(self,'aGrae Toolbox','Quieres copiar los datos asociados a la campaña {}?'.format(self.combo_campanias.currentText()), QMessageBox.Yes, QMessageBox.No)

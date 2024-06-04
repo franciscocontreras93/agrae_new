@@ -1,9 +1,15 @@
 import os
 from PyQt5.QtGui import QIcon, QPixmap
+from qgis.PyQt.QtCore import pyqtSignal, QSize, QDate
+from qgis.PyQt.QtWidgets import QLineEdit
 
 class agraeGUI():
+
+    
+
     def __init__(self):
-                
+        self._DIALOG_SIZE = QSize(450,300)
+
         self.icons = {
          'main' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\icon.svg')),
          'info' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\info.png')),
@@ -86,3 +92,6 @@ class agraeGUI():
         'leyenda' - 'p1'  - 'co2' """
 
         if name: return self.images_base[name]
+
+    def formatUpper(self,widget:QLineEdit,v:str):
+        widget.setText(v.upper())

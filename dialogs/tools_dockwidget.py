@@ -18,7 +18,7 @@ from ..gui import agraeGUI
 from ..tools import aGraeTools
 
 
-from .explotacion_dialogs import CopyExplotacionDialog, CreateExplotacionDialog, UpdateExplotacionDialog, GestionExplotacionDialog
+from .explotacion_dialogs import CopyExplotacionDialog, CreateExplotacionDialog, UpdateExplotacionDialog, GestionExplotacionDialog,GestionarExplotacionesDialog
 from .campania_dialogs import CloneCampaniaDialog, CreateCampaniaDialog, UpdateCampaniaDialog
 from .lotes_dialog import LoteWeatherDialog
 from .analitica_dialogs import agraeAnaliticaDialog
@@ -346,7 +346,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         pass
 
     def gestionExplotacionDialog(self):
-        dlg = GestionExplotacionDialog()
+        dlg = GestionarExplotacionesDialog()
+        # dlg = GestionExplotacionDialog()
         # dlg.idExplotacionSignal.connect()
         dlg.exec()
     
@@ -511,12 +512,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 self.FechaDesde = data[0]
                 self.FechaHasta = data[1]
 
-                self.date_siembra.setMinimumDate(data[0])
-                self.date_siembra.setMaximumDate(data[1])
-                self.date_cosecha.setMinimumDate(data[0])
-                self.date_cosecha.setMaximumDate(data[1])
-                self.date_aplicacion.setMinimumDate(data[0])
-                self.date_aplicacion.setMaximumDate(data[1])
+                self.date_siembra.setMinimumDate(self.FechaDesde)
+                self.date_siembra.setMaximumDate(self.FechaHasta)
+                self.date_cosecha.setMinimumDate(self.FechaDesde)
+                self.date_cosecha.setMaximumDate(self.FechaHasta)
+                self.date_aplicacion.setMinimumDate(self.FechaDesde)
+                self.date_aplicacion.setMaximumDate(self.FechaHasta)
                 # print(data)
 
 

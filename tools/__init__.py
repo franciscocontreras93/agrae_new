@@ -154,6 +154,7 @@ class aGraeTools():
                                 else:
                                     item  = QtWidgets.QTableWidgetItem(str('N/D'))  
                                 tableWidget.setItem(j, i, item)
+                                # tableWidget.resizeRowToContext()
                 except IndexError as ie:
                     pass
     
