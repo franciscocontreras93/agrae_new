@@ -451,6 +451,7 @@ class aGraeTools():
                     iface.messageBar().pushMessage("Error:", "Ocurrio un Error, revisa el panel de mensajes del Registro", level=Qgis.Critical)
                     # print(ex)
                     QgsMessageLog.logMessage('{}'.format(ex), self.plugin_name, level=Qgis.Critical)
+                    self.conn.rollback()
 
             else:
                 dns = agraeDataBaseDriver().getDSN()

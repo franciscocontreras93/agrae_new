@@ -416,8 +416,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                     data = self.tools.checkData(data)
                 return data
             except Exception as ex:
-                # print(ex)
-                self.conn.close()
+                print(ex)
+                self.conn.rollback()
 
     def afterLotesCreated(self,idexp):
         self.updateComboExp()

@@ -53,25 +53,9 @@ segm_analitica as (select
     n.tipo AS n_tipo,
     n.incremento AS n_inc,
  	a.p,
-    a.metodo AS p_metodo,
-        CASE
-            WHEN a.metodo = 1 THEN ( SELECT DISTINCT p.tipo
-               FROM analytic.fosforo p
-              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND p.suelo = txt.grupo AND a.p >= p.limite_inferior AND a.p < p.limite_superior)
-            WHEN a.metodo = 2 THEN ( SELECT DISTINCT p.tipo
-               FROM analytic.fosforo p
-              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND a.p >= p.limite_inferior AND a.p <= p.limite_superior)
-            ELSE NULL::character varying
-        END AS p_tipo,
-        CASE
-            WHEN a.metodo = 1 THEN ( SELECT DISTINCT p.incremento
-               FROM analytic.fosforo p
-              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND p.suelo = txt.grupo AND a.p >= p.limite_inferior AND a.p < p.limite_superior)
-            WHEN a.metodo = 2 THEN ( SELECT DISTINCT p.incremento
-               FROM analytic.fosforo p
-              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND a.p >= p.limite_inferior AND a.p <= p.limite_superior)
-            ELSE NULL::double precision
-        END AS p_inc,
+	met.nombre AS p_metodo,
+    p_n.etiqueta as p_tipo,
+    p_n.incremento as p_inc,
     a.k,
     k.tipo AS k_tipo,
     k.incremento AS k_inc,
@@ -140,8 +124,10 @@ segm_analitica as (select
 	LEFT JOIN analytic.calcio ca ON ca.suelo = txt.grupo AND a.ca >= ca.limite_inferior AND a.ca <= ca.limite_superior
 	LEFT JOIN analytic.magnesio mg ON mg.suelo = txt.grupo AND a.mg >= mg.limite_inferior AND a.mg <= mg.limite_superior
 	LEFT JOIN analytic.cic cic ON a.cic >= cic.limite_i AND a.cic <= cic.limite_s
-	LEFT JOIN analytic.nitrogeno n ON a.n >= n.limite_inferior AND a.n <= n.limite_superior
-	LEFT JOIN analytic.potasio k ON k.regimen = s.regimen AND k.suelo = txt.grupo AND a.k >= k.limite_inferior AND a.k < k.limite_superior
+	LEFT JOIN analytic.nitrogeno n ON a.n >= n.limite_inferior AND a.n <= n.limite_superior and n.textura = txt.grupo
+	LEFT JOIN analytic.potasio k ON k.textura = txt.grupo AND a.k >= k.limite_inferior AND a.k < k.limite_superior
 	LEFT JOIN analytic.sodio na ON na.suelo = txt.grupo AND a.na >= na.limite_inferior AND a.na <= na.limite_superior
+    LEFT JOIN analytic.fosforo_nuevo p_n on p_n.metodo = a.metodo AND p_n.textura = txt.grupo and p_n.carbonatos = carb.nivel AND a.p >= p_n.limite_inferior AND a.p < p_n.limite_superior
+	LEFT JOIN analytic.p_metodos met on a.metodo = met.id
 	)
 {} --QUERY DE LA SELECCION
