@@ -55,24 +55,6 @@ segm_analitica as (select
     met.nombre AS p_metodo,
     p_n.etiqueta as p_tipo,
     p_n.incremento as p_inc,
---        CASE
---            WHEN a.metodo = 1 THEN ( SELECT DISTINCT p.tipo
---               FROM analytic.fosforo p
---              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND p.suelo = txt.grupo AND a.p >= p.limite_inferior AND a.p < p.limite_superior)
---            WHEN a.metodo = 2 THEN ( SELECT DISTINCT p.tipo
---               FROM analytic.fosforo p
---              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND a.p >= p.limite_inferior AND a.p <= p.limite_superior)
---            ELSE NULL::character varying
---        END AS p_tipo,
---        CASE
---            WHEN a.metodo = 1 THEN ( SELECT DISTINCT p.incremento
---               FROM analytic.fosforo p
---              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND p.suelo = txt.grupo AND a.p >= p.limite_inferior AND a.p < p.limite_superior)
---            WHEN a.metodo = 2 THEN ( SELECT DISTINCT p.incremento
---               FROM analytic.fosforo p
---              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND a.p >= p.limite_inferior AND a.p <= p.limite_superior)
---            ELSE NULL::double precision
---        END AS p_inc,
     a.k,
     k.tipo AS k_tipo,
     k.incremento AS k_inc,

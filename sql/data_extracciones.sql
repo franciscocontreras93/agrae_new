@@ -221,15 +221,15 @@ uf as (select
 	)
 select  u.uf_etiqueta, 
         u.prod_ponderada::integer,
-        (u.extraccioncosechan || ' / ' ||
-        u.extraccioncosechap || ' / ' ||
-        u.extraccioncosechak) cos_npk,
-        (u.extraccionresiduon || ' / ' ||
-        u.extraccionresiduop || ' / ' ||
-        u.extraccionresiduok) res_npk, 
-        (u.necesidad_n || ' / ' ||
-        u.necesidad_p || ' / ' ||
-        u.necesidad_k) aportes_npk,
+        (round(u.extraccioncosechan) || ' / ' ||
+        round(u.extraccioncosechap) || ' / ' ||
+        round(u.extraccioncosechak)) cos_npk,
+        (round(u.extraccionresiduon) || ' / ' ||
+        round(u.extraccionresiduop) || ' / ' ||
+        round(u.extraccionresiduok)) res_npk, 
+        (round(u.necesidad_n) || ' / ' ||
+        round(u.necesidad_p) || ' / ' ||
+        round(u.necesidad_k)) aportes_npk,
 --        round((st_area(u.geom) * 1000000)::numeric,2) area, --AREA ELIPSOIDAL
         round((st_area(st_transform(st_setsrid(u.geom,4326),8857)) / 10000)::numeric,2) area --AREA PLANIMETRICA
         from uf u
