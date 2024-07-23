@@ -170,7 +170,7 @@ class CrearLotesDialog(QDialog):
                         QgsMessageLog.logMessage('Lote: {} ya existe en la Base de Datos'.format(nombre), 'aGrae Logs', 1)
                         self.conn.rollback()
                 except Exception as ex:
-                    print(ex)
+                    # print(ex)
                     self.conn.rollback()
             # print(query) 
         

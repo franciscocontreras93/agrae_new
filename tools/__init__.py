@@ -1,6 +1,7 @@
 import os, csv
 import pandas as pd
 import numpy as np
+import processing
 from io import BytesIO
 from PIL import Image
 
@@ -194,9 +195,6 @@ class aGraeTools():
 
         dirname = QFileDialog.getExistingDirectory(None, "Selecciona una Carpeta")
         return dirname
-
-        
-
      
     def processImageToBytea(self,path):
         try:
@@ -313,6 +311,51 @@ class aGraeTools():
 
         pass
         
+    def cargarRindes(self,
+                     layer:QgsVectorLayer,
+                     field_volumen:QgsField,
+                     field_humedad:QgsField,
+                     fecha:str,
+                     idcampania:int,
+                     idexplotacion:int,
+                     target_crs: QgsCoordinateReferenceSystem  = QgsCoordinateReferenceSystem("EPSG:4326")):
+        layer = layer
+        if layer.crs() != target_crs:
+            layer = self.reprojectLayer(layer,target_crs)
+        
+        srid = target_crs.authid()[5:]
+
+        # srid = lyr.crs().authid()[5:]
+        sql = """ INSERT INTO field.data_rindes(volumen, humedad, fecha_muestreo, geom,idcampania,idexplotacion) VALUES"""
+        if len(layer.selectedFeatures()) > 0: features = layer.selectedFeatures() 
+        else: features = layer.getFeatures()
+        for f in features:
+            volumen = f[field_volumen] 
+            humedad = f[field_humedad] 
+            geometria = f.geometry() .asWkt()
+            sql = sql + """ ({},{},'{}',st_geomfromtext('{}',{}),{},{}),\n""".format(volumen,humedad,fecha,geometria,srid,idcampania,idexplotacion)                 
+        
+        with self.conn.cursor() as cursor:
+            try: 
+                
+                cursor.execute(sql[:-2])   
+                self.conn.commit() 
+                self.messages('Monitor de Rendimiento', 'Datos de Rendimiento cargados a la base de datos',3)
+
+            except Exception as ex:
+                self.messages('Monitor de Rendimiento', ex,2,alert=True)
+                self.conn.rollback()
+    
+       
+
+    def reprojectLayer(self,layer,target_crs):
+        parameter = {
+            'INPUT': layer,
+            'TARGET_CRS': target_crs,
+            'OUTPUT': 'memory:Reprojected'
+        }
+        return processing.run('native', parameter)['OUTPUT']
+
     def getLotesLayer(self):
         sql = aGraeSQLTools().getSql('lotes_layer.sql')
         layer = self.getDataBaseLayer(sql,layername='aGrae Lotes',styleName='lotes_asignados',memory=False)
@@ -505,16 +548,10 @@ class aGraeTools():
             return pd.DataFrame()
         
     def guardarReporteAnalitica(self,df):
-        # QMessageBox.about(self, 'aGrae GIS', f'Asignando parcelas al Lote, este proceso puede demorar un momento.')        
-        # file_path = str(self.an_lbl_file.text())        
-        # df = pd.read_csv(file_path,delimiter=';')
-        # df1 = df1.astype(object).replace(np.nan, 'NULL')
         df1 = df
         columns = [c for c in df1.columns]
-        # sql = aGraeSQLTools().getSql('csv_report_verify.sql').format(idcampania,idexplotacion)
-        # _SQL_INSERT = '''INSERT INTO analytic.analitica (cod,ceap,ph,ce,carbon,caliza,ca,mg,k,na,n,p,organi,al,b,fe,mn,cu,zn,s,mo,arcilla,limo,arena,ni,co,ti,"as",pb,cr,metodo) VALUES\n'''
         _VALUES = list()
-        # print(columns)   
+        print(columns)   
         with self.conn.cursor() as cursor:
             try:   
                 for index, r in df1.iterrows():
@@ -522,7 +559,7 @@ class aGraeTools():
                     
                     try:
                         cursor.execute(sql)
-                        QgsMessageLog.logMessage('Analitica ({}) Cargada Correctamente'.format(r['COD']), 'aGrae Laboratorio', level=Qgis.Success)
+                        self.messages('aGrae GIS','Analitica ({}) Cargada Correctamente'.format(r['COD']),3,alert=True)
                         self.conn.commit()
                     except Exception as ex:
                         self.conn.rollback()

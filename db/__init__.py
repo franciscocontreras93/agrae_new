@@ -40,6 +40,16 @@ class agraeDataBaseDriver():
         
     def getDSN(self):
         return self.dsn
+    
+
+    def read(self,query) : 
+        conn = self.connection() 
+
+        with conn.cursor() as cursor: 
+            cursor.execute(query)
+            data =  cursor.fetchall()
+            return data
+
         
 
 

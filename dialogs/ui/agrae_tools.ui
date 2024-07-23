@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>443</width>
-    <height>690</height>
+    <width>439</width>
+    <height>681</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -52,8 +52,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>421</width>
-         <height>390</height>
+         <width>417</width>
+         <height>381</height>
         </rect>
        </property>
        <attribute name="label">
@@ -102,87 +102,6 @@
            <string>Formulario de Datos</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_7">
-           <item row="5" column="1" colspan="2">
-            <widget class="QDateEdit" name="date_siembra">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumDate">
-              <date>
-               <year>2023</year>
-               <month>11</month>
-               <day>1</day>
-              </date>
-             </property>
-             <property name="calendarPopup">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1" colspan="2">
-            <widget class="QComboBox" name="combo_cultivo">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="editable">
-              <bool>false</bool>
-             </property>
-             <item>
-              <property name="text">
-               <string>Seleccionar Cultivo...</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item row="6" column="1" colspan="2">
-            <widget class="QDateEdit" name="date_cosecha">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="calendarPopup">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="0">
-            <widget class="QCheckBox" name="check_cosecha">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="layoutDirection">
-              <enum>Qt::RightToLeft</enum>
-             </property>
-             <property name="text">
-              <string>Fecha Cosecha</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_4">
-             <property name="text">
-              <string>Regimen:</string>
-             </property>
-             <property name="margin">
-              <number>4</number>
-             </property>
-             <property name="indent">
-              <number>4</number>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_2">
-             <property name="text">
-              <string>Cultivo: </string>
-             </property>
-             <property name="margin">
-              <number>4</number>
-             </property>
-             <property name="indent">
-              <number>4</number>
-             </property>
-            </widget>
-           </item>
            <item row="2" column="1" colspan="2">
             <widget class="QComboBox" name="combo_regimen">
              <property name="enabled">
@@ -195,17 +114,10 @@
              </item>
             </widget>
            </item>
-           <item row="0" column="3">
-            <widget class="QToolButton" name="tool_lote">
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_4">
              <property name="text">
-              <string>...</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="label_7">
-             <property name="text">
-              <string>Prod. Esperada:</string>
+              <string>Regimen:</string>
              </property>
              <property name="margin">
               <number>4</number>
@@ -234,13 +146,16 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="1" colspan="2">
-            <widget class="QLineEdit" name="line_nombre">
+           <item row="6" column="0">
+            <widget class="QCheckBox" name="check_cosecha">
              <property name="enabled">
               <bool>false</bool>
              </property>
-             <property name="readOnly">
-              <bool>false</bool>
+             <property name="layoutDirection">
+              <enum>Qt::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>Fecha Cosecha</string>
              </property>
             </widget>
            </item>
@@ -260,6 +175,91 @@
              </property>
             </widget>
            </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>Prod. Esperada:</string>
+             </property>
+             <property name="margin">
+              <number>4</number>
+             </property>
+             <property name="indent">
+              <number>4</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1" colspan="2">
+            <widget class="QComboBox" name="combo_cultivo">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="editable">
+              <bool>false</bool>
+             </property>
+             <item>
+              <property name="text">
+               <string>Seleccionar Cultivo...</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="6" column="1" colspan="2">
+            <widget class="QDateEdit" name="date_cosecha">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="calendarPopup">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Cultivo: </string>
+             </property>
+             <property name="margin">
+              <number>4</number>
+             </property>
+             <property name="indent">
+              <number>4</number>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1" colspan="2">
+            <widget class="QLineEdit" name="line_nombre">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="readOnly">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1" colspan="2">
+            <widget class="QDateEdit" name="date_siembra">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="minimumDate">
+              <date>
+               <year>2023</year>
+               <month>11</month>
+               <day>1</day>
+              </date>
+             </property>
+             <property name="calendarPopup">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QToolButton" name="tool_lote">
+             <property name="text">
+              <string>...</string>
+             </property>
+            </widget>
+           </item>
            <item row="0" column="0">
             <widget class="QLabel" name="label">
              <property name="text">
@@ -273,6 +273,35 @@
              </property>
             </widget>
            </item>
+           <item row="7" column="1" colspan="2">
+            <widget class="QSpinBox" name="line_prod_final">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::NoButtons</enum>
+             </property>
+             <property name="suffix">
+              <string> kg</string>
+             </property>
+             <property name="maximum">
+              <number>1000000000</number>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="0">
+            <widget class="QLabel" name="label_19">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="text">
+              <string>Prod. Final</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
@@ -283,8 +312,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>421</width>
-         <height>390</height>
+         <width>417</width>
+         <height>381</height>
         </rect>
        </property>
        <attribute name="label">

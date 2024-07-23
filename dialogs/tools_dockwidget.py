@@ -30,6 +30,7 @@ from .composer_dialog import agraeComposer
 from .cultivos_dialog import GestionarCultivosDialog
 from .parametros_dialog import GestionarParametrosDialog
 from .plots_dialog import agraePlotsDialog
+from .monitor_dialogs import MonitorRendimientosDialog
 
 toolsDialog, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui/agrae_tools.ui'))
 
@@ -56,10 +57,14 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.nombreLote = None
         self.idCultivo = None
         self.idRegimen = None
+        self.prodEsperada = None
+        self.prodFinal = None
+        
         self.fechaSiembra = ''
         self.fechaCosecha = ''
         self.FechaDesde = QDate()
         self.FechaHasta = QDate()
+        
 
         self.getCampaniasData()
         self.getCultivosData()
@@ -111,7 +116,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         # TOOLBUTTONS 
         # TOOL_EXP_2
 
-       
         self.AsignarLotesExplotacion = QtWidgets.QAction(agraeGUI().getIcon('selection'),'Asignar Lotes a Explotacion',self)
         self.AsignarLotesExplotacion.triggered.connect(self.asignarLotesExp)
 
@@ -126,7 +130,11 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         #TODO
         self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Fertiliacion',self)
         self.GenerarResumenFertilizacion.triggered.connect(self.exportarResumen)
+        #TODO
+        self.MonitorDeRendimiento = QtWidgets.QAction(agraeGUI().getIcon('rindes'),'Monitor de Rendimiento',self)
+        self.MonitorDeRendimiento.triggered.connect(self.monitorRendimientoDialog)
 
+        # actions_exp = [self.AsignarLotesExplotacion,self.CargarCapasExplotacion,self.GenerarReporteFertilizacion,self.GenerarUnidadesFertilizacion,self.GenerarResumenFertilizacion,self.MonitorDeRendimiento]
         actions_exp = [self.AsignarLotesExplotacion,self.CargarCapasExplotacion,self.GenerarReporteFertilizacion,self.GenerarUnidadesFertilizacion,self.GenerarResumenFertilizacion]
         self.tools.settingsToolsButtons(self.tool_exp_2,actions_exp,icon=agraeGUI().getIcon('explotacion'),setMainIcon=True)
 
@@ -134,9 +142,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         #TODO 
         self.CargarCapaMuestras = QtWidgets.QAction(agraeGUI().getIcon('pois'),'Cargar Capa de Muestras',self)
         # self.CargarCapaMuestras.triggered.connect(self.crearFormatoAnalitica)
-        
 
-        self.CrearArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Crear Archivo de Laboratorio',self)
+        self.CrearArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Archivo de Laboratorio',self)
         self.CrearArchivoAnalisis.triggered.connect(self.crearFormatoAnalitica)
         self.ImportarArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('import'),'Cargar Archivo de Laboratorio',self)
         self.ImportarArchivoAnalisis.triggered.connect(self.cargarAnalitica)
@@ -169,7 +176,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.IndentifyLoteAction.triggered.connect(self.identify)
         
         self.CargarLotes = QtWidgets.QAction(agraeGUI().getIcon('add'),'Cargar Nuevos Lotes',self)
-        self.CargarLotes.triggered.connect(self.cargarLotes)
+        self.CargarLotes.triggered.connect(self.cargarLotesDialog)
 
         self.CrearCE = QtWidgets.QAction(agraeGUI().getIcon('segmentos'),'Cargar CE',self)
         self.CrearCE.triggered.connect(lambda : self.gestionarDatosBaseDialog(0))
@@ -252,7 +259,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.GenerarPanelesDialogAction = QtWidgets.QAction(agraeGUI().getIcon('chart-bar'),'Panel de Analisis Grafico',self)
         self.GenerarPanelesDialogAction.triggered.connect(self.loteAnliticDialog)
 
-        self.EditarLoteAction.triggered.connect(lambda: self.tools.enableElements(self.EditarLoteAction,[self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.ActualizarLoteAction,self.EliminarLoteAction, self.check_siembra, self.check_cosecha]))
+        self.EditarLoteAction.triggered.connect(lambda: self.tools.enableElements(self.EditarLoteAction,[self.line_nombre,self.line_produccion,self.line_prod_final,self.combo_cultivo,self.combo_regimen,self.ActualizarLoteAction,self.EliminarLoteAction, self.check_siembra, self.check_cosecha]))
         actions_lote = [self.GenerarPanelesDialogAction,self.EditarLoteAction,self.ActualizarLoteAction,self.ClimaLoteAction,self.EliminarLoteAction]
         self.tools.settingsToolsButtons(self.tool_lote, actions_lote)
 
@@ -382,13 +389,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         
         pass
     
-    def cargarLotes(self):
+    def cargarLotesDialog(self):
         layer = iface.activeLayer()
         dlg = CrearLotesDialog(layer)
         # dlg.expCreated.connect(lambda e: self.tools.messages('aGrae Tools','Explotacion {} creada correctamente'.format(e),3))
         # dlg.loteCreated.connect(self.afterLotesCreated)
         dlg.exec()
-
 
     def generateComposerDialog(self):
         group  = '{}-{}'.format(self.combo_campania.currentText()[2:],self.combo_explotacion.currentText())
@@ -397,6 +403,14 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
        
 
         dlg = agraeComposer(self.atlasLayers,self.combo_campania.currentData(),self.combo_explotacion.currentData())
+        dlg.exec()
+
+    def monitorRendimientoDialog(self):
+
+        dlg = MonitorRendimientosDialog(
+            idcampania=self.combo_campania.currentData(),
+            idexplotacion= self.combo_explotacion.currentData()
+        )
         dlg.exec()
 
     # FUCNTIONS
@@ -840,6 +854,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.idCultivo = feat['idcultivo']
         self.idRegimen = feat['idregimen']
         self.prodEsperada = feat['prod_esperada']
+        self.prodFinal = feat['prod_final']
         self.line_nombre.setText(self.nombreLote)
 
 
@@ -854,7 +869,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             else:
                 self.date_siembra.setEnabled(False)
 
-            self.label_status.setText('Siembra Activa')
+            self.label_status.setText('Cultivando')
             self.label_status.setStyleSheet("QLabel { background-color : green; color : white; }")
             self.fechaSiembra = feat['fechasiembra'].toString('yyyy-MM-dd')
             self.date_siembra.setDate(feat['fechasiembra'])
@@ -884,6 +899,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         regimen = self.combo_regimen.currentData() 
         nombre = self.line_nombre.text()
         produccion = self.line_produccion.value()
+        prod_final = self.line_prod_final.value()
         fechaSiembra = ''
         fechaCosecha = ''
         if self.check_siembra.isChecked():
@@ -894,7 +910,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         
         sql_lote = '''update agrae.lotes set nombre = '{}' where idlote = {}'''.format(nombre,self.idLote)
 
-        sql_data = '''update campaign.data set idcultivo = {}, idregimen = {}, fechasiembra = nullif('{}','')::date, fechacosecha = nullif('{}','')::date, prod_esperada = {} where iddata = {} '''.format(cultivo,regimen,fechaSiembra,fechaCosecha,produccion,self.idData)
+        sql_data = '''update campaign.data set idcultivo = {}, idregimen = {}, fechasiembra = nullif('{}','')::date, fechacosecha = nullif('{}','')::date, prod_esperada = {}, prod_final = {} where iddata = {} '''.format(cultivo,regimen,fechaSiembra,fechaCosecha,produccion,prod_final,self.idData)
         # print(sql_data)
         with self.conn.cursor() as cursor:
             try:

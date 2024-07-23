@@ -676,7 +676,7 @@ class GestionarExplotacionesDialog(QDialog):
                 sql = '''with data as (select '{}' as nombre, '{}' as direccion)
                     INSERT INTO agrae.explotacion (nombre,direccion)
                     select * from data
-                    ON CONFLICT(nombre) 
+                    ON CONFLICT(nombre,direccion) 
                     DO UPDATE SET
                     nombre = (select nombre from data),
                     direccion = (select direccion from data)

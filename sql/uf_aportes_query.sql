@@ -43,9 +43,9 @@ lotes as (select l.*,round((st_area(st_transform(l.geom,8857)) / 10000)::numeric
 	d.extraccionresiduok, 
 	d.prod_esperada from data d 
 	join agrae.lotes l on d.idlote = l.idlote
-	join agrae.cultivo cult on d.idcultivo = cult.idcultivo
-	join agrae.agricultor ag on d.idexplotacion = ag.idexplotacion
-	join agrae.persona per on per.idpersona = ag.idpersona),	
+	LEFT JOIN agrae.cultivo cult on d.idcultivo = cult.idcultivo
+	LEFT JOIN agrae.agricultor ag on d.idexplotacion = ag.idexplotacion
+	LEFT JOIN agrae.persona per on per.idpersona = ag.idpersona),	
 segmentos as (select distinct s.idsegmento,s.ceap,s.segmento,st_multi(st_intersection(s.geometria,l.geom)) as geometria, l.idlote, l.iddata, l.regimen from agrae.segmentos s join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),4)::geometry,s.geometria)),
 segm_analitica as (select 
 	m.codigo,
@@ -371,7 +371,7 @@ join necesidades_f nf using(idlote, iddata, uf, uf_etiqueta)
 aportes as (
 select
 n.idlote, n.iddata, n.uf, n.uf_etiqueta,n.prod_ponderada,
-concat(n.necesidad_n,'-',n.necesidad_p,'-',n.necesidad_k) necesidades_iniciales,
+concat(ROUND(n.necesidad_n),'-',ROUND(n.necesidad_p),'-',ROUND(n.necesidad_k)) necesidades_iniciales,
 coalesce(d.fertilizantefondoformula,'Sin Informacion') fertilizantefondoformula,
 	(CASE
             WHEN d.fertilizantefondoajustado::text ~~* 'n'::text AND n.necesidad_n > 0::double precision THEN round(n.necesidad_n / NULLIF((string_to_array(d.fertilizantefondoformula, '-'::text))[1]::double precision / 100::double precision, 0::double precision))

@@ -49,6 +49,8 @@ class agraeGUI():
          'tractor' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\tractor-solid.svg')),
          'pois' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\pois.svg')),
          'settings' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\gear-solid.svg')),
+         'rindes' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\rindes.svg')),
+         'satelite' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\satellite-solid.svg')),
          
 
         }
