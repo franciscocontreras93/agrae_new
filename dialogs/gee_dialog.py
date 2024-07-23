@@ -51,16 +51,19 @@ from ..gui.CustomPushButton import CustomPushButton
 
 class aGraeGEEDialog(QDialog):
     
-    def __init__(self):
+    def __init__(self,layer,idexplotacion):
         super().__init__()
         # self.core = aGraeGEE()
         # self.core.test()
         self.UIComponents()
-
-        self.resize(400,400)
+        self.idexplotacion = idexplotacion
+        self.resize(400,200)
 
         self.setWindowTitle('aGrae Google-Earth-Engine')
         # ee.Authenticate(auth_mode='localhost')
+
+        self.idexplotacion = idexplotacion
+        self.layer = layer
 
     def UIComponents(self):
         self.layout = QVBoxLayout()
@@ -94,6 +97,7 @@ class aGraeGEEDialog(QDialog):
         self.cloud.setMaximum(40)
         self.cloud.setValue(5)
 
+        
 
         
         
@@ -106,11 +110,18 @@ class aGraeGEEDialog(QDialog):
         sceneGroupLayout.addWidget(label_cloud,0,2)
         sceneGroupLayout.addWidget(self.cloud,1,2)
 
+
         self.sceneParametersGroup.setLayout(sceneGroupLayout)
 
         advanceGroupLayout = QGridLayout()
         self.advanceParametersGroup = QGroupBox()
         self.advanceParametersGroup.setTitle('Configurar Parametros de Kernel')
+        
+        label_buffer = QLabel('Radio del Buffer')
+        self.buffer = QSpinBox()
+        self.buffer.setMinimum(0)
+        self.buffer.setMaximum(20)
+        self.buffer.setValue(5)
 
         label_radius = QLabel('Radio del Kernel')
         self.kernel_radius = QSpinBox()
@@ -133,12 +144,14 @@ class aGraeGEEDialog(QDialog):
         self.kernel_magnitude.setValue(1)
 
         
-        advanceGroupLayout.addWidget(label_radius,0,0)
-        advanceGroupLayout.addWidget(self.kernel_radius,1,0)
-        advanceGroupLayout.addWidget(label_units,0,1)
-        advanceGroupLayout.addWidget(self.kernel_units,1,1)
-        advanceGroupLayout.addWidget(label_magnitude,0,2)
-        advanceGroupLayout.addWidget(self.kernel_magnitude,1,2)
+        advanceGroupLayout.addWidget(label_buffer,0,0)
+        advanceGroupLayout.addWidget(self.buffer,1,0)
+        advanceGroupLayout.addWidget(label_radius,0,1)
+        advanceGroupLayout.addWidget(self.kernel_radius,1,1)
+        advanceGroupLayout.addWidget(label_units,0,2)
+        advanceGroupLayout.addWidget(self.kernel_units,1,2)
+        advanceGroupLayout.addWidget(label_magnitude,0,3)
+        advanceGroupLayout.addWidget(self.kernel_magnitude,1,3)
 
 
 
@@ -152,7 +165,7 @@ class aGraeGEEDialog(QDialog):
 
 
 
-        self.layout.addWidget(self.layerGroup)
+        # self.layout.addWidget(self.layerGroup)
         self.layout.addWidget(self.sceneParametersGroup)
         self.layout.addWidget(self.advanceParametersGroup)
         self.layout.addWidget(self.btn_run)
@@ -162,9 +175,9 @@ class aGraeGEEDialog(QDialog):
 
 
     def execute(self):
-        from ..tools.geeCore import aGraeNDVI
+        from ..tools.geeCore import aGraeNDVIMulti
         
-        layer = self.layer.currentLayer()
+        # layer = self.layer.currentLayer()
         year = self.year.value()
         period = self.period.value()
         clouds = self.cloud.value()
@@ -173,11 +186,12 @@ class aGraeGEEDialog(QDialog):
         units = self.kernel_units.currentData()
         magnitude = self.kernel_magnitude.value()
 
-        core = aGraeNDVI(
-            layer=layer,
+        core = aGraeNDVIMulti(
+            layer=self.layer,
             year = year,
             period = period,
-            min_cloud= clouds,
+            max_clouds= clouds,
+            buffer_radius=self.buffer.value(),
             kernel_radius= radius,
             kernel_units= units,
             kernel_magnitude=magnitude

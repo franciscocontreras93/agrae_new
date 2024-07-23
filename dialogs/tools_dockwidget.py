@@ -31,6 +31,7 @@ from .cultivos_dialog import GestionarCultivosDialog
 from .parametros_dialog import GestionarParametrosDialog
 from .plots_dialog import agraePlotsDialog
 from .monitor_dialogs import MonitorRendimientosDialog
+from .gee_dialog import aGraeGEEDialog
 
 toolsDialog, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui/agrae_tools.ui'))
 
@@ -130,12 +131,22 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         #TODO
         self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Fertiliacion',self)
         self.GenerarResumenFertilizacion.triggered.connect(self.exportarResumen)
+
+        self.GenerarAmbientes = QtWidgets.QAction(agraeGUI().getIcon('satelite'),'Generar Mapas de Ambientes',self)
+        self.GenerarAmbientes.triggered.connect(self.geeDialog)
         #TODO
         self.MonitorDeRendimiento = QtWidgets.QAction(agraeGUI().getIcon('rindes'),'Monitor de Rendimiento',self)
         self.MonitorDeRendimiento.triggered.connect(self.monitorRendimientoDialog)
 
-        # actions_exp = [self.AsignarLotesExplotacion,self.CargarCapasExplotacion,self.GenerarReporteFertilizacion,self.GenerarUnidadesFertilizacion,self.GenerarResumenFertilizacion,self.MonitorDeRendimiento]
-        actions_exp = [self.AsignarLotesExplotacion,self.CargarCapasExplotacion,self.GenerarReporteFertilizacion,self.GenerarUnidadesFertilizacion,self.GenerarResumenFertilizacion]
+        actions_exp = [
+            self.AsignarLotesExplotacion,
+            self.CargarCapasExplotacion,
+            self.GenerarReporteFertilizacion,
+            self.GenerarUnidadesFertilizacion,
+            self.GenerarResumenFertilizacion,
+            self.GenerarAmbientes,
+            self.MonitorDeRendimiento]
+        # actions_exp = [self.AsignarLotesExplotacion,self.CargarCapasExplotacion,self.GenerarReporteFertilizacion,self.GenerarUnidadesFertilizacion,self.GenerarResumenFertilizacion]
         self.tools.settingsToolsButtons(self.tool_exp_2,actions_exp,icon=agraeGUI().getIcon('explotacion'),setMainIcon=True)
 
         # TOOL_LAB
@@ -368,8 +379,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         dlg.exec()
         # print(idExplotacion)
     
-
-
     def gestionAgricultorDialog(self):
         dlg = GestionAgricultorDialog()
         dlg.exec()
@@ -403,6 +412,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
        
 
         dlg = agraeComposer(self.atlasLayers,self.combo_campania.currentData(),self.combo_explotacion.currentData())
+        dlg.exec()
+
+    def geeDialog(self):
+        dlg = aGraeGEEDialog(self.layer,self.combo_explotacion.currentData())
         dlg.exec()
 
     def monitorRendimientoDialog(self):
@@ -443,8 +456,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             dlg = LoteWeatherDialog(self.featureLote)
             dlg.exec()
         
-    
-
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
 
@@ -493,8 +504,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             # else:
             variable = ''
             
-
-
     def infoLote(self,i):
         if i == 1:
             iface.mapCanvas().setMapTool(self.identifyTool)
@@ -571,6 +580,11 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         else: 
             print('Debe seleccionar uno o mas lotes')
 
+    def asignarCultivosLotes(self):
+        lotes = [f['iddata'] for f in self.layer.selectedFeatures()]
+        print(lotes)
+        pass
+
     def asignarExplotacionCampania(self,e:list):
         
         # PRIMERO DEBE CARGAR LA CAPA LOTES AL CANVAS
@@ -602,12 +616,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         else: 
             print('Debe seleccionar uno o mas lotes')
-
-
-
-
-
-
 
     def getLotesExplotacionLayer(self):
        
@@ -738,9 +746,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                     self.conn.rollback()
                     print(ex,'Error getExpData')
             
-            
-    
-
     def getCultivosData(self):
         with self.conn.cursor() as cursor:
             try:

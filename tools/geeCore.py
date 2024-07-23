@@ -216,3 +216,179 @@ class aGraeNDVI:
         print('**** Pre-Procesamiento Exitoso ****')
         
         self.executePostProcessing()
+
+
+
+class aGraeNDVIMulti:
+    def __init__(
+        self,
+        layer :QgsVectorLayer = iface.activeLayer(),
+        year : int =datetime.datetime.today().year ,
+        period: int = 5, 
+        max_clouds : int = 20,
+        buffer_radius : int = 5,
+        kernel_radius : int = 20,
+        kernel_units : int = 1,
+        kernel_magnitude : int = 1,
+        scale : int  = 1
+        ): 
+#        print('**** Inicializando Google-Earth-Engine ****')
+#        ee.Authenticate(auth_mode='localhost')
+        
+        ee.Initialize(project='ee-agraeproyectos')
+        print('**** Google-Earth-Engine Inicializado Correctamente ****')
+        
+        self._layer = layer
+        self._crs = self._layer.crs()
+        self._destCrs = QgsCoordinateReferenceSystem(4326)
+        self._tr = QgsCoordinateTransform(self._crs, self._destCrs, QgsProject.instance())
+        
+        self._year = year
+        self._initial_date = self._year  - period
+
+        self._years =  ee.List.sequence(self._initial_date, self._year)
+        self._buffer_radius = buffer_radius 
+        self._kernel_radius = kernel_radius 
+        self._kernel_magnitude = kernel_magnitude
+        self._kernel_units = kernel_units
+        
+        self._scale = scale
+        self._max_clouds = max_clouds
+                
+    def getGeometry(self,feature):
+        geom = feature.geometry()
+        geom.transform(self._tr)
+        
+        if geom.isMultipart():
+            poly = geom.asMultiPolygon() 
+            n = len(poly[0][0])
+            coords = [[poly[0][0][i][0],poly[0][0][i][1]] for i in range(n)]
+        else:
+            poly = geom.asPolygon() 
+            coords = []
+            for pol in poly:
+                for c in pol:
+                    coords.append([c[0],c[1]])
+            
+        geometry = ee.Geometry.Polygon(coords) 
+        geometry = geometry.buffer(self._buffer_radius)
+        return geometry
+    def addNDVI(self,image): return image.addBands(image.normalizedDifference(['B8','B4']))
+    
+    def processingScene(self,y):
+        return self.sceneNDVI.filter(ee.Filter.calendarRange(y, y, 'year')).reduce(ee.Reducer.max()) 
+        
+    def getSceneNDVI (self):
+        
+        imageCollection = ee.ImageCollection('COPERNICUS/S2_SR').filterBounds(self.geometry).filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', self._max_clouds).filter(ee.Filter.calendarRange(self._years.get(0),self._years.get(-1),'year'))
+        scene = imageCollection.map(self.addNDVI)
+        scene = scene.select(['nd'])
+        scene = scene.map(self.clipScene)
+        return  scene
+    
+    def getProcessedScene(self):
+        processed = self._years.map(lambda y: self.processingScene(y))
+        return processed
+    def clipScene(self,image):
+        return image.clip(self.geometry)
+        
+    def getConvolve(self,image):
+        units = {
+            1 : 'pixels',
+            2 : 'meters'
+        }
+        filter = ee.Kernel.square(
+          radius= self._kernel_radius,
+          units= units[self._kernel_units],
+          magnitude = self._kernel_magnitude,
+          normalize = True
+        )
+        return image.convolve(filter)
+    
+    def getPercentiles(self,image : ee.Image , percentiles : list = [25,50,75]):
+        return image.reduceRegion(ee.Reducer.percentile(percentiles), self.geometry, 1)
+    
+#   
+    def getReclassifiedImage(self,image):
+        NDVIConvolve = self.getConvolve(
+            image = image
+        )
+        
+        percentile = self.getPercentiles(NDVIConvolve)
+        expression = ee.String('(b(0) <= ').cat(ee.Number(percentile.get('nd_max_p25').getInfo()).format()).cat(') ? 20 : (b(0) <= ').cat(ee.Number(percentile.get('nd_max_p50').getInfo()).format()).cat(') ? 40 : 60')
+        reclass = NDVIConvolve.expression(expression)
+        return reclass
+        
+    def getAmbientes(self,image):
+        ambientes = image.reduceToVectors(
+          scale = self._scale,
+          labelProperty = 'ambiente',
+          bestEffort = False,
+          geometry = self.geometry
+          )
+        
+        return ambientes
+          
+    def imageDownloadURL(self,image):
+        return image.getDownloadURL({
+            'format':'GeoTIFF',
+            'crs': 'EPSG:3857',
+            'region': self.geometry,
+            'scale':10
+            })
+    def vectorDownloadURL(self,vector):
+        return vector.getDownloadURL('geojson')
+        
+        
+    def downloadImage(self,image,name='temp'):
+        temp = tempfile.gettempdir()
+        url = self.imageDownloadURL(image)
+        downloadPath = os.path.join(tempfile.gettempdir(),f"{name}.tiff")
+        request.urlretrieve(url,downloadPath)
+        fileName = os.path.basename(downloadPath)
+        r = QgsRasterLayer(downloadPath,'NDVI_GEE_Layer')
+#        QgsProject.instance().addMapLayer(r)
+        return r
+        
+    def downloadVector(self,vector,name='vector_temp'):
+        downloadPath = os.path.join(tempfile.gettempdir(),f"{name}.geojson")
+        url=self.vectorDownloadURL(vector)
+        request.urlretrieve(url,downloadPath)
+        v = QgsVectorLayer(downloadPath,'Ambientes_GEE_Layer')
+#        QgsProject.instance().addMapLayer(v)
+        return v
+    
+        
+    def execute(self):
+        print('**** Ejecutando algoritmo de Post-Procesamiento. ****')
+        processing.runAndLoadResults("model:1_Post-procesado", {
+        'capa_ambientes_gee':self.ambientesLayer,
+        'capa_ndvi_gee':self.ndviLayer,
+        'lote':QgsProcessingFeatureSourceDefinition(self._layer.source() , selectedFeaturesOnly=True, featureLimit=-1, geometryCheck=QgsFeatureRequest.GeometryAbortOnInvalid),
+        'mapa_de_ambientes':'TEMPORARY_OUTPUT'})
+        print('**** Mapa de Ambientes generado Correctamente ****')
+    def run(self):
+        print('**** Ejecutando algoritmo de Pre-Procesamiento en GEE. ****\n**** Este proceso puede tardar algunos minutos. ****')
+        # exp = QgsExpression('idexplotacion = {}'.format(self.idexplotacion))
+        for feature in [f for f in self._layer.selectedFeatures()]:
+            self.geometry = self.getGeometry(feature)
+            self.sceneNDVI = self.getSceneNDVI()
+            self.processed = ee.ImageCollection.fromImages(self.getProcessedScene())
+            self.NDVImax = self.processed.median()
+            self.reclassified = self.getReclassifiedImage(self.NDVImax)
+            self.ambientes = self.getAmbientes(self.reclassified)
+            
+            self.ndviLayer = self.downloadImage(self.NDVImax)
+            self.ambientesLayer = self.downloadVector(self.ambientes)
+            print('**** Pre-Procesamiento Exitoso ****')
+            
+            self.execute()
+        
+
+# core = aGraeNDVI(year = 2024 , 
+#     buffer_radius = 1 , 
+#     min_cloud = 5,
+#     kernel_radius = 10, 
+#     kernel_magnitude = 2
+#     )
+# core.run()
