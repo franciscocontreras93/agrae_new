@@ -131,18 +131,32 @@ class GestionPersonasDialog(QDialog,agraePersonasDialog_):
                 TELEFONO = self.ln_phone.text()
                 EMAIL = self.ln_email.text()
                 
+                if self.idPersona == None:
+                    sql = '''with data as (select '{}' as dni, '{}' as nombre, '{}' as apellidos, '{}' as direccion, '{}' as telefono, '{}' as email)
+                    INSERT INTO agrae.persona (dni,nombre,apellidos,direccion,telefono,email)
+                    select dni,nombre,apellidos,direccion,telefono,email from data
+                    ON CONFLICT(dni) 
+                    DO UPDATE SET
+                    nombre = (select nombre from data),
+                    apellidos = (select apellidos from data),
+                    direccion = (select direccion from data),
+                    telefono = (select telefono from data),
+                    email = (select email from data)
+                    where agrae.persona.dni = (select dni from data) ;'''.format(DNI.upper(),NOMBRE.upper(),APELLIDO.upper(),DIRECCION,TELEFONO,EMAIL)
+                
+                else:
 
-                sql = '''with data as (select '{}' as dni, '{}' as nombre, '{}' as apellidos, '{}' as direccion, '{}' as telefono, '{}' as email)
-                INSERT INTO agrae.persona (dni,nombre,apellidos,direccion,telefono,email)
-                select dni,nombre,apellidos,direccion,telefono,email from data
-                ON CONFLICT(dni) 
-                DO UPDATE SET
-                nombre = (select nombre from data),
-                apellidos = (select apellidos from data),
-                direccion = (select direccion from data),
-                telefono = (select telefono from data),
-                email = (select email from data)
-                where agrae.persona.dni = (select dni from data) ;'''.format(DNI.upper(),NOMBRE.upper(),APELLIDO.upper(),DIRECCION,TELEFONO,EMAIL)
+                    sql = '''with data as (select '{}' as dni, '{}' as nombre, '{}' as apellidos, '{}' as direccion, '{}' as telefono, '{}' as email)
+                    UPDATE agrae.persona SET
+                    dni = (select dni from data),
+                    nombre = (select nombre from data),
+                    apellidos = (select apellidos from data),
+                    direccion = (select direccion from data),
+                    telefono = (select telefono from data),
+                    email = (select email from data)
+                    where idpersona = {} ;'''.format(DNI.upper(),NOMBRE.upper(),APELLIDO.upper(),DIRECCION,TELEFONO,EMAIL,self.idPersona)
+
+
                 
                 cursor.execute(sql)
                 self.conn.commit()

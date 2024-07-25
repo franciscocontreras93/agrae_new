@@ -572,7 +572,7 @@ class GestionarExplotacionesDialog(QDialog):
         self.tools = aGraeTools()
         self.conn = agraeDataBaseDriver().connection()
         self.completer = self.tools.dataCompleter('select nombre,direccion from agrae.explotacion')
-        self.idExplotacion = 0
+        self.idExplotacion = None
         self.UIComponents()
         self.getData()
 
@@ -671,8 +671,9 @@ class GestionarExplotacionesDialog(QDialog):
         nombre = self.ln_name.text()
         direccion = self.ln_dir.toPlainText()
         
-        if nombre != '' and direccion != '':
-            try:
+        
+        try:
+            if nombre != '' and direccion != '' and  self.idExplotacion == None:
                 sql = '''with data as (select '{}' as nombre, '{}' as direccion)
                     INSERT INTO agrae.explotacion (nombre,direccion)
                     select * from data
@@ -682,24 +683,38 @@ class GestionarExplotacionesDialog(QDialog):
                     direccion = (select direccion from data)
                     where agrae.explotacion.idexplotacion = {} ;'''.format(nombre,direccion,self.idExplotacion)
                 # print(sql)
-                with self.conn.cursor() as cursor:
-                    cursor.execute(sql)
-                    self.conn.commit()
-                    QgsMessageLog.logMessage("Explotacion {} creada correctamente".format(nombre), 'aGrae GIS', level=3)
-                    QMessageBox.about(self, "aGrae GIS:", "Explotacion {} creada correctamente".format(nombre))
-                    self.tools.clearWidget([
-                        self.ln_name, 
-                        self.ln_dir
-                    ])
-                    self.getData()
+            if nombre != '' and direccion != '' and self.idExplotacion != None:
+                sql = '''
+                with data as (select '{}' as nombre, '{}' as direccion)
+                update agrae.explotacion set
+                nombre = (select nombre from data),
+                direccion = (select direccion from data)
+                where agrae.explotacion.idexplotacion = {};
+                '''.format(nombre,direccion,self.idExplotacion)
                 
-            except Exception as ex:
-                QgsMessageLog.logMessage("{}".format(ex), 'aGrae GIS', level=1)
-                QMessageBox.about(self, "aGrae GIS:", "Ocurrio un Error, revisar el panel de registros.".format())
-                self.conn.rollback()
+            with self.conn.cursor() as cursor:
+                cursor.execute(sql)
+                self.conn.commit()
+                QgsMessageLog.logMessage("Explotacion {} creada correctamente".format(nombre), 'aGrae GIS', level=3)
+                QMessageBox.about(self, "aGrae GIS:", "Explotacion {} creada correctamente".format(nombre))
+                self.tools.clearWidget([
+                    self.ln_name, 
+                    self.ln_dir
+                ])
+                self.getData()
+            
+        except Exception as ex:
+            QgsMessageLog.logMessage("{}".format(ex), 'aGrae GIS', level=1)
+            QMessageBox.about(self, "aGrae GIS:", "Ocurrio un Error, revisar el panel de registros.".format())
+            self.conn.rollback()
 
-            finally:
-                self.tabWidget.setCurrentIndex(0)
+        finally:
+            self.tabWidget.setCurrentIndex(0)
+
+
+        
+
+        
 
     def delete(self):
         row = self.tableWidget.currentRow()
