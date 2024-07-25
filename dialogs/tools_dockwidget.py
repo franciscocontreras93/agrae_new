@@ -400,7 +400,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     
     def cargarLotesDialog(self):
         layer = iface.activeLayer()
-        dlg = CrearLotesDialog(layer)
+        dlg = CrearLotesDialog(layer,self.combo_campania.currentData(),self.combo_explotacion.currentData())
         # dlg.expCreated.connect(lambda e: self.tools.messages('aGrae Tools','Explotacion {} creada correctamente'.format(e),3))
         # dlg.loteCreated.connect(self.afterLotesCreated)
         dlg.exec()

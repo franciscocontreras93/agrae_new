@@ -320,7 +320,7 @@ class MonitorRendimientosDialog(QDialog):
         # fecha = self.layer_rinde_date.date().toString('yyyy/MM/dd')
         # print(fecha)
 
-        aGraeTools().cargarRindes(
+        aGraeTools().crearRindes(
                 layer=self.layer_rinde_combo.currentLayer(),
                 field_volumen=self.volumen_field_combo.currentField(),
                 field_humedad=self.humedad_field_combo.currentField(),

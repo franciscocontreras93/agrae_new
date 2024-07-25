@@ -81,7 +81,7 @@ class GestionDatosBaseDialog(QDialog,agraeDatosBaseDialog):
 class CrearLotesDialog(QDialog):
     closingPlugin = pyqtSignal()
     # idExplotacionSignal = pyqtSignal(list)
-    def __init__(self, layer: QgsVectorLayer):
+    def __init__(self, layer: QgsVectorLayer,idcampania:int=None,idexplotacion:int=None):
         super().__init__()
         self.layer = layer
         self.setWindowTitle('Cargar Lotes desde la capa {}'.format(self.layer.name()))
@@ -91,6 +91,9 @@ class CrearLotesDialog(QDialog):
         self.conn = agraeDataBaseDriver().connection()
 
         self.UIComponents()
+
+        self.idcampania = idcampania
+        self.idexplotacion = idexplotacion
 
     def UIComponents(self):
         self.layout = QGridLayout()
@@ -105,13 +108,17 @@ class CrearLotesDialog(QDialog):
         self.combo_nombre = QgsFieldComboBox()
         self.combo_nombre.setLayer(self.layer)
 
+        self.selector = QCheckBox('Añadir lotes a la Explotacion Actual')
+
         self.btn_cargar = QPushButton('Cargar Lotes')
         self.btn_cargar.clicked.connect(self.loadLotes)
         
 
         self.groupBoxLayout.addWidget(self.label_1,0,0)
         self.groupBoxLayout.addWidget(self.combo_nombre,1,0)
-        self.groupBoxLayout.addWidget(self.btn_cargar,2,0)
+        self.groupBoxLayout.addWidget(self.selector,2,0)
+        self.groupBoxLayout.addWidget(self.btn_cargar,3,0)
+
 
 
         self.groupBox.setLayout(self.groupBoxLayout)
@@ -122,40 +129,31 @@ class CrearLotesDialog(QDialog):
 
     def loadLotes(self):
 
-        # layer = iface.activeLayer()
-        # sourceCrs = layer.crs()
-        # crsBase = QgsCoordinateReferenceSystem(4326)
-        # tr = QgsCoordinateTransform(sourceCrs, crsBase, QgsProject.instance())
-
-        # for f in iter(layer.getSelectedFeatures()):
-        #     geom = f.geometry()
-        #     geom.transform(tr)
-        #     print(geom)
-        
         sourceCrs = self.layer.crs()
         crsBase = QgsCoordinateReferenceSystem(4326)
         tr = QgsCoordinateTransform(sourceCrs, crsBase, QgsProject.instance())
         selection = [f for f in self.layer.getSelectedFeatures()]
-        sql = self.agraeSql.getSql('create_lote.sql')
-        # reply = QtWidgets.QMessageBox.question(None,'aGrae Toolbox',question,QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
-        # if reply == QtWidgets.QMessageBox.Yes:
-        #     return action
-
-        for f in selection: 
-            nombre = str(f[self.combo_nombre.currentField()])
-            for e in ['/','-']:
-                nombre.replace(e,'_')
+        if self.selector.isChecked():
+            sql = self.agraeSql.getSql('new_lote_assign_copy.sql')
+        else:
+            sql = self.agraeSql.getSql('create_lote.sql')
+        
+        with self.conn.cursor() as cursor:
+            for f in selection: 
+                nombre = str(f[self.combo_nombre.currentField()])
+                for e in ['/','-']:
+                    nombre.replace(e,'_')
+                    
+                geom = f.geometry()
+                if sourceCrs != crsBase:
+                    geom.transform(tr)
+                if self.selector.isChecked():
+                    query = sql.format(nombre,geom.asWkt(),self.idcampania,self.idexplotacion)
+                else:
+                    query = sql.format(nombre,geom.asWkt())
                 
-            geom = f.geometry()
-            if sourceCrs != crsBase:
-                geom.transform(tr)
-            
-            query = sql.format(nombre,geom.asWkt())
-            # print(query)
+                # print(query)
 
-
-            
-            with self.conn.cursor() as cursor: 
                 try:
                     cursor.execute(query)
                     response = cursor.fetchone()
@@ -169,8 +167,11 @@ class CrearLotesDialog(QDialog):
                         self.tools.messages('Lote: {} ya existe en la Base de Datos'.format(nombre),1)
                         QgsMessageLog.logMessage('Lote: {} ya existe en la Base de Datos'.format(nombre), 'aGrae Logs', 1)
                         self.conn.rollback()
+
+                    # print(query)
+
                 except Exception as ex:
-                    # print(ex)
+                    print(ex)
                     self.conn.rollback()
             # print(query) 
         

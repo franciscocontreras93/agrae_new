@@ -311,7 +311,7 @@ class aGraeTools():
 
         pass
         
-    def cargarRindes(self,
+    def crearRindes(self,
                      layer:QgsVectorLayer,
                      field_volumen:QgsField,
                      field_humedad:QgsField,
