@@ -117,8 +117,11 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         # TOOLBUTTONS 
         # TOOL_EXP_2
 
-        self.AsignarLotesExplotacion = QtWidgets.QAction(agraeGUI().getIcon('selection'),'Asignar Lotes a Explotacion',self)
+        self.AsignarLotesExplotacion = QtWidgets.QAction(agraeGUI().getIcon('selection'),'Asignar Lotes Seleccionados a Explotacion',self)
         self.AsignarLotesExplotacion.triggered.connect(self.asignarLotesExp)
+
+        self.AsignarCultivosLotes = QtWidgets.QAction(agraeGUI().getIcon('select-cultivo'),'Asignar Cultivos a Lotes Seleccionados',self)
+        self.AsignarCultivosLotes.triggered.connect(self.asignarCultivosLotes)
 
         self.CargarCapasExplotacion = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar capas de Explotacion',self)
         self.CargarCapasExplotacion.triggered.connect(self.generarCapasExplotacion)
@@ -140,6 +143,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         actions_exp = [
             self.AsignarLotesExplotacion,
+            self.AsignarCultivosLotes,
             self.CargarCapasExplotacion,
             self.GenerarReporteFertilizacion,
             self.GenerarUnidadesFertilizacion,
@@ -271,7 +275,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.GenerarPanelesDialogAction.triggered.connect(self.loteAnliticDialog)
 
         self.EditarLoteAction.triggered.connect(lambda: self.tools.enableElements(self.EditarLoteAction,[self.line_nombre,self.line_produccion,self.line_prod_final,self.combo_cultivo,self.combo_regimen,self.ActualizarLoteAction,self.EliminarLoteAction, self.check_siembra, self.check_cosecha]))
-        actions_lote = [self.GenerarPanelesDialogAction,self.EditarLoteAction,self.ActualizarLoteAction,self.ClimaLoteAction,self.EliminarLoteAction]
+        actions_lote = [self.EditarLoteAction,self.ActualizarLoteAction,self.ClimaLoteAction,self.GenerarPanelesDialogAction,self.EliminarLoteAction,]
         self.tools.settingsToolsButtons(self.tool_lote, actions_lote)
 
         # TOOL_FERT
@@ -417,6 +421,29 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     def geeDialog(self):
         dlg = aGraeGEEDialog(self.layer,self.combo_explotacion.currentData())
         dlg.exec()
+
+    def asignarCultivosLotes(self):
+            
+        dlg = GestionarCultivosDialog()
+        dlg.tableWidget.doubleClicked.disconnect()
+        dlg.tableWidget.doubleClicked.connect(dlg.getIdCultivoSignal)
+        dlg.idCultivoSignal.connect(self.getIdCultivo)
+        
+        dlg.exec()
+
+        lotes = [str(f['iddata']) for f in self.layer.selectedFeatures()]
+        try:
+            self.tools.asignarMultiplesCultivos(self.idCultivo,lotes)
+        except Exception as ex:
+          print(ex)
+          
+        finally:
+          self.idCultivo = None
+        
+
+    def getIdCultivo(self,data):
+        self.idCultivo = data
+        
 
     def monitorRendimientoDialog(self):
 
@@ -580,10 +607,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         else: 
             print('Debe seleccionar uno o mas lotes')
 
-    def asignarCultivosLotes(self):
-        lotes = [f['iddata'] for f in self.layer.selectedFeatures()]
-        print(lotes)
-        pass
+    
 
     def asignarExplotacionCampania(self,e:list):
         
@@ -1151,7 +1175,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             'Ceap36 Infiltracion': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap90 Textura': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap90 Infiltracion': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
-            
+            'Rendimiento' : aGraeSQLTools().getSql('rindes_layer_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
         }
 
         

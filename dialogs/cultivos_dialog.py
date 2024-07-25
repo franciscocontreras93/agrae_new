@@ -20,6 +20,8 @@ dialog, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui/cultivo_d
 
 
 class GestionarCultivosDialog(QtWidgets.QDialog,dialog):
+    idCultivoSignal = pyqtSignal(int)
+
     def __init__(self, parent=None):
         super(GestionarCultivosDialog,self).__init__(parent)
         self.tools = aGraeTools()
@@ -29,6 +31,8 @@ class GestionarCultivosDialog(QtWidgets.QDialog,dialog):
         self.setupUi(self)
         self.UIComponents()
         self.getData()
+
+        self.setModal(False)
         
     
     def UIComponents(self):
@@ -241,3 +245,10 @@ class GestionarCultivosDialog(QtWidgets.QDialog,dialog):
                 e.setValue(0)
             elif isinstance( e, QLineEdit):
                 e.clear()
+
+    def getIdCultivoSignal(self):
+        row = self.tableWidget.currentRow()
+        self.idCultivo = int(self.tableWidget.item(row,0).text())
+        self.idCultivoSignal.emit(self.idCultivo)
+        # return self.idCultivo
+        self.close()

@@ -95,6 +95,9 @@ class CrearLotesDialog(QDialog):
         self.idcampania = idcampania
         self.idexplotacion = idexplotacion
 
+        self.resize(300,200)
+        self.setModal(False)
+
     def UIComponents(self):
         self.layout = QGridLayout()
         

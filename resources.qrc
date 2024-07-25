@@ -5,6 +5,7 @@
         <file>gui\icons\icon.svg</file>
 
         <file>gui\icons\arrow.svg</file>
+        <file>gui\icons\arrow-cultivo.svg</file>
         <file>gui\icons\pen-solid.svg</file>
         <file>gui\icons\pen-to-square-solid.svg</file>
         <file>gui\icons\trash-solid.svg</file>

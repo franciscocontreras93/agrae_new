@@ -50,7 +50,6 @@ class aGraeTools():
         else:
             toolbutton.setDefaultAction(actions[0])
 
-
     def messages(self,title:str,text:str,level,duration:int=2,alert=False):
         """Levels:\n
         0.  Info\n
@@ -131,7 +130,6 @@ class aGraeTools():
             except Exception as ex:
                 print(ex)
                 self.conn.rollback()
-
 
     def populateTable(self,sql:str,tableWidget:QtWidgets.QTableWidget, action=False):
         with self.conn.cursor() as cursor:
@@ -346,8 +344,6 @@ class aGraeTools():
                 self.messages('Monitor de Rendimiento', ex,2,alert=True)
                 self.conn.rollback()
     
-       
-
     def reprojectLayer(self,layer,target_crs):
         parameter = {
             'INPUT': layer,
@@ -362,7 +358,6 @@ class aGraeTools():
         QgsProject.instance().addMapLayer(layer)
         iface.actionSelect().trigger()
         iface.setActiveLayer(layer)
-
 
     def getDataBaseLayerUri(self,idcampania,idexplotacion,name):
         dns = agraeDataBaseDriver().getDSN()
@@ -688,7 +683,6 @@ class aGraeTools():
 
             print(ex)
 
-       
     def exportarResumenFertilizacion(self,idcampania:int,idexplotacion:int,nameExp:str):
         s = QSettings('agrae','dbConnection')
         path = s.value('reporte_path')
@@ -881,3 +875,27 @@ class aGraeTools():
             
         except Exception as ex:
             print(ex)
+
+    def asignarMultiplesCultivos(self,idcultivo:int,data:list):
+        sql = '''UPDATE campaign.data
+        SET idcultivo={}
+        WHERE iddata in ({})'''.format(idcultivo,','.join(data))
+        with self.conn.cursor() as cursor:
+            try:
+                cursor.execute(sql)
+                self.conn.commit()
+
+                self.messages('aGrae Tools','Se Asignaron los cultivos Correctamente.',3)
+            
+            except Exception as ex:
+                self.messages('aGrae Tools','No se pudieron asignar los cultivos.\n {}'.format(ex),2,alert=True)
+                raise Exception(ex)
+
+
+    
+
+
+
+
+            
+

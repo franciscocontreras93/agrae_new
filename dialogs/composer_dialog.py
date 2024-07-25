@@ -22,6 +22,7 @@ class agraeComposer(QDialog,agraeComposerDialog):
         self.layers = layers
         self.composerTools = aGraeComposerTools(self.layers,idcampania,idexplotacion)
         self.setWindowTitle('Generar Reporte de Preescripcion')
+        self.setModal(False)
         
 
         # self.threadpool = QThreadPool()

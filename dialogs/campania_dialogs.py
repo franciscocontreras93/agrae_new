@@ -38,6 +38,8 @@ class CreateCampaniaDialog(QDialog):
 
         self.date_test = 'NULL'
 
+        self.setModal(False)
+
     def UIComponents(self):
         
         self.layout = QGridLayout()
