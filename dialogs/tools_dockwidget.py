@@ -120,7 +120,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.AsignarLotesExplotacion = QtWidgets.QAction(agraeGUI().getIcon('selection'),'Asignar Lotes Seleccionados a Explotacion',self)
         self.AsignarLotesExplotacion.triggered.connect(self.asignarLotesExp)
 
-        self.AsignarCultivosLotes = QtWidgets.QAction(agraeGUI().getIcon('select-cultivo'),'Asignar Cultivos a Lotes Seleccionados',self)
+        self.AsignarCultivosLotes = QtWidgets.QAction(agraeGUI().getIcon('select-cultivo'),'Asignar Cultivo a Lotes Seleccionados',self)
         self.AsignarCultivosLotes.triggered.connect(self.asignarCultivosLotes)
 
         self.CargarCapasExplotacion = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar capas de Explotacion',self)
@@ -1120,7 +1120,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         question = 'Quieres eliminar el lote {}?, esta acción eliminará\nsolo los datos asociados a la campaña.'.format(self.nombreLote)
         sql = '''delete from campaign.data where iddata = {}'''.format(self.idData)
         actions = [self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.date_siembra,self.date_cosecha,self.ActualizarLoteAction,self.EliminarLoteAction]
-        self.tools.deleteAction(question,sql,self.EditarLoteAction,actions)
+        try:
+            self.tools.deleteAction(question,sql,self.EditarLoteAction,actions)
+            self.tools.messages('aGrae Tools','Se elimino el lote {} de la explotacion actual.'.format(self.nombreLote),3,duration=5)
+        except Exception as ex:
+            print(ex)
+            self.tools.messages('aGrae Tools','No se pudo eliminar el lote'.format(self.nombreLote),2,alert=True)
 
 
     def crearFormatoAnalitica(self):

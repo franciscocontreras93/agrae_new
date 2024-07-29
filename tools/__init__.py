@@ -79,7 +79,7 @@ class aGraeTools():
                     self.conn.commit()
                 except Exception as ex:
                     self.conn.rollback()
-                    print('{}'.format(ex))
+                    raise Exception(ex)
         
         if widget and actions:
             widget.setChecked(False)

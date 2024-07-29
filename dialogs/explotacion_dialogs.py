@@ -674,14 +674,18 @@ class GestionarExplotacionesDialog(QDialog):
         
         try:
             if nombre != '' and direccion != '' and  self.idExplotacion == None:
+                # sql = '''with data as (select '{}' as nombre, '{}' as direccion)
+                #     INSERT INTO agrae.explotacion (nombre,direccion)
+                #     select * from data
+                #     ON CONFLICT(nombre,direccion) 
+                #     DO UPDATE SET
+                #     nombre = (select nombre from data),
+                #     direccion = (select direccion from data)
+                #     where agrae.explotacion.idexplotacion = {} ;'''.format(nombre,direccion,self.idExplotacion)
                 sql = '''with data as (select '{}' as nombre, '{}' as direccion)
                     INSERT INTO agrae.explotacion (nombre,direccion)
                     select * from data
-                    ON CONFLICT(nombre,direccion) 
-                    DO UPDATE SET
-                    nombre = (select nombre from data),
-                    direccion = (select direccion from data)
-                    where agrae.explotacion.idexplotacion = {} ;'''.format(nombre,direccion,self.idExplotacion)
+                    '''.format(nombre,direccion,self.idExplotacion)
                 # print(sql)
             if nombre != '' and direccion != '' and self.idExplotacion != None:
                 sql = '''
@@ -704,6 +708,7 @@ class GestionarExplotacionesDialog(QDialog):
                 self.getData()
             
         except Exception as ex:
+            # print(ex)
             QgsMessageLog.logMessage("{}".format(ex), 'aGrae GIS', level=1)
             QMessageBox.about(self, "aGrae GIS:", "Ocurrio un Error, revisar el panel de registros.".format())
             self.conn.rollback()
