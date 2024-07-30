@@ -196,6 +196,9 @@
              <property name="editable">
               <bool>false</bool>
              </property>
+             <property name="insertPolicy">
+              <enum>QComboBox::NoInsert</enum>
+             </property>
              <item>
               <property name="text">
                <string>Seleccionar Cultivo...</string>
@@ -558,6 +561,9 @@
         <widget class="QComboBox" name="combo_explotacion">
          <property name="editable">
           <bool>true</bool>
+         </property>
+         <property name="insertPolicy">
+          <enum>QComboBox::NoInsert</enum>
          </property>
         </widget>
        </item>

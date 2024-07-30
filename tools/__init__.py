@@ -9,6 +9,7 @@ from psycopg2 import extras, Binary
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtWidgets import *
 from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import Qt
 from qgis.utils import iface 
 from qgis.core import *
 from qgis.PyQt.QtCore import  QVariant, QSettings, QSize,QDateTime
@@ -94,18 +95,22 @@ class aGraeTools():
 
         pass
     
-    def dataCompleter(self,sql:str) -> list:
-        with self.conn.cursor() as cursor:
-            cursor.execute(sql)
-            data = []
-            for t in cursor.fetchall():
-                for i in t:
-                    data.append(i)
+    def dataCompleter(self,sql:str=None,data_combo:list=None) -> list:
+        if sql:
+            with self.conn.cursor() as cursor:
+                cursor.execute(sql)
+                data = []
+                for t in cursor.fetchall():
+                    for i in t:
+                        data.append(i)
+        if data_combo:
+            data = data_combo
 
-            data = set(data)
-            completer = QCompleter(data)
-            completer.setCaseSensitivity(False)
-            return completer
+        data = set(data)
+        completer = QCompleter(data)
+        completer.setCaseSensitivity(False)
+        completer.setFilterMode(Qt.MatchContains)
+        return completer
     
     def searchGetData(self,lineWidget:QLineEdit,tableWidget:QTableWidget,param:str,query_empty:str,query_param:str):
         if param == '':

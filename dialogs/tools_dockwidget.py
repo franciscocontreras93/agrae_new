@@ -746,8 +746,13 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                     data = cursor.fetchall()
                     # print(idcampania)
                     if len(data) >= 1 and self.combo_campania.currentData() != None:
+                        data_completer = [e[0] for e in data]
                         for e in data:
                             self.combo_explotacion.addItem(e[0],e[1])
+                        
+                        exp_completer = self.tools.dataCompleter(data_combo=data_completer)
+                        self.combo_explotacion.setCompleter(exp_completer)
+
                         
                         sql_date_camp = 'select fecha_desde, fecha_hasta from campaign.campanias where id = {}'.format(self.combo_campania.currentData())
                         cursor.execute(sql_date_camp)
@@ -760,7 +765,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                             self.date_siembra.setMaximumDate(data[1])
                             self.date_cosecha.setMinimumDate(data[0])
                             self.date_cosecha.setMaximumDate(data[1])
-                        except:
+                        except Exception as ex:
+                            print(ex)
                             pass
 
                     
