@@ -636,7 +636,7 @@ class GestionarExplotacionesDialog(QDialog):
 
 
     def getData(self):
-        param = self.ln_search.text()
+        param = str(self.ln_search.text()).rstrip()
         if param == '':
             sql =  sql = ''' select e.idexplotacion, e.nombre,count(a.idagricultor) agricultores, e.direccion from agrae.explotacion e
             left join agrae.agricultor a on a.idexplotacion = e.idexplotacion

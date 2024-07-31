@@ -28,7 +28,7 @@ from qgis.PyQt.QtWidgets import (
  
     
     )
-from qgis.PyQt.QtCore import pyqtSignal, QSettings, QVariant, Qt, QSize
+from qgis.PyQt.QtCore import pyqtSignal, QSettings, QVariant, Qt, QSize,QThreadPool
 from qgis.core import *
 from qgis.gui import * 
 from qgis.utils import iface
@@ -37,12 +37,14 @@ from qgis.PyQt import uic
 
 from ..gui import agraeGUI
 from ..tools import aGraeTools
-
+from ..tools.worker import Worker
 
 from ..gui.CustomLineEdit import CustomLineEdit
 from ..gui.CustomLineSearch import CustomLineSearch
 from ..gui.CustomTable import CustomTable
 from ..gui.CustomPushButton import CustomPushButton
+
+import threading
 
 
 
@@ -64,6 +66,9 @@ class aGraeGEEDialog(QDialog):
 
         self.idexplotacion = idexplotacion
         self.layer = layer
+
+        self.tools = aGraeTools()
+        self.threadpool = QThreadPool()
 
     def UIComponents(self):
         self.layout = QVBoxLayout()
@@ -158,7 +163,7 @@ class aGraeGEEDialog(QDialog):
 
         self.advanceParametersGroup.setLayout(advanceGroupLayout)
         self.btn_run = QPushButton('Ejecutar')
-        self.btn_run.clicked.connect(self.execute)
+        self.btn_run.clicked.connect(self.run)
         
 
 
@@ -198,6 +203,18 @@ class aGraeGEEDialog(QDialog):
             )
         
         core.run()
+
+    def run(self):
+    
+        self.tools.messages('aGrae GEE','Generando Mapas de Ambientes, este proceso puede tardar varios minutos.\nPorfavor espere un momento.',alert=True)
+        # print('worker')
+        worker = Worker(lambda: self.execute())
+        # worker.signals.finished.connect(lambda: self.tools.UserMessages('Archivos generados correctamente',level=Qgis.Success))
+        worker.signals.finished.connect(lambda: iface.messageBar().pushMessage("aGrae GIS", 'Archivos generados correctamente', level=Qgis.Success))
+        self.threadpool.start(worker)
+
+
+    
 
         
 

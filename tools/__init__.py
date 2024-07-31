@@ -51,7 +51,7 @@ class aGraeTools():
         else:
             toolbutton.setDefaultAction(actions[0])
 
-    def messages(self,title:str,text:str,level,duration:int=2,alert=False):
+    def messages(self,title:str,text:str,level:int=0,duration:int=2,alert=False):
         """Levels:\n
         0.  Info\n
         1.  Warning\n

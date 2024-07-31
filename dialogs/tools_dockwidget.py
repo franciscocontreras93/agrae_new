@@ -646,7 +646,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         sql = aGraeSQLTools().getSql('view_lotes.sql')
 
-
         try:
             sql = sql.format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
             self.getCampaniaCultivoCombo(self.combo_explotacion.currentData())
@@ -678,14 +677,19 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         pass
     
     def focusExp(self):
+        reset = ''
+        self.layer.setSubsetString(reset)
         if self.combo_explotacion.currentData() != None:
-            exp = QgsExpression("\"idexplotacion\"={}".format(self.combo_explotacion.currentData()))
-            it = self.layer.getFeatures(QgsFeatureRequest(exp))
-            ids = [f.id() for f in it]
-            self.layer.selectByIds(ids)
-            bbox = self.layer.boundingBoxOfSelected()
-            iface.actionZoomToSelected().trigger()
-            self.layer.removeSelection()
+            # exp = QgsExpression("\"idexplotacion\"={}".format(self.combo_explotacion.currentData()))
+            # it = self.layer.getFeatures(QgsFeatureRequest(exp))
+            # ids = [f.id() for f in it]
+            # self.layer.selectByIds(ids)
+            self.layer.setSubsetString("\"idexplotacion\"={}".format(self.combo_explotacion.currentData()))
+            # bbox = self.layer.boundingBoxOfSelected()
+            # iface.actionZoomToSelected().trigger()
+            iface.mapCanvas().setExtent(self.layer.extent())
+            iface.mapCanvas().refresh()
+            # self.layer.removeSelection()
 
     def getCampaniaCultivoCombo(self,idexp):
         self.combo_cultivo_2.clear()

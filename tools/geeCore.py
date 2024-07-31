@@ -256,23 +256,37 @@ class aGraeNDVIMulti:
         self._max_clouds = max_clouds
                 
     def getGeometry(self,feature):
-        geom = feature.geometry()
-        geom.transform(self._tr)
+        # geom = feature.geometry()
+        # geom.transform(self._tr)
         
-        if geom.isMultipart():
-            poly = geom.asMultiPolygon() 
-            n = len(poly[0][0])
-            coords = [[poly[0][0][i][0],poly[0][0][i][1]] for i in range(n)]
-        else:
-            poly = geom.asPolygon() 
-            coords = []
-            for pol in poly:
-                for c in pol:
-                    coords.append([c[0],c[1]])
+        # if geom.isMultipart():
+        #     poly = geom.asMultiPolygon() 
+        #     n = len(poly[0][0])
+        #     coords = [[poly[0][0][i][0],poly[0][0][i][1]] for i in range(n)]
+        # else:
+        #     poly = geom.asPolygon() 
+        #     coords = []
+        #     for pol in poly:
+        #         for c in pol:
+        #             coords.append([c[0],c[1]])
             
-        geometry = ee.Geometry.Polygon(coords) 
+        # geometry = ee.Geometry.Polygon(coords) 
+        # geometry = geometry.buffer(self._buffer_radius)
+        # return geometry
+        coords = []
+        geom = feature.geometry()
+        
+        poly = geom.asMultiPolygon()
+        features = [poly[f][0] for f in range(len(poly))]
+        for f in features:
+            for point in f:
+                coords.append([point.x(),point.y()])  
+
+        geometry = ee.Geometry.MultiPolygon(coords)
         geometry = geometry.buffer(self._buffer_radius)
+        
         return geometry
+    
     def addNDVI(self,image): return image.addBands(image.normalizedDifference(['B8','B4']))
     
     def processingScene(self,y):
@@ -359,18 +373,28 @@ class aGraeNDVIMulti:
         return v
     
         
-    def execute(self):
+    def execute(self,layer_clip:QgsVectorLayer):
         print('**** Ejecutando algoritmo de Post-Procesamiento. ****')
         processing.runAndLoadResults("model:1_Post-procesado", {
         'capa_ambientes_gee':self.ambientesLayer,
         'capa_ndvi_gee':self.ndviLayer,
-        'lote':QgsProcessingFeatureSourceDefinition(self._layer.source() , selectedFeaturesOnly=True, featureLimit=-1, geometryCheck=QgsFeatureRequest.GeometryAbortOnInvalid),
+        # 'lote':QgsProcessingFeatureSourceDefinition(self._layer.source() , selectedFeaturesOnly=True, featureLimit=-1, geometryCheck=QgsFeatureRequest.GeometryAbortOnInvalid),
+        'lote': layer_clip,
         'mapa_de_ambientes':'TEMPORARY_OUTPUT'})
         print('**** Mapa de Ambientes generado Correctamente ****')
     def run(self):
         print('**** Ejecutando algoritmo de Pre-Procesamiento en GEE. ****\n**** Este proceso puede tardar algunos minutos. ****')
+        
         # exp = QgsExpression('idexplotacion = {}'.format(self.idexplotacion))
         for feature in [f for f in self._layer.selectedFeatures()]:
+            # with QgsVectorLayer('Multipolygon?crs=EPSG:4326','lote','memory') as layer_clip:
+            layer_clip = QgsVectorLayer('Multipolygon?crs=EPSG:4326','lote','memory')
+            lote_feat = QgsFeature()
+            lote_feat.setGeometry(feature.geometry())
+            layer_clip.startEditing()
+            layer_clip.addFeature(lote_feat)
+            layer_clip.commitChanges()
+
             self.geometry = self.getGeometry(feature)
             self.sceneNDVI = self.getSceneNDVI()
             self.processed = ee.ImageCollection.fromImages(self.getProcessedScene())
@@ -382,7 +406,8 @@ class aGraeNDVIMulti:
             self.ambientesLayer = self.downloadVector(self.ambientes)
             print('**** Pre-Procesamiento Exitoso ****')
             
-            self.execute()
+            # QgsProject.instance().addMapLayer(layer_clip)
+            self.execute(layer_clip)
         
 
 # core = aGraeNDVI(year = 2024 , 
