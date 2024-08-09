@@ -65,11 +65,18 @@ class aGraeGEEDialog(QDialog):
         # ee.Authenticate(auth_mode='localhost')
 
         self.idexplotacion = idexplotacion
-        self.layer = layer
+        self.layer = self.getLayer(layer)
 
         self.tools = aGraeTools()
         self.threadpool = QThreadPool()
 
+    def getLayer(self,layer:QgsVectorLayer):
+        features = list(layer.getSelectedFeatures())
+        new_layer  = QgsVectorLayer('MULTIPOLYGON?crs=EPSG:4326','new_layer','memory')
+        new_layer.dataProvider().addFeatures(features)
+        return new_layer
+
+    
     def UIComponents(self):
         self.layout = QVBoxLayout()
 

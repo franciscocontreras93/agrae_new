@@ -9,6 +9,8 @@ from urllib import request
 from qgis.utils import iface
 from qgis.core import *
 
+from ..tools import aGraeTools
+
 
 
 #from qgis.PyQt.QtCore import QSettings
@@ -235,8 +237,7 @@ class aGraeNDVIMulti:
 #        print('**** Inicializando Google-Earth-Engine ****')
 #        ee.Authenticate(auth_mode='localhost')
         
-        ee.Initialize(project='ee-agraeproyectos')
-        print('**** Google-Earth-Engine Inicializado Correctamente ****')
+       
         
         self._layer = layer
         self._crs = self._layer.crs()
@@ -254,27 +255,15 @@ class aGraeNDVIMulti:
         
         self._scale = scale
         self._max_clouds = max_clouds
+
+        ee.Initialize(project='ee-agraeproyectos')
+        QgsMessageLog.logMessage('*** Google Earth Engine Iniciado Correctamente ***' , 'aGrae GEE', level=Qgis.Info) 
                 
     def getGeometry(self,feature):
-        # geom = feature.geometry()
-        # geom.transform(self._tr)
         
-        # if geom.isMultipart():
-        #     poly = geom.asMultiPolygon() 
-        #     n = len(poly[0][0])
-        #     coords = [[poly[0][0][i][0],poly[0][0][i][1]] for i in range(n)]
-        # else:
-        #     poly = geom.asPolygon() 
-        #     coords = []
-        #     for pol in poly:
-        #         for c in pol:
-        #             coords.append([c[0],c[1]])
-            
-        # geometry = ee.Geometry.Polygon(coords) 
-        # geometry = geometry.buffer(self._buffer_radius)
-        # return geometry
         coords = []
         geom = feature.geometry()
+        geom.transform(self._tr)
         
         poly = geom.asMultiPolygon()
         features = [poly[f][0] for f in range(len(poly))]
@@ -374,20 +363,21 @@ class aGraeNDVIMulti:
     
         
     def execute(self,layer_clip:QgsVectorLayer):
-        print('**** Ejecutando algoritmo de Post-Procesamiento. ****')
+
+        QgsMessageLog.logMessage('**** Ejecutando algoritmo de Post-Procesamiento. ****' , 'aGrae GEE', level=Qgis.Info) 
         processing.runAndLoadResults("model:1_Post-procesado", {
         'capa_ambientes_gee':self.ambientesLayer,
         'capa_ndvi_gee':self.ndviLayer,
         # 'lote':QgsProcessingFeatureSourceDefinition(self._layer.source() , selectedFeaturesOnly=True, featureLimit=-1, geometryCheck=QgsFeatureRequest.GeometryAbortOnInvalid),
         'lote': layer_clip,
         'mapa_de_ambientes':'TEMPORARY_OUTPUT'})
-        print('**** Mapa de Ambientes generado Correctamente ****')
+        QgsMessageLog.logMessage('**** Mapa de Ambientes generado Correctamente ****' , 'aGrae GEE', level=Qgis.Info) 
     def run(self):
-        print('**** Ejecutando algoritmo de Pre-Procesamiento en GEE. ****\n**** Este proceso puede tardar algunos minutos. ****')
+        QgsMessageLog.logMessage('**** Ejecutando algoritmo de Pre-Procesamiento en GEE. ****\n**** Este proceso puede tardar algunos minutos. ****' , 'aGrae GEE', level=Qgis.Info) 
         
         # exp = QgsExpression('idexplotacion = {}'.format(self.idexplotacion))
-        for feature in [f for f in self._layer.selectedFeatures()]:
-            # with QgsVectorLayer('Multipolygon?crs=EPSG:4326','lote','memory') as layer_clip:
+        for feature in [f for f in self._layer.getFeatures()]:
+
             layer_clip = QgsVectorLayer('Multipolygon?crs=EPSG:4326','lote','memory')
             lote_feat = QgsFeature()
             lote_feat.setGeometry(feature.geometry())
@@ -405,15 +395,10 @@ class aGraeNDVIMulti:
             self.ndviLayer = self.downloadImage(self.NDVImax)
             self.ambientesLayer = self.downloadVector(self.ambientes)
             print('**** Pre-Procesamiento Exitoso ****')
+
+            QgsMessageLog.logMessage('**** Pre-Procesamiento Exitoso ****' , 'aGrae GEE', level=Qgis.Info) 
             
-            # QgsProject.instance().addMapLayer(layer_clip)
+ 
             self.execute(layer_clip)
         
 
-# core = aGraeNDVI(year = 2024 , 
-#     buffer_radius = 1 , 
-#     min_cloud = 5,
-#     kernel_radius = 10, 
-#     kernel_magnitude = 2
-#     )
-# core.run()

@@ -741,7 +741,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         sql = '''select distinct e.nombre , d.idexplotacion from campaign.data d
         join campaign.campanias c on c.id = d.idcampania 
         join agrae.explotacion e on e.idexplotacion = d.idexplotacion 
-        where c.id = {}'''.format(idcampania)
+        where c.id = {}
+        order by e.nombre'''.format(idcampania)
         # print(idcampania)
         if idcampania != None:
             with self.conn.cursor() as cursor:
