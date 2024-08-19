@@ -5,7 +5,7 @@ import processing
 from io import BytesIO
 from PIL import Image
 
-from psycopg2 import extras, Binary
+from psycopg2 import extras, Binary, errors
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtWidgets import *
 from qgis.PyQt.QtGui import QIcon
@@ -17,6 +17,8 @@ from qgis.PyQt.QtCore import  QVariant, QSettings, QSize,QDateTime
 
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
+
+from .agraeQR import aGraeLabelGenerator
 
 
 class aGraeTools():
@@ -896,6 +898,53 @@ class aGraeTools():
                 self.messages('aGrae Tools','No se pudieron asignar los cultivos.\n {}'.format(ex),2,alert=True)
                 raise Exception(ex)
 
+    def crearPuntosMuestreo(self,ids:list):
+        # TODO
+        from .gdriveCore import GDrive
+        query = aGraeSQLTools().getSql('query_create_muestreo.sql').format(','.join([str(id) for id in ids]))
+        core = aGraeLabelGenerator()
+        drive = GDrive()
+        
+        try:
+            with self.conn.cursor() as cursor:  
+                cursor.execute(query)
+                data = cursor.fetchall()
+
+                for r in data:
+                    codigo = r[1]
+
+                    qr = core.generateQR(codigo)
+                    label = core.generateLabel(qr,codigo)
+                    url = drive.upload_file(label)
+                    cursor.execute('''UPDATE field.muestras set label = '{}' where codigo = '{}' '''.format(url,codigo))
+                    
+                self.conn.commit()
+                self.messages('aGrae GIS','Muestras generadas correctamente.',3,5)
+                # self.conn.rollback()
+        # except errors.lookup('23505'):
+        #     self.messages('aGrae GIS','Ya Existen muestras para los lotes en la campaña actual.')
+        #     # QMessageBox.about(None, self.plugin_name,'El analisis con codigo: {} ya existe en la base de datos.\nComprueba la informacion'.format(row['COD']))
+        #     # QgsMessageLog.logMessage('El analisis con codigo: {} ya existe en la base de datos.\nComprueba la informacion'.format(row['COD']), self.plugin_name, level=Qgis.Warning)
+        #     self.conn.rollback()
+        
+        except Exception as ex:
+            print(ex)
+            self.messages('Error:','{}'.format(ex),1,5)
+            self.conn.rollback()
+        return
+
+
+
+    
+    def cargarLabelsDRIVE(self,file_path:str):
+        from .gdriveCore import GDrive
+        # file_path = r"D:\GeoSIG\aGrae\test\test_labels\label_A410201.pdf"
+        core = aGraeLabelGenerator()
+        qr,code = core.generateQR('A410205')
+        label = core.generateLabel(qr,code)
+
+        drive = GDrive()
+        url = drive.upload_file(label)
 
     
 

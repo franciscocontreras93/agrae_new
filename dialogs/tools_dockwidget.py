@@ -155,14 +155,16 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         # TOOL_LAB
         #TODO 
-        self.CargarCapaMuestras = QtWidgets.QAction(agraeGUI().getIcon('pois'),'Cargar Capa de Muestras',self)
-        # self.CargarCapaMuestras.triggered.connect(self.crearFormatoAnalitica)
+        self.CargarCapaMuestras = QtWidgets.QAction(agraeGUI().getIcon('pois'),'Generar Puntos de Muestreo.',self)
+        self.CargarCapaMuestras.triggered.connect(self.createMuestreoPoints)
+
+        self.ActualziarProyectoMuestreo = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Actualizar capas de Muestreo',self)
 
         self.CrearArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Archivo de Laboratorio',self)
         self.CrearArchivoAnalisis.triggered.connect(self.crearFormatoAnalitica)
         self.ImportarArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('import'),'Cargar Archivo de Laboratorio',self)
         self.ImportarArchivoAnalisis.triggered.connect(self.cargarAnalitica)
-        actions_lab = [self.CargarCapaMuestras,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis]
+        actions_lab = [self.CargarCapaMuestras,self.ActualziarProyectoMuestreo,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis]
         self.tools.settingsToolsButtons(self.tool_lab,actions_lab,icon=agraeGUI().getIcon('matraz'),setMainIcon=True)
         # TOOL_DATA
         self.GestionarPersonas = QtWidgets.QAction(agraeGUI().getIcon('users'),'Gestionar Personas',self)
@@ -607,8 +609,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         else: 
             print('Debe seleccionar uno o mas lotes')
 
-    
-
     def asignarExplotacionCampania(self,e:list):
         
         # PRIMERO DEBE CARGAR LA CAPA LOTES AL CANVAS
@@ -847,7 +847,18 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 self.conn.rollback()
                 print(ex)
 
-    # LOTES
+    def createMuestreoPoints(self):
+
+        # reply = QtWidgets.QMessageBox.question(self,'aGrae Toolbox','Quieres generar los puntos de muestreo para la Explotacion:\n{}?'.format(self.combo_explotacion.currentText()),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        # if reply == QtWidgets.QMessageBox.Yes:
+
+        if len(list(self.layer.getSelectedFeatures())) > 0:
+            ids  = [f['iddata'] for f in  list(self.layer.getSelectedFeatures())]
+        else:
+            ids = [f['iddata'] for f in  list(self.layer.getFeatures())]
+
+        self.tools.crearPuntosMuestreo(ids)
+ 
     def checkData(self,condition,label,value,widget):
         styleNormal = "QLabel { background-color : transparent; color : black; font-weight : normal }"
         styleBackgroudRed = "QLabel { background-color : red; color : white; font-weight : bold }"

@@ -398,7 +398,6 @@ class aGraeNDVIMulti:
 
             QgsMessageLog.logMessage('**** Pre-Procesamiento Exitoso ****' , 'aGrae GEE', level=Qgis.Info) 
             
- 
             self.execute(layer_clip)
         
 
