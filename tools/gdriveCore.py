@@ -8,7 +8,7 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from googleapiclient.http import MediaFileUpload
 
-
+### INSTALL pip install google-api-python-client
 
 class GDrive:
     def __init__(self):
@@ -58,7 +58,7 @@ class GDrive:
         }
 
         file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-        perm = self.drive_service.permissions().create(fileId=file.get("id"), body=permission, sendNotificationEmail=None).execute()
+        perm = self.drive_service.permissions().create(fileId=file.get("id"), body=permission, sendNotificationEmail=False).execute()
         url = 'https://drive.google.com/file/d/{}/view?usp=sharing'.format(file.get('id'))
         return url
         
@@ -68,12 +68,12 @@ class GDrive:
 
 
 
-# file_path = r"D:\GeoSIG\aGrae\test\test_labels\label_A410201.pdf"
+# file_path = r"D:\GeoSIG\aGrae\PANELES\label_A4101659.png"
 
 
 
 # ## Example usage
 # gdrive = GDrive()
-# url = gdrive.upload_file(file_name, file_path)
+# url = gdrive.upload_file(file_path)
 
 # print(url) 

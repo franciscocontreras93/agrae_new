@@ -661,8 +661,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
 
         except Exception as ex:
-            self.conn.rollback()
-            print(ex)
+            # self.conn.rollback()
+            # print(ex)
+            pass
 
                 
         self.reloadLayer()
@@ -848,16 +849,16 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 print(ex)
 
     def createMuestreoPoints(self):
-
-        # reply = QtWidgets.QMessageBox.question(self,'aGrae Toolbox','Quieres generar los puntos de muestreo para la Explotacion:\n{}?'.format(self.combo_explotacion.currentText()),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
-        # if reply == QtWidgets.QMessageBox.Yes:
-
+        
         if len(list(self.layer.getSelectedFeatures())) > 0:
             ids  = [f['iddata'] for f in  list(self.layer.getSelectedFeatures())]
         else:
             ids = [f['iddata'] for f in  list(self.layer.getFeatures())]
+        
+        reply = QtWidgets.QMessageBox.question(self,'aGrae Toolbox','Quieres generar los puntos de muestreo para:\n{} Lotes de la explotacion :\n{}?'.format(len(ids) , self.combo_explotacion.currentText()),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
 
-        self.tools.crearPuntosMuestreo(ids)
+                self.tools.crearPuntosMuestreo(ids)
  
     def checkData(self,condition,label,value,widget):
         styleNormal = "QLabel { background-color : transparent; color : black; font-weight : normal }"

@@ -5,7 +5,8 @@ import processing
 from io import BytesIO
 from PIL import Image
 
-from psycopg2 import extras, Binary, errors
+import psycopg2
+from psycopg2 import extras, Binary, errors, InterfaceError
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtWidgets import *
 from qgis.PyQt.QtGui import QIcon
@@ -24,6 +25,7 @@ from .agraeQR import aGraeLabelGenerator
 class aGraeTools():
     def __init__(self):
         self.instance = QgsProject.instance()
+        self.dsn = agraeDataBaseDriver().dsn
         try:
             self.conn = agraeDataBaseDriver().connection()
         except Exception as ex:
@@ -438,8 +440,10 @@ class aGraeTools():
         else: estilo = styleName
 
         styleUri = os.path.join(os.path.dirname(__file__), 'styles/{}.qml'.format(estilo))
+        cursor = agraeDataBaseDriver().cursor(self.conn,extras.RealDictCursor)
 
-        with self.conn.cursor(cursor_factory=extras.RealDictCursor) as cursor:
+        # with self.conn.cursor(cursor_factory=extras.RealDictCursor) as cursor:
+        with cursor:
             if memory:
                 lyr = QgsVectorLayer('MultiPolygon?crs=epsg:4326&index=yes'.format(type),layername,'memory')
                 provider = lyr.dataProvider()
@@ -904,33 +908,52 @@ class aGraeTools():
         query = aGraeSQLTools().getSql('query_create_muestreo.sql').format(','.join([str(id) for id in ids]))
         core = aGraeLabelGenerator()
         drive = GDrive()
+
         
         try:
-            with self.conn.cursor() as cursor:  
-                cursor.execute(query)
-                data = cursor.fetchall()
-
-                for r in data:
-                    codigo = r[1]
-
-                    qr = core.generateQR(codigo)
-                    label = core.generateLabel(qr,codigo)
-                    url = drive.upload_file(label)
-                    cursor.execute('''UPDATE field.muestras set label = '{}' where codigo = '{}' '''.format(url,codigo))
-                    
-                self.conn.commit()
-                self.messages('aGrae GIS','Muestras generadas correctamente.',3,5)
-                # self.conn.rollback()
-        # except errors.lookup('23505'):
-        #     self.messages('aGrae GIS','Ya Existen muestras para los lotes en la campaña actual.')
-        #     # QMessageBox.about(None, self.plugin_name,'El analisis con codigo: {} ya existe en la base de datos.\nComprueba la informacion'.format(row['COD']))
-        #     # QgsMessageLog.logMessage('El analisis con codigo: {} ya existe en la base de datos.\nComprueba la informacion'.format(row['COD']), self.plugin_name, level=Qgis.Warning)
-        #     self.conn.rollback()
-        
+            
+            cursor = agraeDataBaseDriver().cursor(self.conn)
+            cursor.execute(query)
+            data = cursor.fetchall()
+            # cursor.close()
+            self.conn.commit()
+            self.messages('aGrae GIS','Muestras generadas correctamente.',3,5)
+                
+        except errors.lookup('23505'):
+            self.messages('aGrae GIS','Ya Existen muestras para los lotes en la campaña actual.')
+            self.conn.rollback()
         except Exception as ex:
             print(ex)
             self.messages('Error:','{}'.format(ex),1,5)
             self.conn.rollback()
+        
+        try:
+            cursor = agraeDataBaseDriver().cursor(self.conn)
+            query_update = '''UPDATE field.muestras as m set label = q.label from (values {}) as q(label,codigo) where m.codigo = q.codigo'''
+            values = ''
+            for r in data:
+                codigo = r[1]
+                uid = r[0]
+
+                qr = core.generateQR(codigo)
+                label = core.generateLabel(qr,codigo)
+                url = drive.upload_file(label)
+                values = values + ''' ('{}' ,'{}'),\n'''.format(url,codigo)
+                
+            # print(values[:-2])
+            query_update = query_update.format(values[:-2])
+            # print(query_update)
+
+            cursor.execute(query_update)
+            self.conn.commit()     
+            # self.conn.rollback()
+        except Exception as ex:
+            print(ex)
+
+       
+           
+
+        
         return
 
 
