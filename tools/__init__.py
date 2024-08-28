@@ -494,13 +494,14 @@ class aGraeTools():
                     else:
                         # print(lyr.isValid())
                         QgsMessageLog.logMessage('Capa: <b>{}</b> INCORRECTA'.format(lyr.name()), self.plugin_name, level=Qgis.Warning)
-                        # return lyr
+                        return QgsVectorLayer()
                 
                 except Exception as ex:
                     iface.messageBar().pushMessage("Error:", "Ocurrio un Error, revisa el panel de mensajes del Registro", level=Qgis.Critical)
                     # print(ex)
                     QgsMessageLog.logMessage('{}'.format(ex), self.plugin_name, level=Qgis.Critical)
                     self.conn.rollback()
+                    return QgsVectorLayer()
 
             else:
                 dns = agraeDataBaseDriver().getDSN()

@@ -32,8 +32,10 @@ from .parametros_dialog import GestionarParametrosDialog
 from .plots_dialog import agraePlotsDialog
 from .monitor_dialogs import MonitorRendimientosDialog
 from .gee_dialog import aGraeGEEDialog
-
+from .reportes_dialog import ReportesDialog
 toolsDialog, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui/agrae_tools.ui'))
+
+
 
 class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     def __init__(self,
@@ -1163,7 +1165,16 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         if not data.empty:
             dlg = agraeAnaliticaDialog(data)
             dlg.exec()
+    
+    def new_generarCapasExplotacion(self):
+        self.atlasLayers = {}
+        self.atlasLayers['Atlas'] = self.layer.clone()
         
+        dlg = ReportesDialog()
+        dlg.exec()
+
+        pass
+
     def generarCapasExplotacion(self):
         self.atlasLayers = {}
         self.atlasLayers['Atlas'] = self.layer.clone()

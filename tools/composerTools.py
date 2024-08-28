@@ -143,8 +143,11 @@ class aGraeComposerTools():
                 out.close()
                 pass
     def setTextOverElements(self,elements,text):
-        for e in elements:
-            e.setText(text)
+        try:
+            for e in elements:
+                e.setText(text)
+        except:
+            pass
     def layoutGenerator(self,
             basemap,
             preview=False,
@@ -274,7 +277,7 @@ class aGraeComposerTools():
 
         lotes = self.layers['Atlas']
 
-
+        
         self.setLayersToMap([layout.itemById('ceap36_txt'),layout.itemById('ceap90_txt')],[lotes,self.layers['Ceap36 Textura'],self.layers['Ceap36 Infiltracion']],basemap) #*  PAG 01
         self.setLayersToMap([layout.itemById('ceap36_inf'),layout.itemById('ceap90_inf')],[lotes,self.layers['Ceap90 Textura'],self.layers['Ceap90 Infiltracion']],basemap) #* PAG 02
         self.setLayersToMap([layout.itemById('map_nitrogeno'),layout.itemById('map_fosforo')],[lotes,self.layers['Nitrogeno'],self.layers['Fosforo']],basemap) #* PAG 03
