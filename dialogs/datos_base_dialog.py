@@ -52,6 +52,7 @@ class GestionDatosBaseDialog(QDialog,agraeDatosBaseDialog):
 
     def updateSegmentosField(self,layer):
         self.field_segmento.setLayer(layer)
+        self.field_ceap.setLayer(layer)
 
 
     def updateAmbientesField(self,layer):
@@ -64,7 +65,8 @@ class GestionDatosBaseDialog(QDialog,agraeDatosBaseDialog):
     def loadSegmentos(self):
         self.tools.crearSegmento(
             layer = self.layers_segmento.currentLayer(),
-            field_segmento = self.field_segmento.currentField())
+            field_segmento = self.field_segmento.currentField(),
+            field_ceap=self.field_ceap.currentField())
         pass
     def loadAmbientes(self):
         self.tools.crearAmbiente(layer = self.layers_ambiente.currentLayer(),
@@ -81,10 +83,9 @@ class GestionDatosBaseDialog(QDialog,agraeDatosBaseDialog):
 class CrearLotesDialog(QDialog):
     closingPlugin = pyqtSignal()
     # idExplotacionSignal = pyqtSignal(list)
-    def __init__(self, layer: QgsVectorLayer,idcampania:int=None,idexplotacion:int=None):
+    def __init__(self, idcampania:int=None,idexplotacion:int=None):
         super().__init__()
-        self.layer = layer
-        self.setWindowTitle('Cargar Lotes desde la capa {}'.format(self.layer.name()))
+        self.setWindowTitle('Cargar Lotes desde Capa')
         self.agraeSql = aGraeSQLTools()
         self.tools = aGraeTools()
 
@@ -101,26 +102,36 @@ class CrearLotesDialog(QDialog):
     def UIComponents(self):
         self.layout = QGridLayout()
         
-        self.groupBoxLayout = QGridLayout()
+        self.groupBoxLayout = QVBoxLayout()
         self.groupBox = QGroupBox()
         self.groupBox.setTitle('Cargar Lotes al Sistema aGrae')
+        
+        self.label_1 = QLabel('Selecciona la Capa con los Lotes')
+        self.combo_layer = QgsMapLayerComboBox()
+        self.combo_layer.layerChanged.connect(self.updateCombo)
 
-        self.label_1 = QLabel('Seleccionar Campo Nombre del Lote')
-        self.label_1.setMaximumSize(QSize(250,15))
+        self.select_seleccionados = QCheckBox('Lotes seleccionados')
+        
+        self.label_2 = QLabel('Seleccionar Campo Nombre del Lote')
+        self.label_2.setMaximumSize(QSize(250,15))
         
         self.combo_nombre = QgsFieldComboBox()
-        self.combo_nombre.setLayer(self.layer)
+        self.combo_nombre.setFilters(QgsFieldProxyModel.String)
+        self.combo_nombre.setLayer(self.combo_layer.currentLayer())
 
-        self.selector = QCheckBox('Añadir lotes a la Explotacion Actual')
+        self.select_explotacion = QCheckBox('Añadir lotes a la Explotacion Actual')
 
         self.btn_cargar = QPushButton('Cargar Lotes')
         self.btn_cargar.clicked.connect(self.loadLotes)
         
-
-        self.groupBoxLayout.addWidget(self.label_1,0,0)
-        self.groupBoxLayout.addWidget(self.combo_nombre,1,0)
-        self.groupBoxLayout.addWidget(self.selector,2,0)
-        self.groupBoxLayout.addWidget(self.btn_cargar,3,0)
+        
+        self.groupBoxLayout.addWidget(self.label_1)
+        self.groupBoxLayout.addWidget(self.combo_layer)
+        self.groupBoxLayout.addWidget(self.select_seleccionados)
+        self.groupBoxLayout.addWidget(self.label_2)
+        self.groupBoxLayout.addWidget(self.combo_nombre)
+        self.groupBoxLayout.addWidget(self.select_explotacion)
+        self.groupBoxLayout.addWidget(self.btn_cargar)
 
 
 
@@ -129,20 +140,26 @@ class CrearLotesDialog(QDialog):
         self.setLayout(self.layout)
 
         pass
+    def updateCombo(self,layer):
+        self.combo_nombre.setLayer(layer)
 
     def loadLotes(self):
-
-        sourceCrs = self.layer.crs()
+        layer = self.combo_layer.currentLayer()
+        sourceCrs = layer.crs()
         crsBase = QgsCoordinateReferenceSystem(4326)
         tr = QgsCoordinateTransform(sourceCrs, crsBase, QgsProject.instance())
-        selection = [f for f in self.layer.getSelectedFeatures()]
-        if self.selector.isChecked():
+        if self.select_seleccionados.isChecked():
+            features = [f for f in layer.getSelectedFeatures()]
+        else: 
+            features = [f for f in layer.getFeatures()]
+        
+        if self.select_explotacion.isChecked():
             sql = self.agraeSql.getSql('new_lote_assign_copy.sql')
         else:
             sql = self.agraeSql.getSql('create_lote.sql')
         
         with self.conn.cursor() as cursor:
-            for f in selection: 
+            for f in features: 
                 nombre = str(f[self.combo_nombre.currentField()])
                 for e in ['/','-']:
                     nombre.replace(e,'_')
@@ -150,7 +167,7 @@ class CrearLotesDialog(QDialog):
                 geom = f.geometry()
                 if sourceCrs != crsBase:
                     geom.transform(tr)
-                if self.selector.isChecked():
+                if self.select_explotacion.isChecked():
                     query = sql.format(nombre,geom.asWkt(),self.idcampania,self.idexplotacion)
                 else:
                     query = sql.format(nombre,geom.asWkt())

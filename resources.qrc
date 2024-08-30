@@ -45,6 +45,7 @@
         <file>gui\icons\minus-solid.svg</file>
         <file>gui\icons\rindes.svg</file>
         <file>gui\icons\satellite-solid.svg</file>
+        <file>gui\icons\tools.svg</file>
 
         <!-- PLOT GRAPHS -->
         <file>gui\base\lgnd1.svg</file>

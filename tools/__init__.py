@@ -13,7 +13,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import Qt
 from qgis.utils import iface 
 from qgis.core import *
-from qgis.PyQt.QtCore import  QVariant, QSettings, QSize,QDateTime
+from qgis.PyQt.QtCore import  Qt,QVariant, QSettings, QSize,QDateTime
 
 
 from ..db import agraeDataBaseDriver
@@ -54,6 +54,22 @@ class aGraeTools():
             toolbutton.setIcon(icon)
         else:
             toolbutton.setDefaultAction(actions[0])
+    def getToolButton(self,actions=None,icon:QIcon=None,setMainIcon=False) -> QToolButton:
+        toolButton = QToolButton()
+        toolButton.setMenu(QtWidgets.QMenu())
+        toolButton.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
+        toolButton.setIconSize(QSize(15,15))
+        if actions:
+           
+            for i in range(len(actions)):
+                toolButton.menu().addAction(actions[i])
+
+        if setMainIcon:
+            toolButton.setIcon(icon)
+        else:
+            toolButton.setDefaultAction(actions[0])
+        
+        return toolButton
 
     def messages(self,title:str,text:str,level:int=0,duration:int=2,alert=False):
         """Levels:\n
@@ -217,10 +233,10 @@ class aGraeTools():
         except:
             return ''
     
-    def crearSegmento(self,layer,field_segmento):
+    def crearSegmento(self,layer,field_segmento,field_ceap):
         lyr = layer
         srid = lyr.crs().authid()[5:]
-        sql = """ insert into agrae.segmentos(segmento,geometria) values """
+        sql = """ insert into agrae.segmentos(segmento,ceap,geometria) values """
         if len(lyr.selectedFeatures()) > 0: features = lyr.selectedFeatures() 
         else: features = lyr.getFeatures()
         try:
@@ -228,8 +244,9 @@ class aGraeTools():
                 try: 
                     for f in features :
                         segm = f[field_segmento] 
+                        ceap = f[field_ceap]
                         geometria = f.geometry() .asWkt()
-                        sql = sql + f""" ({segm},st_multi(st_force2d(st_transform(st_geomfromtext('{geometria}',{srid}),4326)))),\n"""                   
+                        sql = sql + f""" ({segm},{ceap},st_multi(st_force2d(st_transform(st_geomfromtext('{geometria}',{srid}),4326)))),\n"""                   
                     # print(sql)
                     cursor.execute(sql[:-2])   
                     self.conn.commit() 
