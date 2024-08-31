@@ -54,6 +54,7 @@ class aGraeTools():
             toolbutton.setIcon(icon)
         else:
             toolbutton.setDefaultAction(actions[0])
+    
     def getToolButton(self,actions=None,icon:QIcon=None,setMainIcon=False) -> QToolButton:
         toolButton = QToolButton()
         toolButton.setMenu(QtWidgets.QMenu())
@@ -70,6 +71,40 @@ class aGraeTools():
             toolButton.setDefaultAction(actions[0])
         
         return toolButton
+    
+    def getAction(self,parent,icon,text,callback) -> QAction:
+        action = QAction(icon, text)
+        action.triggered.connect(callback)
+
+        return action
+    
+    def getCampaniasData(self,combo:QComboBox):
+        combo.clear()
+        with self.conn.cursor() as cursor:
+            # try:
+                cursor.execute('''SELECT DISTINCT concat(upper(prefix),'-',UPPER(nombre)) as nombre , id  FROM campaign.campanias ORDER BY id desc''')
+                data_camp = cursor.fetchall()
+                for e in data_camp:
+                    combo.addItem(e[0],e[1])
+    
+    def getExplotacionData(self,combo:QComboBox,idcampania):
+
+        combo.clear()
+        sql = '''select distinct e.nombre , d.idexplotacion from campaign.data d
+        join campaign.campanias c on c.id = d.idcampania 
+        join agrae.explotacion e on e.idexplotacion = d.idexplotacion 
+        where c.id = {}
+        order by e.nombre'''.format(idcampania)
+        # print(idcampania)
+        if idcampania != None:
+            with self.conn.cursor() as cursor: 
+                cursor.execute(sql)
+                data = cursor.fetchall()
+                # print(idcampania)
+                if len(data) >= 1:
+                    for e in data:
+                        combo.addItem(e[0],e[1])
+    
 
     def messages(self,title:str,text:str,level:int=0,duration:int=2,alert=False):
         """Levels:\n

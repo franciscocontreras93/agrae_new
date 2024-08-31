@@ -83,7 +83,7 @@ class GestionDatosBaseDialog(QDialog,agraeDatosBaseDialog):
 class CrearLotesDialog(QDialog):
     closingPlugin = pyqtSignal()
     # idExplotacionSignal = pyqtSignal(list)
-    def __init__(self, idcampania:int=None,idexplotacion:int=None):
+    def __init__(self):
         super().__init__()
         self.setWindowTitle('Cargar Lotes desde Capa')
         self.agraeSql = aGraeSQLTools()
@@ -93,8 +93,7 @@ class CrearLotesDialog(QDialog):
 
         self.UIComponents()
 
-        self.idcampania = idcampania
-        self.idexplotacion = idexplotacion
+       
 
         self.resize(300,200)
         self.setModal(False)
@@ -102,7 +101,7 @@ class CrearLotesDialog(QDialog):
     def UIComponents(self):
         self.layout = QGridLayout()
         
-        self.groupBoxLayout = QVBoxLayout()
+        self.groupBoxLayout = QGridLayout()
         self.groupBox = QGroupBox()
         self.groupBox.setTitle('Cargar Lotes al Sistema aGrae')
         
@@ -119,19 +118,40 @@ class CrearLotesDialog(QDialog):
         self.combo_nombre.setFilters(QgsFieldProxyModel.String)
         self.combo_nombre.setLayer(self.combo_layer.currentLayer())
 
-        self.select_explotacion = QCheckBox('Añadir lotes a la Explotacion Actual')
+        self.select_explotacion = QCheckBox('Añadir lotes a la Explotacion')
+        self.select_explotacion.stateChanged.connect(self.enableCombos)
+    
+        self.combo_campania = QComboBox()
+        self.combo_campania.currentIndexChanged.connect(lambda: self.tools.getExplotacionData(self.combo_explotacion,self.combo_campania.currentData()))
+        self.combo_campania.setEnabled(False)
+
+        self.combo_explotacion = QComboBox()
+        self.combo_explotacion.setEnabled(False)
+
+        self.tools.getCampaniasData(self.combo_campania)
+        self.tools.getExplotacionData(self.combo_explotacion,self.combo_campania.currentData())
+        
+
+        self.combo_explotacion.setEditable(True)
+        self.combo_explotacion.setInsertPolicy(QComboBox.NoInsert)
+        self.combo_explotacion.completer().setCompletionMode(QCompleter.PopupCompletion)
+
 
         self.btn_cargar = QPushButton('Cargar Lotes')
         self.btn_cargar.clicked.connect(self.loadLotes)
         
         
-        self.groupBoxLayout.addWidget(self.label_1)
-        self.groupBoxLayout.addWidget(self.combo_layer)
-        self.groupBoxLayout.addWidget(self.select_seleccionados)
-        self.groupBoxLayout.addWidget(self.label_2)
-        self.groupBoxLayout.addWidget(self.combo_nombre)
-        self.groupBoxLayout.addWidget(self.select_explotacion)
-        self.groupBoxLayout.addWidget(self.btn_cargar)
+        self.groupBoxLayout.addWidget(QLabel('Selecciona la Capa con los Lotes'),0,0,1,0)
+        self.groupBoxLayout.addWidget(self.combo_layer,1,0,1,0)
+        self.groupBoxLayout.addWidget(self.select_seleccionados,2,0,1,0)
+        self.groupBoxLayout.addWidget(QLabel('Seleccionar Campo Nombre del Lote'),3,0,1,0)
+        self.groupBoxLayout.addWidget(self.combo_nombre,4,0,1,0)
+        self.groupBoxLayout.addWidget(self.select_explotacion,5,0,1,0)
+        self.groupBoxLayout.addWidget(QLabel('Seleccionar Campaña'),6,0,1,0)
+        self.groupBoxLayout.addWidget(QLabel('Seleccionar Explotacion'),6,1,1,0)
+        self.groupBoxLayout.addWidget(self.combo_campania,7,0)
+        self.groupBoxLayout.addWidget(self.combo_explotacion,7,1)
+        self.groupBoxLayout.addWidget(self.btn_cargar,8,0,1,0)
 
 
 
@@ -140,8 +160,18 @@ class CrearLotesDialog(QDialog):
         self.setLayout(self.layout)
 
         pass
+
     def updateCombo(self,layer):
         self.combo_nombre.setLayer(layer)
+
+    def enableCombos(self):
+        if self.select_explotacion.isChecked():
+            self.combo_campania.setEnabled(True)
+            self.combo_explotacion.setEnabled(True)
+        else:
+            self.combo_campania.setEnabled(False)
+            self.combo_explotacion.setEnabled(False)
+
 
     def loadLotes(self):
         layer = self.combo_layer.currentLayer()
@@ -168,7 +198,7 @@ class CrearLotesDialog(QDialog):
                 if sourceCrs != crsBase:
                     geom.transform(tr)
                 if self.select_explotacion.isChecked():
-                    query = sql.format(nombre,geom.asWkt(),self.idcampania,self.idexplotacion)
+                    query = sql.format(nombre,geom.asWkt(),self.combo_campania.currentData(),self.combo_explotacion.currentData())
                 else:
                     query = sql.format(nombre,geom.asWkt())
                 

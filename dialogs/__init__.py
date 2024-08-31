@@ -1,4 +1,4 @@
-from .datos_base_dialog import CrearLotesDialog
+from .datos_base_dialog import CrearLotesDialog, GestionDatosBaseDialog
 
 
 class aGraeDialogs():
@@ -6,8 +6,19 @@ class aGraeDialogs():
         pass
 
     def cargarLotesDialog(self):
-        
-        dlg = CrearLotesDialog(self.combo_campania.currentData(),self.combo_explotacion.currentData())
-        # dlg.expCreated.connect(lambda e: self.tools.messages('aGrae Tools','Explotacion {} creada correctamente'.format(e),3))
-        # dlg.loteCreated.connect(self.afterLotesCreated)
+        dlg = CrearLotesDialog()
+        dlg.exec()
+
+    def cargarCEDialog(self):
+        dlg = GestionDatosBaseDialog()
+        dlg.tabWidget.setCurrentIndex(0)
+        dlg.exec()
+
+    def cargarSegmentoDialog(self):
+        dlg = GestionDatosBaseDialog()
+        dlg.tabWidget.setCurrentIndex(1)
+        dlg.exec()
+    def cargarAmbienteDialog(self):
+        dlg = GestionDatosBaseDialog()
+        dlg.tabWidget.setCurrentIndex(2)
         dlg.exec()
