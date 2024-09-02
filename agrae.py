@@ -125,9 +125,12 @@ class aGraeToolbox:
         # self.action = QAction('Go!', self.iface.mainWindow())
         # self.action.triggered.connect(self.run)
         # self.iface.addToolBarIcon(self.action)
-        # self.CargarLotesDialogAction = QAction(parent=None,icon=agraeGUI().getIcon('add'))
-        # tools_agrae_actions = [self.CargarLotesDialogAction]
-        # self.tools_agrae = self.tools.getToolButton(tools_agrae_actions,agraeGUI().getIcon('main'),setMainIcon=True)
+        # self.CargarLotesDialogAction = self.tools.getAction(None,agraeGUI().getIcon('add'),'Cargar Nuevos Lotes',callback=aGraeDialogs.cargarLotesDialog)
+        # self.CrearCEDialogAction = self.tools.getAction(None,agraeGUI().getIcon('map-base'),'Cargar Datos Base',callback=aGraeDialogs.cargarCEDialog)
+        
+        # tools_agrae_actions = [self.CargarLotesDialogAction,self.CrearCEDialogAction]
+
+        # self.tools_agrae = self.tools.getToolButton(tools_agrae_actions,agraeGUI().getIcon('tools'),setMainIcon=True)
         # self.toolbar.addWidget(self.tools_agrae)
 
         self.add_action(agraeGUI().getIcon('lotes'),'Cargar Lotes',self.agraeGestionLotes,add_to_menu=False,add_to_toolbar=True)

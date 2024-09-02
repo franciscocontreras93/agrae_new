@@ -211,7 +211,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         actions_agrae = [self.IndentifyLoteAction,self.CargarLotes,self.CrearCE,self.CrearSegmentos,self.CrearAmbientes]
 
-        self.tools.settingsToolsButtons(self.tool_agrae,actions_agrae,icon=agraeGUI().getIcon('main'),setMainIcon=True)
+        self.tools.settingsToolsButtons(self.tool_agrae,actions_agrae,icon=agraeGUI().getIcon('tools'),setMainIcon=True)
 
         # TOOL_CAMP
         self.CrearCampaniaAction = QtWidgets.QAction(agraeGUI().getIcon('add'),'Crear Campaña',self)
@@ -411,9 +411,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     
     def cargarLotesDialog(self):
         
-        dlg = CrearLotesDialog(self.combo_campania.currentData(),self.combo_explotacion.currentData())
-        # dlg.expCreated.connect(lambda e: self.tools.messages('aGrae Tools','Explotacion {} creada correctamente'.format(e),3))
-        # dlg.loteCreated.connect(self.afterLotesCreated)
+        dlg = CrearLotesDialog()
         dlg.exec()
 
     def generateComposerDialog(self):
