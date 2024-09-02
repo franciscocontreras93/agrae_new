@@ -129,7 +129,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         self.CargarCapasExplotacion = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar capas de Explotacion',self)
         self.CargarCapasExplotacion.triggered.connect(self.generarCapasExplotacion)
-        self.GenerarReporteFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('printer'),'Generar Reporte de Fertiliacion',self)
+        self.GenerarReporteFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('printer'),'Generar Reporte de Fertilizacion',self)
         self.GenerarReporteFertilizacion.triggered.connect(self.generateComposerDialog)
 
         #TODO

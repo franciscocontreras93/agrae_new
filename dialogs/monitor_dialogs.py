@@ -136,7 +136,7 @@ class MonitorRendimientosDialog(QDialog):
         ########### TAB WIDGET ####################
         
         tab_1 = QTabWidget()
-        tab_1.addTab(widgetInformacion,'Informacion Rindes')
+        # tab_1.addTab(widgetInformacion,'Informacion Rindes')
         tab_1.addTab(widgetCarga,'Carga de Datos')
         tab_1.addTab(widgetAjusteRindes,'Ajuste de Valores de Rendimiento')
 
