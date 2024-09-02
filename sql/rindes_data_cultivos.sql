@@ -13,7 +13,7 @@ with data as (
 	c.indice_cosecha as ic 	 	
 	from campaign.data d  	 	
 	left join agrae.cultivo c on c.idcultivo = d.idcultivo 	 	
-	where d.idcampania = {} and idexplotacion = {}),
+	where d.idcampania = {} and idexplotacion = {} and d.idcultivo is not null),
 lotes as (select d.iddata,
 l.idlote, 
 d.idcultivo,

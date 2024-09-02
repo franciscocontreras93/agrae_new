@@ -413,7 +413,9 @@ class aGraeTools():
             'TARGET_CRS': target_crs,
             'OUTPUT': 'memory:Reprojected'
         }
-        return processing.run('native', parameter)['OUTPUT']
+       
+        return processing.run('native:reprojectlayer', parameter)['OUTPUT']
+
 
     def getLotesLayer(self):
         sql = aGraeSQLTools().getSql('lotes_layer.sql')
