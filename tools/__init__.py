@@ -13,7 +13,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import Qt
 from qgis.utils import iface 
 from qgis.core import *
-from qgis.PyQt.QtCore import  Qt,QVariant, QSettings, QSize,QDateTime
+from qgis.PyQt.QtCore import  Qt,QVariant, QSettings, QSize,QDateTime,pyqtSignal
 
 
 from ..db import agraeDataBaseDriver
@@ -23,6 +23,8 @@ from .agraeQR import aGraeLabelGenerator
 
 
 class aGraeTools():
+    MuestreoEndSignal = pyqtSignal(bool)
+
     def __init__(self):
         self.instance = QgsProject.instance()
         self.dsn = agraeDataBaseDriver().dsn
@@ -920,12 +922,17 @@ class aGraeTools():
                 self.messages('aGrae Tools','No se pudieron asignar los cultivos.\n {}'.format(ex),2,alert=True)
                 raise Exception(ex)
 
-    def crearPuntosMuestreo(self,ids:list):
+    def crearPuntosMuestreo(self,ids:list,segmentos:list):
         # TODO
         from .gdriveCore import GDrive
-        query = aGraeSQLTools().getSql('query_create_muestreo.sql').format(','.join([str(id) for id in ids]))
+        ids = ','.join([str(id) for id in ids])
+        segmentos = ','.join([str(seg) for seg in segmentos])
+        data = None
+        query = aGraeSQLTools().getSql('query_create_muestreo.sql').format(ids,segmentos)
         core = aGraeLabelGenerator()
         drive = GDrive()
+
+        # print(query)
 
         
         try:
@@ -945,34 +952,31 @@ class aGraeTools():
             self.messages('Error:','{}'.format(ex),1,5)
             self.conn.rollback()
         
-        try:
-            cursor = agraeDataBaseDriver().cursor(self.conn)
-            query_update = '''UPDATE field.muestras as m set label = q.label from (values {}) as q(label,codigo) where m.codigo = q.codigo'''
-            values = ''
-            for r in data:
-                codigo = r[1]
-                uid = r[0]
+        if data:
+            try:
+                cursor = agraeDataBaseDriver().cursor(self.conn)
+                query_update = '''UPDATE field.muestras as m set label = q.label from (values {}) as q(label,codigo) where m.codigo = q.codigo'''
+                values = ''
+                for r in data:
+                    codigo = r[1]
+                    uid = r[0]
 
-                qr = core.generateQR(codigo)
-                label = core.generateLabel(qr,codigo)
-                url = drive.upload_file(label)
-                values = values + ''' ('{}' ,'{}'),\n'''.format(url,codigo)
-                
-            # print(values[:-2])
-            query_update = query_update.format(values[:-2])
-            # print(query_update)
+                    qr = core.generateQR(codigo)
+                    label = core.generateLabel(qr,codigo)
+                    url = drive.upload_file(label)
+                    values = values + ''' ('{}' ,'{}'),\n'''.format(url,codigo)
+                    
+                # print(values[:-2])
+                query_update = query_update.format(values[:-2])
+                # print(query_update)
 
-            cursor.execute(query_update)
-            self.conn.commit()     
-            # self.conn.rollback()
-        except Exception as ex:
-            print(ex)
+                cursor.execute(query_update)
+                self.conn.commit()     
+            except Exception as ex:
+                self.conn.rollback()
+                print(ex)
 
-       
-           
-
-        
-        return
+        # self.MuestreoEndSignal.emit(False)
 
 
 

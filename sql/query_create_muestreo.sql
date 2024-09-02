@@ -26,7 +26,8 @@ segmentos as (
 		end) as geom,
 		st_area(st_transform(s.geometria,8857)) / 10000 as area
 		from agrae.segmentos s 
-	join lotes  b on st_intersects(s.geometria,b.geom)),
+	join lotes  b on st_intersects(s.geometria,b.geom)
+	where segmento in ({})),
 grouped as (
 	select idlote,
 		idcampania,

@@ -5,6 +5,7 @@ import psycopg2
 
 from psycopg2 import extras
 
+
 from qgis.PyQt import QtWidgets, uic
 from qgis.PyQt.QtCore import pyqtSignal, Qt,QDate,QSize
 from qgis.PyQt.QtGui import QIcon
@@ -17,6 +18,7 @@ from ..sql import aGraeSQLTools
 from ..gui import agraeGUI
 from ..tools import aGraeTools
 
+from ..dialogs import aGraeDialogs
 
 from .explotacion_dialogs import CopyExplotacionDialog, CreateExplotacionDialog, UpdateExplotacionDialog, GestionExplotacionDialog,GestionarExplotacionesDialog
 from .campania_dialogs import CloneCampaniaDialog, CreateCampaniaDialog, UpdateCampaniaDialog
@@ -158,7 +160,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         # TOOL_LAB
         #TODO 
         self.CargarCapaMuestras = QtWidgets.QAction(agraeGUI().getIcon('pois'),'Generar Puntos de Muestreo.',self)
-        self.CargarCapaMuestras.triggered.connect(self.createMuestreoPoints)
+        # self.CargarCapaMuestras.triggered.connect(self.createMuestreoPoints) #TODO
+        self.CargarCapaMuestras.triggered.connect(aGraeDialogs.muestreoDialog)
 
         self.ActualziarProyectoMuestreo = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Actualizar capas de Muestreo',self)
 
@@ -850,6 +853,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 self.conn.rollback()
                 print(ex)
 
+    
     def createMuestreoPoints(self):
         
         if len(list(self.layer.getSelectedFeatures())) > 0:

@@ -85,7 +85,7 @@ class CrearLotesDialog(QDialog):
     # idExplotacionSignal = pyqtSignal(list)
     def __init__(self, idcampania:int=None,idexplotacion:int=None):
         super().__init__()
-        self.setWindowTitle('Cargar Lotes desde Capa')
+        self.setWindowTitle('aGrae | Cargar Lotes desde Capa')
         self.agraeSql = aGraeSQLTools()
         self.tools = aGraeTools()
 
@@ -104,7 +104,7 @@ class CrearLotesDialog(QDialog):
         
         self.groupBoxLayout = QVBoxLayout()
         self.groupBox = QGroupBox()
-        self.groupBox.setTitle('Cargar Lotes al Sistema aGrae')
+        self.groupBox.setTitle('Cargar Lotes al Sistema aGre')
         
         self.label_1 = QLabel('Selecciona la Capa con los Lotes')
         self.combo_layer = QgsMapLayerComboBox()

@@ -1,4 +1,5 @@
 from .datos_base_dialog import CrearLotesDialog
+from .muestreo_dialog import MuestreoDialog
 
 
 class aGraeDialogs():
@@ -10,4 +11,8 @@ class aGraeDialogs():
         dlg = CrearLotesDialog(self.combo_campania.currentData(),self.combo_explotacion.currentData())
         # dlg.expCreated.connect(lambda e: self.tools.messages('aGrae Tools','Explotacion {} creada correctamente'.format(e),3))
         # dlg.loteCreated.connect(self.afterLotesCreated)
+        dlg.exec()
+    
+    def muestreoDialog(self):
+        dlg = MuestreoDialog()
         dlg.exec()
