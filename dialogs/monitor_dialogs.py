@@ -282,8 +282,9 @@ class MonitorRendimientosDialog(QDialog):
                 for r in range(rows):
                     idcultivo = self.tableAjusteCultivos.item(r,0).text()
                     value = self.tableAjusteCultivos.item(r,2).text()
-                    sql_cultivos = aGraeSQLTools().getSql('rindes_save_prod_cultivo.sql').format(self.idcampania,self.idexplotacion,idcultivo,value)
-                    cursor.execute(sql_cultivos)
+                    if int(value) > 0:
+                        sql_cultivos = aGraeSQLTools().getSql('rindes_save_prod_cultivo.sql').format(self.idcampania,self.idexplotacion,idcultivo,value)
+                        cursor.execute(sql_cultivos)
                 self.conn.commit()
                 # print(sql_cultivos)
                 aGraeTools().messages('Monitor de Rendimientos','Se han guardado los datos de Produccion',3)
