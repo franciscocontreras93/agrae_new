@@ -680,7 +680,8 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
 
         # print('huella de carbono')
         data = self.dataExtraccion
-        with self.conn.cursor() as cursor: 
+        cursor = agraeDataBaseDriver().cursor(self.conn)
+        with cursor: 
             try:
                 sql = '''select ca.unidadesnpktradicionales  from campaign."data" d 
                 join agrae.agricultor ag on ag.idexplotacion  = d.idexplotacion 
