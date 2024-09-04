@@ -851,12 +851,16 @@ class MplCanvas(FigureCanvasQTAgg):
                 else: 
                     values = [0,0,0,0]
                     # print(values)
-            except IndexError as ie:
+            except IndexError:
+                values = [0,0,0,0]
+                # print(values)
+                return values
+            except KeyError:
                 values = [0,0,0,0]
                 # print(values)
                 return values
 
-            
+            # print(values)
             return values   
 
     
@@ -870,7 +874,7 @@ class MplCanvas(FigureCanvasQTAgg):
         p_values = {segmentos[i]: fosforo[i] for i in range(len(segmentos))}
         k_values = {segmentos[i]: potasio[i] for i in range(len(segmentos))}
         carb_values = {segmentos[i]: carbonato[i] for i in range(len(segmentos))}
-        # print(n_values)
+        print(n_values)
 
         suelo_1 = getValues(1)
         suelo_2 = getValues(2)
