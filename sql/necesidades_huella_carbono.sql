@@ -108,10 +108,10 @@ segm_analitica as (select
 	s.geometria 
 	from segmentos s 
 	join campaign.data d  on  s.iddata = d.iddata 
-	join field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and m.idsegmento = s.idsegmento --join MUESTRAS
+	join field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and st_intersects(m.geom,s.geometria) --join MUESTRAS
 	join analytic.analitica a on m.codigo = a.cod
 	LEFT JOIN analytic.ph ph ON a.ph > ph.limite_inferior AND a.ph <= ph.limite_superior
-	LEFT JOIN analytic.textura txt ON a.arena >= txt.arena_i AND a.arena <= txt.arena_s AND a.arcilla >= txt.arcilla_i AND a.arcilla <= txt.arcilla_s AND a.ceap >= txt.ceap_i AND a.ceap <= txt.ceap_s
+	LEFT JOIN analytic.textura txt ON a.ceap >= txt.ceap_i AND a.ceap <= txt.ceap_s
 	LEFT JOIN analytic.conductividad_electrica ce ON a.ce >= ce.limite_i AND a.ce <= ce.limite_s
 	LEFT JOIN analytic.carbonatos carb ON a.carbon >= carb.limite_inferior AND a.carbon < carb.limite_superior
 	LEFT JOIN analytic.caliza_activa ca_ac ON a.caliza >= ca_ac.limite_i AND a.caliza <= ca_ac.limite_s

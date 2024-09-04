@@ -715,7 +715,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
             #! CALCULO HUELLA CARBONO FERTILIZACION INTRAPARCELARIA
             sql =  aGraeSQLTools().getSql('necesidades_huella_carbono.sql')
             sql = sql.format(self.iddata)
-            # print(sql)
+            print(sql)
             cursor.execute(sql)
             data = cursor.fetchall() 
             # print('DEBUG',data)
