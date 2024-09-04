@@ -281,7 +281,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.GenerarPanelesDialogAction = QtWidgets.QAction(agraeGUI().getIcon('chart-bar'),'Panel de Analisis Grafico',self)
         self.GenerarPanelesDialogAction.triggered.connect(self.loteAnliticDialog)
 
-        self.EditarLoteAction.triggered.connect(lambda: self.tools.enableElements(self.EditarLoteAction,[self.line_nombre,self.line_produccion,self.line_prod_final,self.combo_cultivo,self.combo_regimen,self.ActualizarLoteAction,self.EliminarLoteAction, self.check_siembra, self.check_cosecha]))
+        self.EditarLoteAction.triggered.connect(lambda: self.tools.enableElements(self.EditarLoteAction,[self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.ActualizarLoteAction,self.EliminarLoteAction, self.check_siembra, self.check_cosecha]))
         actions_lote = [self.EditarLoteAction,self.ActualizarLoteAction,self.ClimaLoteAction,self.GenerarPanelesDialogAction,self.EliminarLoteAction,]
         self.tools.settingsToolsButtons(self.tool_lote, actions_lote)
 
@@ -955,7 +955,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         regimen = self.combo_regimen.currentData() 
         nombre = self.line_nombre.text()
         produccion = self.line_produccion.value()
-        prod_final = self.line_prod_final.value()
+        # prod_final = self.line_prod_final.value()
         fechaSiembra = ''
         fechaCosecha = ''
         if self.check_siembra.isChecked():
@@ -966,7 +966,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         
         sql_lote = '''update agrae.lotes set nombre = '{}' where idlote = {}'''.format(nombre,self.idLote)
 
-        sql_data = '''update campaign.data set idcultivo = {}, idregimen = {}, fechasiembra = nullif('{}','')::date, fechacosecha = nullif('{}','')::date, prod_esperada = {}, prod_final = {} where iddata = {} '''.format(cultivo,regimen,fechaSiembra,fechaCosecha,produccion,prod_final,self.idData)
+        sql_data = '''update campaign.data set idcultivo = {}, idregimen = {}, fechasiembra = nullif('{}','')::date, fechacosecha = nullif('{}','')::date, prod_esperada = {} where iddata = {} '''.format(cultivo,regimen,fechaSiembra,fechaCosecha,produccion,self.idData)
         # print(sql_data)
         with self.conn.cursor() as cursor:
             try:
