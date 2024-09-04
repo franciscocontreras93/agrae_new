@@ -601,8 +601,12 @@ class aGraeTools():
         file = self.openFileDialog()
         # print(file)
         if file != None:
-            df = pd.read_csv(file,delimiter=';')
-            df = df.astype(object).replace(np.nan, 'NULL')
+            try:
+                df = pd.read_csv(file,delimiter=';')
+                df = df.astype(object).replace(np.nan, 'NULL')
+            except UnicodeDecodeError:
+                df = pd.read_csv(file,delimiter=';',encoding='windows-1252')
+                df = df.astype(object).replace(np.nan, 'NULL')
             # print(df)
             
             # print(data)
