@@ -77,7 +77,7 @@ class GestionDatosBaseDialog(QDialog,agraeDatosBaseDialog):
     def loadCE(self):
          self.tools.crearCE(layer = self.layers_ce.currentLayer(),
                                  field_ce36= self.field_ce36.currentField(),
-                                 field_ce90 = self.field_ce36.currentField())
+                                 field_ce90 = self.field_ce90.currentField())
 
 
 class CrearLotesDialog(QDialog):

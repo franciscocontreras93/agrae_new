@@ -339,8 +339,15 @@ class aGraeTools():
         lyr = layer
         srid = lyr.crs().authid()[5:]
         sql = """ insert into agrae.ce(ce36, kf36, ce90, kf90 ,geometria) values """
-        if len(lyr.selectedFeatures()) > 0: features = lyr.selectedFeatures() 
-        else: features = lyr.getFeatures()
+        if len(list(lyr.selectedFeatures())) > 0:
+            features = list(lyr.selectedFeatures())
+        else:
+            features = list(lyr.getFeatures())
+
+        # print(len(features))
+
+        # print(len(list(features)))
+
         try:
             reply = QtWidgets.QMessageBox.question(None,'aGrae Toolbox','Se cargaran {} poligonos a la base de datos,\n este proceso puede tardar. Quiere Continuar?'.format(len(features)),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
             if reply == QtWidgets.QMessageBox.Yes:
@@ -359,10 +366,10 @@ class aGraeTools():
                         # print(sql)
                         cursor.execute(sql[:-2])   
                         self.conn.commit() 
-                        QMessageBox.about(None, 'aGrae GIS', 'CE Cargados Correctamente \na la base de datos')
+                        QMessageBox.about(None, 'aGrae GIS', 'CE Cargados Correctamente a la base de datos')
 
                     except Exception as ex:
-
+                        
                         QgsMessageLog.logMessage(f'{ex}', 'aGrae GIS', level=1)
                         self.conn.rollback()
     
@@ -370,7 +377,6 @@ class aGraeTools():
             QgsMessageLog.logMessage(f'{ex}', 'aGrae GIS', level=1)
             self.conn.rollback()
 
-        pass
         
     def crearRindes(self,
                      layer:QgsVectorLayer,
@@ -618,7 +624,6 @@ class aGraeTools():
         df1 = df
         columns = [c for c in df1.columns]
         _VALUES = list()
-        print(columns)   
         with self.conn.cursor() as cursor:
             try:   
                 for index, r in df1.iterrows():
@@ -626,39 +631,19 @@ class aGraeTools():
                     
                     try:
                         cursor.execute(sql)
-                        self.messages('aGrae GIS','Analitica ({}) Cargada Correctamente'.format(r['COD']),3,alert=True)
-                        self.conn.commit()
+                        
                     except Exception as ex:
                         self.conn.rollback()
                         raise Exception('Ocurrio un Error: {}'.format(ex))
-                    
+                
+                self.conn.commit()
+                self.messages('aGrae GIS','Analitica  Cargada Correctamente',alert=True)
+
             except Exception as ex:
                 QMessageBox.about(None, self.plugin_name, 'Ocurrio un error, revisa el panel de registros para más información')
                 QgsMessageLog.logMessage(f'{ex}', self.plugin_name, level=1)
                 self.conn.rollback()
-            # try:     
-            #     cursor.execute(_SQL_INSERT + ' ,\n'.join(_VALUES))
-            #     self.conn.commit()
-            #     # self.tools.actualizarNecesidades()
-            #     iface.messageBar().pushMessage(self.plugin_name, 'Analitica Cargada Correctamente', level=Qgis.Success)
-            #     QgsMessageLog.logMessage('Analitica Cargada Correctamente', self.plugin_name, level=Qgis.Success)
-                    
-
-            # except errors.lookup('23505'):
-            #     # QMessageBox.about(None, self.plugin_name,'El analisis con codigo: {} ya existe en la base de datos.\nComprueba la informacion'.format(row['COD']))
-            #     # QgsMessageLog.logMessage('El analisis con codigo: {} ya existe en la base de datos.\nComprueba la informacion'.format(row['COD']), self.plugin_name, level=Qgis.Warning)
-            #     # self.conn.rollback()
-            #     _SQL_UPDATE = '''UPDATE analytic.analitica
-            #     SET             idanalitica=nextval('analytic.analitica_idanalitica_seq'::regclass), ceap=0, ph=0, ce=0, carbon=0, caliza=0, ca=0, mg=0, k=0, na=0, n=0, p=0, organi=0, cox=0, rel_cn=0, ca_eq=0, mg_eq=0, k_eq=0, na_eq=0, cic=0, ca_f=0, mg_f=0, k_f=0, na_f=0, al=0, b=0, fe=0, mn=0, cu=0, zn=0, s=0, mo=0, arcilla=0, limo=0, arena=0, ni=0, co=0, ti=0, "as"=0, pb=0, cr=0, metodo=0
-            #     WHERE cod='';'''
-            
-            # except Exception as ex:
-            #     QMessageBox.about(None, self.plugin_name, 'Ocurrio un error, revisa el panel de registros para más información')
-            #     QgsMessageLog.logMessage(f'{ex}', self.plugin_name, level=1)
-            #     self.conn.rollback()
-
-            # self.an_save_bd.setEnabled(False)
-            # QMessageBox.about(self, f"aGrae GIS:",f"Analitica almacenada correctamente")
+           
         
     def crearReporteTest(self):
         #! CREAR BASE DEL ANALISIS DE LABORATORIO
