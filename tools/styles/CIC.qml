@@ -146,7 +146,7 @@
   </elevation>
   <renderer-v2 enableorderby="0" forceraster="0" type="RuleRenderer" symbollevels="0" referencescale="-1">
     <rules key="{2867c40f-c9bf-4fbc-8671-4bd7ad19da6f}">
-      <rule symbol="0" key="{ad1178ce-df4e-4c0c-9a85-80c1e966d111}" label="Sin Datos" filter="CIC is null"/>
+      <rule symbol="0" key="{ad1178ce-df4e-4c0c-9a85-80c1e966d111}" label="Sin Datos" filter="CIC is null or CIC = 'N/D'"/>
       <rule symbol="1" key="{5be6a5be-a823-4794-a42a-cb946d321f3b}" label="CIC&lt;5meq/100g" filter="&quot;CIC&quot; >= 0.000000 AND &quot;CIC&quot; &lt;= 5.000000"/>
       <rule symbol="2" key="{7ac1cd98-efe9-4a61-977c-14268ec448df}" label="Suelo óptimo" filter="&quot;CIC&quot; > 5.000000 AND &quot;CIC&quot; &lt;= 30.000000"/>
       <rule symbol="3" key="{cb9a6c83-15d6-45c0-9ee9-87ebd89ff299}" label="CIC>30meq/100g" filter="&quot;CIC&quot; > 30.000000 AND &quot;CIC&quot; &lt;= 2000.000000"/>

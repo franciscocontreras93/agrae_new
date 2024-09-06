@@ -2073,7 +2073,6 @@
    <layer-tree-layer id="CINQ_e3f4584a_d34e_42fa_ba3f_aa8c5214c17f" checked="Qt::Checked" legend_exp="" patch_size="-1,-1" name="CINQ" expanded="1" legend_split_behavior="0">
     <customproperties>
      <Option type="Map">
-      <Option value="Cinq" type="QString" name="cached_name"/>
       <Option value="Cinq" type="QString" name="legend/title-label"/>
      </Option>
     </customproperties>
@@ -2081,7 +2080,6 @@
    <layer-tree-layer id="COBRE_e6c0b41c_d370_49b3_9ecf_d178afa30142" checked="Qt::Checked" legend_exp="" patch_size="-1,-1" name="COBRE" expanded="1" legend_split_behavior="0">
     <customproperties>
      <Option type="Map">
-      <Option value="Cobre" type="QString" name="cached_name"/>
       <Option value="Cobre" type="QString" name="legend/title-label"/>
      </Option>
     </customproperties>
@@ -3167,7 +3165,6 @@
    <layer-tree-layer id="ALUMINIO_58517890_8749_48f6_9667_06df48fb790d" checked="Qt::Checked" legend_exp="" patch_size="-1,-1" name="ALUMINIO" expanded="1" legend_split_behavior="0">
     <customproperties>
      <Option type="Map">
-      <Option value="Aluminio" type="QString" name="cached_name"/>
       <Option value="Aluminio" type="QString" name="legend/title-label"/>
      </Option>
     </customproperties>
@@ -3175,7 +3172,6 @@
    <layer-tree-layer id="BORO_6b62f324_0574_47fc_b637_5bd08c9edc54" checked="Qt::Checked" legend_exp="" patch_size="-1,-1" name="BORO" expanded="1" legend_split_behavior="0">
     <customproperties>
      <Option type="Map">
-      <Option value="Boro" type="QString" name="cached_name"/>
       <Option value="Boro" type="QString" name="legend/title-label"/>
      </Option>
     </customproperties>
@@ -5659,6 +5655,7 @@
    <layer-tree-layer id="FERT__VARIABLE_PARCELARIA_93bc9899_da2e_4863_a39f_edf14f9d3fd9" checked="Qt::Checked" legend_exp="" patch_size="-1,-1" name="FERT. VARIABLE PARCELARIA" expanded="1" legend_split_behavior="0">
     <customproperties>
      <Option type="Map">
+      <Option value="UF Unica" type="QString" name="cached_name"/>
       <Option value="UF Unica" type="QString" name="legend/title-label"/>
      </Option>
     </customproperties>
@@ -8287,7 +8284,7 @@
    </layer>
   </symbol>
  </LayoutItem>
- <LayoutItem valign="32" uuid="{961eec7b-ed7a-4915-9917-cf29582028e9}" marginY="1" position="145.258,2298.01,mm" htmlState="0" positionOnPage="145.258,149.01,mm" frame="false" templateUuid="{961eec7b-ed7a-4915-9917-cf29582028e9}" type="65641" itemRotation="0" background="false" blendMode="0" excludeFromExports="0" labelText="Se han calculado [% count_distinct( formulafondo != '') +  count_distinct( formulacob1 != '') + &#xa;  count_distinct(formulacob2 != '') + &#xa;   count_distinct( formulacob3 != '')%] combinaciones de Fertilizantes para ajustar las necesidades del cultivo.&#xa;&#xa;De ellas se han seleccionado la combinación más economica. Los fertilizantes que se han analizado han sido:&#xa;&#xa;[%(case&#xa;when formulafondo != ''&#xa;then  concat('* Fondo: ',to_int(string_to_array(formulafondo,'-')[0]),'%-',to_int(string_to_array(formulafondo,'-')[1]),'%-',to_int(string_to_array(formulafondo,'-')[2]),'%')&#xa;end)%]&#xa;[%(case&#xa;when formulacob1 != ''&#xa;then  concat('* Cobertera 1: ',to_int(string_to_array(formulacob1,'-')[0]),'%-',to_int(string_to_array(formulacob1,'-')[1]),'%-',to_int(string_to_array(formulacob1,'-')[2]),'%')&#xa;end)%]&#xa;[%(case&#xa;when formulacob2 != ''&#xa;then  concat('* Cobertera 2: ',to_int(string_to_array(formulacob2,'-')[0]),'%-',to_int(string_to_array(formulacob2,'-')[1]),'%-',to_int(string_to_array(formulacob2,'-')[2]),'%')&#xa;end)%]&#xa;[%(case&#xa;when formulacob3 != ''&#xa;then  concat('* Cobertera 3: ',to_int(string_to_array(formulacob3,'-')[0]),'%-',to_int(string_to_array(formulacob3,'-')[1]),'%-',to_int(string_to_array(formulacob3,'-')[2]),'%')&#xa;end)%]&#xa;&#xa;*** Precios de Fertilizantes a dia [%format_date(now(),'dd-MM-yyyy')%]. Pueden sufrir variación&#xa;&#xa;&#xa;&#xa;" groupUuid="" halign="1" frameJoinStyle="miter" id="" opacity="1" positionLock="false" outlineWidthM="0.3,mm" visibility="1" zValue="429" marginX="3" referencePoint="0" size="55.1472,103.803,mm">
+ <LayoutItem valign="32" uuid="{961eec7b-ed7a-4915-9917-cf29582028e9}" marginY="1" position="145.258,2298.01,mm" htmlState="1" positionOnPage="145.258,149.01,mm" frame="false" templateUuid="{961eec7b-ed7a-4915-9917-cf29582028e9}" type="65641" itemRotation="0" background="false" blendMode="0" excludeFromExports="0" labelText="&lt;p>Se han calculado &lt;b style='color:blue'>[% count_distinct( formulafondo != '') +  count_distinct( formulacob1 != '') + &#xa;  count_distinct(formulacob2 != '') + &#xa;   count_distinct( formulacob3 != '')%]&lt;/b> combinaciones de Fertilizantes para ajustar las necesidades del cultivo.&lt;/p>&#xa;&#xa;&lt;p>De ellas se han seleccionado la combinación más economica. Los fertilizantes que se han analizado han sido:&lt;/p>&#xa;&#xa;&lt;p>[%(case&#xa;when formulafondo != ''&#xa;then  concat('Fondo: ',to_int(string_to_array(formulafondo,'-')[0]),'%-',to_int(string_to_array(formulafondo,'-')[1]),'%-',to_int(string_to_array(formulafondo,'-')[2]),'%')&#xa;end)%]&lt;/p>&#xa;&lt;p>[%(case&#xa;when formulacob1 != ''&#xa;then  concat('Cobertera 1: ',to_int(string_to_array(formulacob1,'-')[0]),'%-',to_int(string_to_array(formulacob1,'-')[1]),'%-',to_int(string_to_array(formulacob1,'-')[2]),'%')&#xa;end)%]&lt;/p>&#xa;&lt;p>[%(case&#xa;when formulacob2 != ''&#xa;then  concat('Cobertera 2: ',to_int(string_to_array(formulacob2,'-')[0]),'%-',to_int(string_to_array(formulacob2,'-')[1]),'%-',to_int(string_to_array(formulacob2,'-')[2]),'%')&#xa;end)%]&lt;p>&#xa;&lt;p>[%(case&#xa;when formulacob3 != ''&#xa;then  concat('* Cobertera 3: ',to_int(string_to_array(formulacob3,'-')[0]),'%-',to_int(string_to_array(formulacob3,'-')[1]),'%-',to_int(string_to_array(formulacob3,'-')[2]),'%')&#xa;end)%]&lt;/p>&#xa;&#xa;&lt;p style='color:red'>*** Precios de Fertilizantes a dia [%format_date(now(),'dd-MM-yyyy')%]. Pueden sufrir variación ***&lt;/p>&#xa;" groupUuid="" halign="1" frameJoinStyle="miter" id="" opacity="1" positionLock="false" outlineWidthM="0.3,mm" visibility="1" zValue="429" marginX="3" referencePoint="0" size="55.1472,103.803,mm">
   <FrameColor alpha="255" blue="0" green="0" red="0"/>
   <BackgroundColor alpha="255" blue="255" green="255" red="255"/>
   <LayoutObject>
@@ -35776,5 +35773,5 @@ def my_form_open(dialog, layer, feature):
    <Option value="true" type="bool" name="singleFile"/>
   </Option>
  </customproperties>
- <Atlas filenamePattern="lote" sortFeatures="1" sortKey="&quot;lote&quot;" coverageLayer="" filterFeatures="0" sortAscending="1" pageNameExpression="lote" enabled="0" hideCoverage="0"/>
+ <Atlas filenamePattern="lote" sortFeatures="1" sortKey="&quot;lote&quot;" coverageLayer="" filterFeatures="0" sortAscending="1" pageNameExpression="&quot;lote&quot;" enabled="0" hideCoverage="0"/>
 </Layout>
