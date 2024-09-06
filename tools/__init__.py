@@ -498,7 +498,7 @@ class aGraeTools():
             1043: QVariant.String,
             1082: QVariant.String,
         }
-        if styleName.lower() in ['fosforo','potasio','calcio','magnesio','sodio']: estilo = 'analisis_ppm' 
+        if styleName.lower() in ['fosforo','potasio','calcio','magnesio','sodio','azufre']: estilo = 'analisis_ppm' 
         else: estilo = styleName
 
         styleUri = os.path.join(os.path.dirname(__file__), 'styles/{}.qml'.format(estilo))

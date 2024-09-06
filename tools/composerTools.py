@@ -128,8 +128,8 @@ class aGraeComposerTools():
                 data = cursor.fetchone()
                 out = open(os.path.join(os.path.dirname(__file__),'img/dist_logo.png'),'wb')
                 out.write(data[2])
-                self.nombre_explotacion = data[0]
-                self.direccion_explotacion = data[1]
+                self.nombre_explotacion = data[0].upper()
+                self.direccion_explotacion = data[1].upper()
                 
                 # image = Image.open(BytesIO(data))
                 # print(image)
@@ -145,7 +145,7 @@ class aGraeComposerTools():
     def setTextOverElements(self,elements,text):
         try:
             for e in elements:
-                e.setText(text)
+                e.setText(text.upper())
         except:
             pass
     def layoutGenerator(self,
@@ -245,7 +245,7 @@ class aGraeComposerTools():
             pc.page(l).setPageSize('A4', QgsLayoutItemPage.Orientation.Portrait)
 
 
-        tmpfile = self.plugin_dir + '/templates/prescripcion.qpt'
+        tmpfile = self.plugin_dir + '/templates/prescripcion_dev.qpt'
         with open(tmpfile) as f:
             template_content = f.read()
             
@@ -263,8 +263,8 @@ class aGraeComposerTools():
             l.setPicturePath(os.path.join(os.path.dirname(__file__),'img/dist_logo.png'))
 
 
-        self.setTextOverElements(nombres_exp,self.nombre_explotacion)
-        self.setTextOverElements(direcciones,self.direccion_explotacion)
+        self.setTextOverElements(nombres_exp,self.nombre_explotacion.upper())
+        self.setTextOverElements(direcciones,self.direccion_explotacion.upper())
         
 
 
