@@ -430,62 +430,65 @@ class aGraeTools():
         iface.actionSelect().trigger()
         iface.setActiveLayer(layer)
 
-    def getDataBaseLayerUri(self,idcampania,idexplotacion,name):
+    def getDataBaseLayerUri(self,idcampania,idexplotacion,name,sql:str=None):
         dns = agraeDataBaseDriver().getDSN()
         styleUri = os.path.join(os.path.dirname(__file__), 'styles/{}.qml'.format('ambientes'))
-        sql = ''' with data as (select distinct 
-            d.iddata,
-            d.idcampania,
-            d.idexplotacion,
-            d.idlote,
-            d.idcultivo, 
-            d.idregimen,
-            d.fertilizantefondoformula,
-            d.fertilizantefondoajustado,
-            d.fertilizantecob1formula,
-            d.fertilizantecob1ajustado,
-            d.fertilizantecob2formula,
-            d.fertilizantecob2ajustado,
-            d.fertilizantecob3formula,
-            d.fertilizantecob3ajustado,
-            c.ms_cosecha,
-            c.extraccioncosechan,
-            c.extraccioncosechap,
-            c.extraccioncosechak, 
-            c.ms_residuo,
-            c.extraccionresiduon,
-            c.extraccionresiduop,
-            c.extraccionresiduok, 
-            d.prod_esperada 
-            from campaign.data d 
-            join agrae.cultivo c on c.idcultivo = d.idcultivo
-            where d.idcampania = {} and d.idexplotacion = {} ),
-        lotes as (select l.*, 
-            d.iddata,
-            d.idcampania,
-            d.idexplotacion,
-            d.idcultivo,
-            d.idregimen as regimen,
-            d.ms_cosecha,
-            d.extraccioncosechan,
-            d.extraccioncosechap,
-            d.extraccioncosechak, 
-            d.ms_residuo,
-            d.extraccionresiduon,
-            d.extraccionresiduop,
-            d.extraccionresiduok, 
-            d.prod_esperada from data d join agrae.lotes l on d.idlote = l.idlote ),
-        ambientes as (select distinct l.nombre as lote,a.idambiente,a.ambiente,a.ndvimax,st_collectionextract(st_multi(st_intersection(l.geom,a.geometria)),3) as geom, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_intersects(l.geom,a.geometria))
-        select row_number() over () as id , lote,idambiente,ambiente,ndvimax::numeric,(geom) as geom from ambientes
-        '''.format(idcampania,idexplotacion)
+        if sql:
+            sql = sql
+        else :
+            sql = ''' with data as (select distinct 
+                d.iddata,
+                d.idcampania,
+                d.idexplotacion,
+                d.idlote,
+                d.idcultivo, 
+                d.idregimen,
+                d.fertilizantefondoformula,
+                d.fertilizantefondoajustado,
+                d.fertilizantecob1formula,
+                d.fertilizantecob1ajustado,
+                d.fertilizantecob2formula,
+                d.fertilizantecob2ajustado,
+                d.fertilizantecob3formula,
+                d.fertilizantecob3ajustado,
+                c.ms_cosecha,
+                c.extraccioncosechan,
+                c.extraccioncosechap,
+                c.extraccioncosechak, 
+                c.ms_residuo,
+                c.extraccionresiduon,
+                c.extraccionresiduop,
+                c.extraccionresiduok, 
+                d.prod_esperada 
+                from campaign.data d 
+                join agrae.cultivo c on c.idcultivo = d.idcultivo
+                where d.idcampania = {} and d.idexplotacion = {} ),
+            lotes as (select l.*, 
+                d.iddata,
+                d.idcampania,
+                d.idexplotacion,
+                d.idcultivo,
+                d.idregimen as regimen,
+                d.ms_cosecha,
+                d.extraccioncosechan,
+                d.extraccioncosechap,
+                d.extraccioncosechak, 
+                d.ms_residuo,
+                d.extraccionresiduon,
+                d.extraccionresiduop,
+                d.extraccionresiduok, 
+                d.prod_esperada from data d join agrae.lotes l on d.idlote = l.idlote ),
+            ambientes as (select distinct l.nombre as lote,a.idambiente,a.ambiente,a.ndvimax,st_collectionextract(st_multi(st_intersection(l.geom,a.geometria)),3) as geom, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_intersects(l.geom,a.geometria))
+            select row_number() over () as id , lote,idambiente,ambiente,ndvimax::numeric,(geom) as geom from ambientes
+            '''.format(idcampania,idexplotacion)
 
         uri = QgsDataSourceUri() 
         uri.setConnection(dns['host'], dns['port'], dns['dbname'], dns['user'], dns['password'])
         uri.setDataSource('', f'({sql})', 'geom', '', 'id')
             # uriUnidades.setDataSource('public', 'unidades', 'geometria', f'"idlotecampania" = {idlotecampania}', 'id')
-        lyrAmbientes = QgsVectorLayer(uri.uri(), '{}-Ambientes'.format(name), 'postgres')
-        lyrAmbientes.loadNamedStyle(styleUri)
-        return lyrAmbientes
+        lyr = QgsVectorLayer(uri.uri(), '{}-Ambientes'.format(name), 'postgres')
+        lyr.loadNamedStyle(styleUri)
+        return lyr
     
     def getDataBaseLayer(self, sql:str, layername:str ='Resultados' ,styleName:str ='',memory=True,save=False,debug=False) -> QgsVectorLayer:
         col_types = {
@@ -500,7 +503,7 @@ class aGraeTools():
         }
         if styleName.lower() in ['fosforo','potasio','calcio','magnesio','sodio','azufre']: estilo = 'analisis_ppm' 
         else: estilo = styleName
-
+       
         styleUri = os.path.join(os.path.dirname(__file__), 'styles/{}.qml'.format(estilo))
         cursor = agraeDataBaseDriver().cursor(self.conn,extras.RealDictCursor)
 
@@ -517,8 +520,9 @@ class aGraeTools():
                     
                     data = cursor.fetchall()
                     if debug:
+                        # print(sql)
                         # print(data)
-                        print(coldesc)
+                        print(set([c[1] for c in coldesc]))
                     # QgsMessageLog.logMessage('{}'.format(sql), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
                     # QgsMessageLog.logMessage('{}'.format(coldesc), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
                     fields = [QgsField(c[0],col_types[c[1]]) for c in coldesc]
@@ -527,16 +531,17 @@ class aGraeTools():
                     geom = QgsGeometry()
                     features = []
                     for r in data:
-                        # if debug:
-                        #     print(r['geom'])
+                        if debug:
+                            # print(r['geom'])
+                            pass
                         feat = QgsFeature()
                         feat.setFields(lyr.fields())
                         for c in fields:
                             feat.setAttribute(c.name(),r[c.name()])
                         feat.setGeometry(geom.fromWkt(r['geom']))
                         features.append(feat)
-                        if debug:
-                            print(feat)
+                        # if debug:
+                        #     print(feat)
                         # QgsMessageLog.logMessage('{}'.format(feat.geometry().asWkt()), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
                         provider.addFeatures([feat])
                     
@@ -560,7 +565,7 @@ class aGraeTools():
                 
                 except Exception as ex:
                     iface.messageBar().pushMessage("Error:", "Ocurrio un Error, revisa el panel de mensajes del Registro", level=Qgis.Critical)
-                    # print(ex)
+                    print(ex)
                     QgsMessageLog.logMessage('{}'.format(ex), self.plugin_name, level=Qgis.Critical)
                     self.conn.rollback()
                     return QgsVectorLayer()
@@ -714,24 +719,9 @@ class aGraeTools():
         s = QSettings('agrae','dbConnection')
         path = s.value('ufs_path')
         fn = os.path.join(path,'UFS_{}.shp'.format(nameExp))
-        print(fn)
-        q = '''select distinct 
-        row_number() OVER (ORDER BY (st_dump(geom)).geom) as id,
-        uf,
-        uf_etiqueta,
-        lote, prod_esperada, prod_ponderada, 
-        fertilizantefondoformula for_1, 
-        fertilizantefondocalculado dos_1,
-        fertilizantecob1formula for_2, 
-        fertilizantecob1calculado dos_2,
-        fertilizantecob2formula for_3, 
-        fertilizantecob2calculado dos_3,
-        fertilizantecob3formula for_4, 
-        fertilizantecob3calculado dos_4,
-        round((st_area(st_transform(((st_dump(geom)).geom),8857))/10000)::numeric,2)::double precision area_ha,
-        st_asText(st_multi((st_dump(geom)).geom)) as geom
-        from uf_final;'''
-        query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,q)
+        
+        query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,'''select * from fert_intraparcelaria''')
+        print(query)
         layer = self.getDataBaseLayer(query,'UFS_{}'.format(nameExp),styleName='Fert Variable Intraparcelaria',memory=True)
         try:
             self.saveLayer(layer,fn,nameExp)

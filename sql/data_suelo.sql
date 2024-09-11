@@ -27,7 +27,7 @@ segm_analitica as (
 	JOIN campaign.data d  on  s.iddata = d.iddata 
 	LEFT JOIN field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and st_intersects(s.geometria,m.geom) --join MUESTRAS
 	JOIN analytic.analitica a on m.codigo = a.cod
-	JOIN analytic.textura txt ON  a.ceap >= txt.ceap_i AND a.ceap <= txt.ceap_s
+	JOIN analytic.textura txt ON  a.ceap >= txt.ceap_i AND a.ceap < txt.ceap_s
 	JOIN analytic.carbonatos carb ON (a.carbon / 100::double precision) >= carb.limite_inferior AND (a.carbon / 100::double precision) < carb.limite_superior
 	LEFT JOIN analytic.nitrogeno n ON a.n >= n.limite_inferior AND a.n < n.limite_superior and n.textura = txt.grupo
 	LEFT JOIN analytic.potasio k ON k.textura = txt.grupo AND a.k >= k.limite_inferior AND a.k < k.limite_superior

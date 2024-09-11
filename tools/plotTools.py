@@ -201,7 +201,7 @@ class PanelRender():
         font2 = ImageFont.truetype("arialbi.ttf", 12)
         img = Image.open(self.path['base4'])
         draw = ImageDraw.Draw(img)
-        txt = 'Si hacemos las coseas BIEN, además de\nahorrar Fertilizante, conseguimos un\n{}% de HUELLA DE CARBONO\nrepecto a seguir haciendolas como siempre'.format(
+        txt = 'Si hacemos las cosas BIEN, además de\nahorrar Fertilizante, conseguimos un\n{}% de HUELLA DE CARBONO\nrespecto a seguir haciéndolas como siempre.'.format(
             datos['percent'])
         draw.text((240, 140), txt, font=font, fill=self.color,
                   anchor='mm', align='center', spacing=12)  # ! TEXTO PANEL
@@ -317,7 +317,7 @@ class PanelRender():
         draw.text((580, 797), '{:,} KgCO2eq/ha'.format(datos['fertilizacion']*(-1)), font=ImageFont.truetype("arialbi.ttf", 15), fill=(226, 59, 59),
                   anchor='mm', align='center', spacing=12)  # ! CAPTURA FERTILZIACION VARIABLE
 
-        nota = 'Se han calculado {} combinaciones de Fertilizantes para ajustar las necesidades del Cultivo.\nDe ellas se ha seleccionado la combinacion mas economica. Los fertilizantes con los que\nse ha analizado han sido: {}\n***Precios Fertilizantes a dia {}. Pueden sufrir Variacion***'.format(
+        nota = 'Se han calculado {} combinaciones de Fertilizantes para ajustar las necesidades del Cultivo.\nDe ellas se ha seleccionado la combinacion más económica. Los fertilizantes con los que\nse ha analizado han sido: {}\n***Precios Fertilizantes a dia {}. Pueden sufrir Variación.***'.format(
             len(precios), formulas[:-4], datetime.today().strftime("%d/%m/%Y"))
 
         draw.text((50, 850),

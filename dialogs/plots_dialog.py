@@ -71,6 +71,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         self.produccion = produccion_esperada.upper()
 
         self.dataSuelo = dataSuelo
+        
         self.dataExtraccion = dataExtraccion
         self.iddata = iddata
         self.lote = lote 
@@ -329,29 +330,38 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         :param _type_ i: _description_
         """
         d = None
+        # if i == 1:
+        #     adjust_factor = 0.20
+        # elif i == 2:
+        #     adjust_factor = 0.50
+        # elif i == 3:
+        #     adjust_factor = 1
+        # elif i == 4:
+        #     adjust_factor = 1
+        adjust_factor = 1
+      
         try:
             if index != 0 and self.dataValidator == False:
                 precio = precio.text()
                 data = self.dataExtraccion
-                # print(precio)
-                # print(self.dataExtraccion)
                 area = [float(e[5]) for e in data]
                 npk = [str(e[4]) for e in data]
                 lista = [e.split(' / ') for e in npk ]
-                n = [int(e[0]) for e in lista ]
+                n = [int(e[0])*adjust_factor for e in lista ]
                 p = [int(e[1]) for e in lista ]
                 k = [int(e[2]) for e in lista ]
+
+                # print(n,p,k)
             elif self.dataValidator == True:
                 precio = precio.text()
                 data = self.dataNecesidades
                 data = list(zip(*[data[col] for col in data]))
-                # print(data)
                 area = [float(e[5]) for e in self.dataExtraccion]
                 uf = [e[0] for e in data]
-                n = [int(e[1]) for e in data]
+                n = [int(e[1]) * adjust_factor for e in data]
                 p = [int(e[2]) for e in data]
                 k = [int(e[3]) for e in data]
-
+                # print(n,p,k)
 
 
             f_n = int(self.formula[0])/100 # FACTOR NITROGENO EN DOSIS APLICADA
@@ -360,6 +370,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
 
 
             cols = [0,(index)]
+            
             d = self.ajustesFertilizantes(n=n,x=f_n,p=p,y=f_p,k=k,z=f_k)
             # print(d)        
             datagen = ([f[col] for col in cols] for f in d)
@@ -588,7 +599,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         if data[12] != None and data[13] != None and data[14] != None :
             f4 = str(data[12])
             txt = txt + '''<p align="center"><span style=" font-weight:600;">APORTE 4 {} </span></p>'''.format(f4)
-            self.line_formula_4.setText(data[13])
+            self.line_formula_4.setText(data[12])
             self.line_precio_4.setText(str(int(round(data[13]))))
             self.combo_ajuste_4.setCurrentText(str(data[14]).upper())
             # self.line_cantidad_4.setText(str(float(data[15])))
@@ -715,7 +726,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
             #! CALCULO HUELLA CARBONO FERTILIZACION INTRAPARCELARIA
             sql =  aGraeSQLTools().getSql('necesidades_huella_carbono.sql')
             sql = sql.format(self.iddata)
-            print(sql)
+            # print(sql)
             cursor.execute(sql)
             data = cursor.fetchall() 
             # print('DEBUG',data)
@@ -737,7 +748,8 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
             #! REDUCCION HUELLA DE CARBONO: 
             try: 
                 _reduccion = -huella_carbono_fp+huella_carbono_fv
-                _percent = round((+_reduccion/huella_carbono_fp)*100)
+                # _percent = round((+_reduccion/huella_carbono_fp)*100)
+                _percent = round((+_reduccion/huella_carbono_fp),1)
                 # print('**** REDUCCION HUELLA DE CARBONO: {} KgCO2eq/ha o un {} % ****'.format(_reduccion,_percent))
 
 
@@ -792,7 +804,7 @@ class MplCanvas(FigureCanvasQTAgg):
         plt.savefig(path)
 
     def plot(self,data):
-        # print(data)
+        print(data)
         
 
         def valores(suelo):
@@ -875,7 +887,7 @@ class MplCanvas(FigureCanvasQTAgg):
         p_values = {segmentos[i]: fosforo[i] for i in range(len(segmentos))}
         k_values = {segmentos[i]: potasio[i] for i in range(len(segmentos))}
         carb_values = {segmentos[i]: carbonato[i] for i in range(len(segmentos))}
-        print(n_values)
+        # print(n_values)
 
         suelo_1 = getValues(1)
         suelo_2 = getValues(2)
