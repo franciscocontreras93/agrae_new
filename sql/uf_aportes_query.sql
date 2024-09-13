@@ -359,7 +359,7 @@ join necesidades_f nf using(idlote, iddata, uf, uf_etiqueta)
 aportes as (
 select
 n.idlote, n.iddata, n.codigo,n.ambiente,n.ndvimax,n.segmento,n.ceap,n.uf, n.uf_etiqueta,
-concat(n.necesidad_n,'-',n.necesidad_p,'-',n.necesidad_k) necesidades_iniciales,
+concat(lpad(n.necesidad_n::varchar,4,'0'),'-',lpad(n.necesidad_p::varchar,4,'0'),'-',lpad(n.necesidad_k::varchar,4,'0')) necesidades_iniciales,
 coalesce(d.fertilizantefondoformula,'Sin Informacion') fertilizantefondoformula,
 	(CASE
             WHEN d.fertilizantefondoajustado::text ~~* 'n'::text AND n.necesidad_n > 0::double precision THEN round((n.necesidad_n) * 0.20 / NULLIF((string_to_array(d.fertilizantefondoformula, '-'::text))[1]::double precision / 100::double precision, 0::double precision))
@@ -392,7 +392,7 @@ coalesce(d.fertilizantecob3formula,'Sin Informacion') fertilizantecob3formula,
             WHEN d.fertilizantecob3ajustado::text ~~* 'pk'::text AND n.necesidad_piii > 0::double precision OR n.necesidad_kiii > 0::double precision THEN round((n.necesidad_piii / NULLIF((string_to_array(d.fertilizantecob3formula, '-'::text))[2]::double precision / 100::double precision, 0::double precision) + n.necesidad_kiii / NULLIF((string_to_array(d.fertilizantecob3formula, '-'::text))[3]::double precision / 100::double precision, 0::double precision)) / 2::double precision)
             ELSE 0::double precision
         end) AS fertilizantecob3calculado,
-concat(n.necesidad_nf,'-',n.necesidad_pf,'-',n.necesidad_kf) necesidades_finales, n.geom
+concat(lpad(n.necesidad_nf::varchar,4,'0'),'-',lpad(n.necesidad_pf::varchar,4,'0'),'-',lpad(n.necesidad_kf::varchar,4,'0')) necesidades_finales, n.geom
 from necesidades n
 join data d using (iddata)
 ),
@@ -532,4 +532,4 @@ sum(area_ha) area_ha,
 st_asText(st_union(geom)) as geom
 from fert_intraparcelaria
 group by iddata,lote,formulafondo,formulacob1,formulacob2,formulacob3)
-{}
+select * from fert_report

@@ -23,7 +23,7 @@ with data as (select distinct
 	c.extraccionresiduok, 
 	d.prod_esperada 
 	from campaign.data d 
-	join agrae.cultivo c on c.idcultivo = d.idcultivo
+	left join agrae.cultivo c on c.idcultivo = d.idcultivo
 	where d.idcampania = {} and d.idexplotacion = {}), -- REQUIERE EL ID DE LA CAMPANIA Y DE LA EXPLOTACION
 lotes as (select l.*, 
 	d.iddata,

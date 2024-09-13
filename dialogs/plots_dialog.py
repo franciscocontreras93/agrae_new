@@ -804,7 +804,7 @@ class MplCanvas(FigureCanvasQTAgg):
         plt.savefig(path)
 
     def plot(self,data):
-        print(data)
+        
         
 
         def valores(suelo):
@@ -817,17 +817,14 @@ class MplCanvas(FigureCanvasQTAgg):
                 elif i == 'Alto':
                     colors.append('#5AB8E2')
                     values.append(4)
-                elif i == 'Medio':
+                elif i == 'Medio' or i == 'Normal':
                     colors.append('#5EE25A')
                     values.append(3)
-                elif i == 'Normal':
-                    colors.append('#5EE25A')
-                    values.append(3)
-                
+                                
                 elif i == 'Bajo':
                     colors.append('#FFAB66')
                     values.append(2)
-                elif i == 'Muy Bajo':
+                elif i == 'Muy Bajo' or i == 'Muy bajo':
                     colors.append('#FF6666')
                     # colors.append('#FF3333')
                     values.append(1)
@@ -892,6 +889,9 @@ class MplCanvas(FigureCanvasQTAgg):
         suelo_1 = getValues(1)
         suelo_2 = getValues(2)
         suelo_3 = getValues(3)
+        # print(suelo_1)
+        # print(suelo_2)
+        # print(suelo_3)
 
         
 
@@ -901,6 +901,8 @@ class MplCanvas(FigureCanvasQTAgg):
         values_1, colors_1 = valores(suelo_1)
         values_2, colors_2 = valores(suelo_2)
         values_3, colors_3 = valores(suelo_3)
+
+        # print(values_1,values_2,values_3)
 
         barGenerator(self.ax1,values_3,colors_3,categorias,y_pos,'',False)
         barGenerator(self.ax2,values_2,colors_2,categorias,y_pos,'',False)

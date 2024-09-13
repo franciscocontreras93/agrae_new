@@ -461,7 +461,7 @@ class aGraeTools():
                 c.extraccionresiduok, 
                 d.prod_esperada 
                 from campaign.data d 
-                join agrae.cultivo c on c.idcultivo = d.idcultivo
+                left join agrae.cultivo c on c.idcultivo = d.idcultivo
                 where d.idcampania = {} and d.idexplotacion = {} ),
             lotes as (select l.*, 
                 d.iddata,
