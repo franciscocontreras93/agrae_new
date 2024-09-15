@@ -1,21 +1,40 @@
 import psycopg2
+import os
 from qgis.PyQt.QtCore import QSettings
+
 
 
 class agraeDataBaseDriver():
     def __init__(self) -> None:
+        BASEDIR = os.path.abspath(os.path.dirname(__file__))
+        
+
+       
 
         self.conn = None
         self.s = QSettings('agrae','dbConnection')
-
-        self.dsn = {
-            'dbname': self.s.value('dbname'),
-            'user': self.s.value('dbuser'),
-            'password': self.s.value('dbpass'),
-            'host': self.s.value('dbhost'),
-            'port': self.s.value('dbport')
-        }
+        debug  = True
         
+
+        if debug and os.environ['COMPUTERNAME'] == 'FJCS-LEGION':
+            from dotenv import load_dotenv
+            load_dotenv(os.path.join(BASEDIR, '.env'))
+            self.dsn = {
+                'dbname': os.getenv('DBNAME'),
+                'user': self.s.value('dbuser'),
+                'password': self.s.value('dbpass'),
+                'host': os.getenv('HOST'),
+                'port': self.s.value('dbport')
+            }
+            
+        else:
+            self.dsn = {
+                'dbname': self.s.value('dbname'),
+                'user': self.s.value('dbuser'),
+                'password': self.s.value('dbpass'),
+                'host': self.s.value('dbhost'),
+                'port': self.s.value('dbport')
+            }        
         pass
 
     def connection(self):

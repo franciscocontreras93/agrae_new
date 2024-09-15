@@ -329,7 +329,7 @@ class aGraeComposerTools():
             self.atlas,
             nombres_lotes,
             self.layers,
-            [layout.itemById('panel_00')],
+            [layout.itemById('panel_00'),layout.itemById('panel_02'),layout.itemById('panel_01'),layout.itemById('panel_03')],
             table_item
             ))
 
@@ -381,8 +381,12 @@ class aGraeComposerTools():
          
             self.setTextOverElements(nombresLotes,nombre_lote)
 
+            # print(self.panels_path)
             
             panels[0].setPicturePath(self.panels_path+'/Panel00'+nombre_lote+'.png')
+            panels[1].setPicturePath(self.panels_path+'/Panel02'+nombre_lote+'.png')
+            panels[2].setPicturePath(self.panels_path+'/Panel01'+nombre_lote+'.png')
+            panels[3].setPicturePath(self.panels_path+'/Panel03'+nombre_lote+'.png')
             
             extent = map.extent()
             atlas.coverageLayer().getFeature(atlas.currentFeatureNumber()+1)

@@ -23,7 +23,7 @@ with data as (select distinct
 	c.extraccionresiduok, 
 	d.prod_esperada 
 	from campaign.data d 
-	join agrae.cultivo c on c.idcultivo = d.idcultivo
+	left join agrae.cultivo c on c.idcultivo = d.idcultivo
 	where d.idcampania = {} and d.idexplotacion = {} ),
 lotes as (select l.*, 
 	d.iddata,
@@ -114,8 +114,8 @@ segm_analitica as (select distinct
 	s.geometria
 	FROM segmentos s 
 	JOIN lotes d  on  s.iddata = d.iddata
-	JOIN field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and m.segmento = s.segmento --join MUESTRAS
-	JOIN analytic.analitica a on m.codigo = a.cod
+	left JOIN field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and m.segmento = s.segmento --join MUESTRAS
+	left JOIN analytic.analitica a on m.codigo = a.cod
 	LEFT JOIN analytic.ph ph ON a.ph > ph.limite_inferior AND a.ph < ph.limite_superior
 	LEFT JOIN analytic.textura txt ON  a.ceap >= txt.ceap_i AND a.ceap < txt.ceap_s
 	LEFT JOIN analytic.conductividad_electrica ce ON a.ce >= ce.limite_i AND a.ce < ce.limite_s
@@ -532,4 +532,6 @@ sum(area_ha) area_ha,
 st_asText(st_union(geom)) as geom
 from fert_intraparcelaria
 group by iddata,lote,formulafondo,formulacob1,formulacob2,formulacob3)
-select * from fert_report
+{}
+-- select * from fert_report
+
