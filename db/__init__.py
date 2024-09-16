@@ -13,7 +13,7 @@ class agraeDataBaseDriver():
 
         self.conn = None
         self.s = QSettings('agrae','dbConnection')
-        debug  = True
+        debug  = False
         
 
         if debug and os.environ['COMPUTERNAME'] == 'FJCS-LEGION':
