@@ -41,9 +41,10 @@ lotes as (select l.*,
 	d.extraccionresiduok, 
 	d.prod_esperada from data d join agrae.lotes l on d.idlote = l.idlote ),	
 segmentos as (select distinct s.idsegmento,s.ceap,s.segmento,st_multi(st_intersection(s.geometria,l.geom)) as geometria, l.idlote, l.iddata, l.regimen from agrae.segmentos s join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),4)::geometry,s.geometria)),
-segm_analitica as (select 
-	s.iddata,
+segm_analitica as (select distinct
 	m.codigo,
+	d.idlote,
+	d.nombre,
 	s.idsegmento,
 	s.segmento,
 	txt.grupo_label suelo,
@@ -52,35 +53,23 @@ segm_analitica as (select
     n.tipo AS n_tipo,
     n.incremento AS n_inc,
  	a.p,
-    a.metodo AS p_metodo,
-        CASE
-            WHEN a.metodo = 1 THEN ( SELECT DISTINCT p.tipo
-               FROM analytic.fosforo p
-              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND p.suelo = txt.grupo AND a.p >= p.limite_inferior AND a.p < p.limite_superior)
-            WHEN a.metodo = 2 THEN ( SELECT DISTINCT p.tipo
-               FROM analytic.fosforo p
-              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND a.p >= p.limite_inferior AND a.p <= p.limite_superior)
-            ELSE NULL::character varying
-        END AS p_tipo,
-        CASE
-            WHEN a.metodo = 1 THEN ( SELECT DISTINCT p.incremento
-               FROM analytic.fosforo p
-              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND p.suelo = txt.grupo AND a.p >= p.limite_inferior AND a.p < p.limite_superior)
-            WHEN a.metodo = 2 THEN ( SELECT DISTINCT p.incremento
-               FROM analytic.fosforo p
-              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND a.p >= p.limite_inferior AND a.p <= p.limite_superior)
-            ELSE NULL::double precision
-        END AS p_inc,
+	met.nombre AS p_metodo,
+    p_n.etiqueta as p_tipo,
+    p_n.incremento as p_inc,
     a.k,
     k.tipo AS k_tipo,
     k.incremento AS k_inc,
 	a.ph,
-	ph.tipo ph,
+	ph.tipo ph_tipo,
 	a.ce,
 	ce.tipo ce_tipo,
 	ce.influencia ce_influencia,
 	a.carbon AS carbonatos,
     carb.tipo AS carb_tipo,
+    a.ca,
+    ca.tipo AS ca_tipo,
+    a.mg,
+    mg.tipo AS mg_tipo,
     a.caliza * 100::double precision AS caliza,
     ca_ac.tipo AS caliza_tipo,
  	round(a.cic::numeric,3) cic,
@@ -93,6 +82,7 @@ segm_analitica as (select
             ELSE 'No cumple con los limites recomendados'::text
     END AS cic_caso,
     a.na,
+    na.tipo as na_tipo,
     a.arcilla,
     a.limo,
     a.arena,
@@ -121,24 +111,26 @@ segm_analitica as (select
     a.mg_eq,
     a.k_eq,
     a.na_eq,
-	s.geometria 
-	from segmentos s 
-	join campaign.data d  on  s.iddata = d.iddata 
-	left join field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and st_intersects(m.geom,s.geometria) --join MUESTRAS
-	left join analytic.analitica a on m.codigo = a.cod
-	LEFT JOIN analytic.ph ph ON a.ph > ph.limite_inferior AND a.ph <= ph.limite_superior
-	LEFT JOIN analytic.textura txt ON  a.ceap >= txt.ceap_i AND a.ceap <= txt.ceap_s
+	s.geometria
+	FROM segmentos s 
+	JOIN lotes d  on  s.iddata = d.iddata
+	left JOIN field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and m.segmento = s.segmento --join MUESTRAS
+	left JOIN analytic.analitica a on m.codigo = a.cod
+	LEFT JOIN analytic.ph ph ON a.ph > ph.limite_inferior AND a.ph < ph.limite_superior
+	LEFT JOIN analytic.textura txt ON  a.ceap >= txt.ceap_i AND a.ceap < txt.ceap_s
 	LEFT JOIN analytic.conductividad_electrica ce ON a.ce >= ce.limite_i AND a.ce < ce.limite_s
 	LEFT JOIN analytic.carbonatos carb ON (a.carbon / 100::double precision) >= carb.limite_inferior AND (a.carbon / 100::double precision) < carb.limite_superior
 	LEFT JOIN analytic.caliza_activa ca_ac ON a.caliza >= ca_ac.limite_i AND a.caliza < ca_ac.limite_s
+	LEFT JOIN analytic.calcio ca ON ca.suelo = txt.grupo AND a.ca >= ca.limite_inferior AND a.ca < ca.limite_superior
+	LEFT JOIN analytic.magnesio mg ON mg.suelo = txt.grupo AND a.mg >= mg.limite_inferior AND a.mg < mg.limite_superior
 	LEFT JOIN analytic.cic cic ON a.cic >= cic.limite_i AND a.cic < cic.limite_s
-	LEFT JOIN analytic.nitrogeno n ON a.n >= n.limite_inferior AND a.n <= n.limite_superior
+	LEFT JOIN analytic.nitrogeno n ON a.n >= n.limite_inferior AND a.n < n.limite_superior and n.textura = txt.grupo
 	LEFT JOIN analytic.potasio k ON k.textura = txt.grupo AND a.k >= k.limite_inferior AND a.k < k.limite_superior
 	LEFT JOIN analytic.sodio na ON na.suelo = txt.grupo AND a.na >= na.limite_inferior AND a.na < na.limite_superior
-	),
+    LEFT JOIN analytic.fosforo_nuevo p_n on p_n.metodo = a.metodo AND p_n.textura = txt.grupo and p_n.carbonatos = carb.nivel AND a.p >= p_n.limite_inferior AND a.p < p_n.limite_superior
+	LEFT JOIN analytic.p_metodos met on a.metodo = met.id),
 --ambientes as (select distinct a.idambiente,a.ambiente,a.ndvimax,a.geometria, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_contains(st_buffer(CAST(l.geom AS geography),4)::geometry,a.geometria)),
-ambientes as (select distinct a.idambiente,a.ambiente,a.ndvimax,st_multi(st_intersection(l.geom,a.geometria)) as geometria, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_intersects(l.geom,a.geometria)),
-amb_40 as (select distinct a.idlote,avg(a.ndvimax) as ndvimed from ambientes a where a.ambiente = 40 group by a.idlote),
+ambientes as (select distinct a.idambiente,a.ambiente,a.ndvimax,st_collectionextract(st_multi(st_intersection(l.geom,a.geometria)),3) as geometria, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_intersects(l.geom,a.geometria)),amb_40 as (select distinct a.idlote,avg(a.ndvimax) as ndvimed from ambientes a where a.ambiente = 40 group by a.idlote),
 producciones as ( -- CALCULO PRODUCCIONES PONDERADAS
 	select a.idambiente,
 			a.idlote,
@@ -173,14 +165,20 @@ extracciones as (select
 		) as extraccionresiduop,
 		round( -- EXTRACCION K
 			d.ms_residuo * a.prod_ponderada * d.extraccionresiduok
-		) as extraccionresiduok
+		) as extraccionresiduok		
 	from amb_join a
 	join data d on d.idlote = a.idlote
+	where st_area(a.geometria) > 0
 	),	
 uf as (select 
 	a.idlote,
 	a.iddata,
 	a.ambiente + s.segmento uf,
+	a.ambiente,
+	a.ndvimax,
+	s.segmento,
+	s.ceap,
+	s.codigo,
 	a.prod_esperada, 
 	a.prod_ponderada,
 	CASE
@@ -202,7 +200,7 @@ uf as (select
 	from extracciones a 
 	join segm_analitica s on st_intersects(s.geometria , a.geometria)
 	group by a.idlote, a.ambiente, s.segmento, a.iddata
-	,a.prod_esperada, a.prod_ponderada
+	,a.prod_esperada, a.prod_ponderada,s.codigo,s.ceap,a.ndvimax
 	),
 necesidades_i as (select --NECESIDADES 1RA APLICACION
 uf.idlote, uf.iddata, uf.uf, uf.uf_etiqueta,
@@ -239,7 +237,7 @@ uf.idlote, uf.iddata, uf.uf, uf.uf_etiqueta,
                 ELSE NULL::double precision
             END * ((string_to_array(q.fertilizantefondoformula, '-'::text))[3]::double precision / 100::double precision))
      end) AS necesidad_ki
-     from uf join data  q on uf.iddata = q.iddata),
+     from uf join data  q on uf.iddata = q.iddata where not st_isEmpty(uf.geom)),
 necesidades_ii as (select --NECESIDADES 2DA APLICACION
 uf.idlote, uf.iddata, uf.uf, uf.uf_etiqueta,
 (case -- NECESIDAD N_II

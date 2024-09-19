@@ -1160,7 +1160,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         exp = self.combo_explotacion.currentText().replace(' ','_')
         camp  = self.combo_campania.currentText()[2:].replace(' ','_')
         name = '{}_{}'.format(camp,exp)
-        self.tools.crearFormatoAnalitica(self.combo_campania.currentData(),self.combo_explotacion.currentData(),name)
+        reply = QtWidgets.QMessageBox.question(self,'aGrae Toolbox','Quieres generar el archivo de Analitica para la explotacion:\n{}?'.format(name),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.tools.crearFormatoAnalitica(self.combo_campania.currentData(),self.combo_explotacion.currentData(),name)
     
     def cargarAnalitica(self):
         data = self.tools.cargarReporteAnalitica()
@@ -1203,7 +1205,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             round(round(mg::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "MG",
             round(round(k::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "K",
             round(round(na::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "NA",
-            st_asText(geom) as geom from segm_analitica;'''),
+            st_asText(st_union(geom)) as geom 
+            from segm_analitica
+            group by idlote,nombre,codigo,segmento,cic,ca,mg,k,na;'''),
             'Hierro': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,fe,st_asText(geom) as geom from segm_analitica;'''),
             'Manganeso': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,mn as valor,st_asText(geom) as geom from segm_analitica;'''),
             'Aluminio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,al,st_asText(geom) as geom from segm_analitica;'''),

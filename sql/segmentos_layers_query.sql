@@ -40,8 +40,17 @@ lotes as (select l.*,
 	d.extraccionresiduop,
 	d.extraccionresiduok, 
 	d.prod_esperada from data d join agrae.lotes l on d.idlote = l.idlote ),	
-segmentos as (select distinct s.idsegmento,s.ceap,s.segmento,st_multi(st_intersection(s.geometria,l.geom)) as geometria, l.idlote, l.iddata, l.regimen from agrae.segmentos s join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),4)::geometry,s.geometria)),
-segm_analitica as (select 
+segmentos as (select distinct 
+s.idsegmento,
+s.ceap,
+s.segmento,
+st_multi(st_intersection(s.geometria,l.geom)) as geometria,
+st_area(st_multi(st_intersection(s.geometria,l.geom))) area, 
+l.idlote, 
+l.iddata, 
+l.regimen 
+from agrae.segmentos s join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),4)::geometry,s.geometria)),
+segm_analitica as (select distinct
 	m.codigo,
 	d.idlote,
 	d.nombre,
@@ -129,5 +138,6 @@ segm_analitica as (select
 	LEFT JOIN analytic.sodio na ON na.suelo = txt.grupo AND a.na >= na.limite_inferior AND a.na < na.limite_superior
     LEFT JOIN analytic.fosforo_nuevo p_n on p_n.metodo = a.metodo AND p_n.textura = txt.grupo and p_n.carbonatos = carb.nivel AND a.p >= p_n.limite_inferior AND a.p < p_n.limite_superior
 	LEFT JOIN analytic.p_metodos met on a.metodo = met.id
+	where s.area > 0
 	)
 {} --QUERY DE LA SELECCION

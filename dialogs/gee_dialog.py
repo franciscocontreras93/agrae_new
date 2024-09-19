@@ -65,13 +65,18 @@ class aGraeGEEDialog(QDialog):
         # ee.Authenticate(auth_mode='localhost')
 
         self.idexplotacion = idexplotacion
-        self.layer = self.getLayer(layer)
+        # self.layer = self.getLayer(layer)
 
         self.tools = aGraeTools()
         self.threadpool = QThreadPool()
 
     def getLayer(self,layer:QgsVectorLayer):
-        features = list(layer.getSelectedFeatures())
+        # if len(list(layer.getSelectedFeatures())) > 0:
+
+        #     features = list(layer.getSelectedFeatures())
+        # else:
+        features = list(layer.getFeatures())
+            
         new_layer  = QgsVectorLayer('MULTIPOLYGON?crs=EPSG:4326','new_layer','memory')
         new_layer.dataProvider().addFeatures(features)
         return new_layer
@@ -177,7 +182,7 @@ class aGraeGEEDialog(QDialog):
 
 
 
-        # self.layout.addWidget(self.layerGroup)
+        self.layout.addWidget(self.layerGroup)
         self.layout.addWidget(self.sceneParametersGroup)
         self.layout.addWidget(self.advanceParametersGroup)
         self.layout.addWidget(self.btn_run)
@@ -189,7 +194,8 @@ class aGraeGEEDialog(QDialog):
     def execute(self):
         from ..tools.geeCore import aGraeNDVIMulti
         
-        # layer = self.layer.currentLayer()
+        layer = self.getLayer(self.layer.currentLayer())
+
         year = self.year.value()
         period = self.period.value()
         clouds = self.cloud.value()
@@ -199,7 +205,7 @@ class aGraeGEEDialog(QDialog):
         magnitude = self.kernel_magnitude.value()
 
         core = aGraeNDVIMulti(
-            layer=self.layer,
+            layer=layer,
             year = year,
             period = period,
             max_clouds= clouds,

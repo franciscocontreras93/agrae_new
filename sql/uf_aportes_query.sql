@@ -2,8 +2,10 @@ with data as (select distinct
 	d.iddata,
 	d.idcampania,
 	d.idexplotacion,
+	ex.nombre as explotacion,
 	d.idlote,
-	d.idcultivo, 
+	d.idcultivo,
+	c.nombre as cultivo,
 	d.idregimen,
 	d.fertilizantefondoformula,
 	d.fertilizantefondoajustado,
@@ -24,12 +26,15 @@ with data as (select distinct
 	d.prod_esperada 
 	from campaign.data d 
 	left join agrae.cultivo c on c.idcultivo = d.idcultivo
+	join agrae.explotacion ex on d.idexplotacion = ex.idexplotacion
 	where d.idcampania = {} and d.idexplotacion = {} ),
 lotes as (select l.*, 
 	d.iddata,
 	d.idcampania,
 	d.idexplotacion,
 	d.idcultivo,
+	d.explotacion,
+	d.cultivo,
 	d.idregimen as regimen,
 	d.ms_cosecha,
 	d.extraccioncosechan,
@@ -40,7 +45,16 @@ lotes as (select l.*,
 	d.extraccionresiduop,
 	d.extraccionresiduok, 
 	d.prod_esperada from data d join agrae.lotes l on d.idlote = l.idlote ),	
-segmentos as (select distinct s.idsegmento,s.ceap,s.segmento,st_multi(st_intersection(s.geometria,l.geom)) as geometria, l.idlote, l.iddata, l.regimen from agrae.segmentos s join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),4)::geometry,s.geometria)),
+segmentos as (select distinct s.idsegmento,
+    s.ceap
+    ,s.segmento,
+    st_multi(st_intersection(s.geometria,l.geom)) as geometria,
+    st_area(st_multi(st_intersection(s.geometria,l.geom))) area,
+    l.idlote, 
+    l.iddata, 
+    l.regimen 
+    from agrae.segmentos s 
+    join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),4)::geometry,s.geometria)),
 segm_analitica as (select distinct
 	m.codigo,
 	d.idlote,
@@ -114,7 +128,7 @@ segm_analitica as (select distinct
 	s.geometria
 	FROM segmentos s 
 	JOIN lotes d  on  s.iddata = d.iddata
-	left JOIN field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and m.segmento = s.segmento --join MUESTRAS
+	left JOIN field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and st_intersects(m.geom,s.geometria) --join MUESTRAS
 	left JOIN analytic.analitica a on m.codigo = a.cod
 	LEFT JOIN analytic.ph ph ON a.ph > ph.limite_inferior AND a.ph < ph.limite_superior
 	LEFT JOIN analytic.textura txt ON  a.ceap >= txt.ceap_i AND a.ceap < txt.ceap_s
@@ -128,9 +142,10 @@ segm_analitica as (select distinct
 	LEFT JOIN analytic.potasio k ON k.textura = txt.grupo AND a.k >= k.limite_inferior AND a.k < k.limite_superior
 	LEFT JOIN analytic.sodio na ON na.suelo = txt.grupo AND a.na >= na.limite_inferior AND a.na < na.limite_superior
     LEFT JOIN analytic.fosforo_nuevo p_n on p_n.metodo = a.metodo AND p_n.textura = txt.grupo and p_n.carbonatos = carb.nivel AND a.p >= p_n.limite_inferior AND a.p < p_n.limite_superior
-	LEFT JOIN analytic.p_metodos met on a.metodo = met.id),
+	LEFT JOIN analytic.p_metodos met on a.metodo = met.id
+    where s.area > 0),
 --ambientes as (select distinct a.idambiente,a.ambiente,a.ndvimax,a.geometria, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_contains(st_buffer(CAST(l.geom AS geography),4)::geometry,a.geometria)),
-ambientes as (select distinct a.idambiente,a.ambiente,a.ndvimax,st_multi(st_intersection(l.geom,a.geometria)) as geometria, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_intersects(l.geom,a.geometria)),
+ambientes as (select distinct a.idambiente,a.ambiente,a.ndvimax,st_collectionextract(st_multi(st_intersection(l.geom,a.geometria)),3) as geometria, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_intersects(l.geom,a.geometria)),
 amb_40 as (select distinct a.idlote,avg(a.ndvimax) as ndvimed from ambientes a where a.ambiente = 40 group by a.idlote),
 producciones as ( -- CALCULO PRODUCCIONES PONDERADAS
 	select a.idambiente,
@@ -166,9 +181,10 @@ extracciones as (select
 		) as extraccionresiduop,
 		round( -- EXTRACCION K
 			d.ms_residuo * a.prod_ponderada * d.extraccionresiduok
-		) as extraccionresiduok
+		) as extraccionresiduok		
 	from amb_join a
 	join data d on d.idlote = a.idlote
+	where st_area(a.geometria) > 0
 	),	
 uf as (select 
 	a.idlote,
@@ -196,7 +212,7 @@ uf as (select
 	round(max((a.extraccioncosechan + a.extraccionresiduon) * (1 + s.n_inc))) necesidad_n,
 	round(max((a.extraccioncosechap + a.extraccionresiduop) * (1 + s.p_inc))) necesidad_p,
 	round(max((a.extraccioncosechak + a.extraccionresiduok) * (1 + s.k_inc))) necesidad_k,
-	(st_multi(st_union(st_multi(ST_CollectionExtract(st_intersection(a.geometria,s.geometria),3))))) as geom
+	st_multi(st_union(st_multi(ST_CollectionExtract(st_intersection(a.geometria,s.geometria),3)))) as geom
 	from extracciones a 
 	join segm_analitica s on st_intersects(s.geometria , a.geometria)
 	group by a.idlote, a.ambiente, s.segmento, a.iddata
@@ -237,7 +253,7 @@ uf.idlote, uf.iddata, uf.uf, uf.uf_etiqueta,
                 ELSE NULL::double precision
             END * ((string_to_array(q.fertilizantefondoformula, '-'::text))[3]::double precision / 100::double precision))
      end) AS necesidad_ki
-     from uf join data  q on uf.iddata = q.iddata),
+     from uf join data  q on uf.iddata = q.iddata where not st_isEmpty(uf.geom)),
 necesidades_ii as (select --NECESIDADES 2DA APLICACION
 uf.idlote, uf.iddata, uf.uf, uf.uf_etiqueta,
 (case -- NECESIDAD N_II
@@ -396,7 +412,10 @@ concat(lpad(n.necesidad_nf::varchar,4,'0'),'-',lpad(n.necesidad_pf::varchar,4,'0
 from necesidades n
 join data d using (iddata)
 ),
-uf_final as (select l.nombre as lote,
+uf_final as (select 
+l.explotacion,
+l.cultivo,
+l.nombre as lote,
 l.iddata,
 a.codigo,
 a.uf, 
@@ -405,7 +424,8 @@ a.ambiente,
 a.ndvimax,
 a.segmento,
 a.ceap,
-a.necesidades_iniciales, 
+a.necesidades_iniciales,
+a.necesidades_finales, 
 a.fertilizantefondoformula, 
 a.fertilizantefondocalculado,
 a.fertilizantecob1formula, 
@@ -414,7 +434,6 @@ a.fertilizantecob2formula,
 a.fertilizantecob2calculado,
 a.fertilizantecob3formula, 
 a.fertilizantecob3calculado,
-a.necesidades_finales,
 st_multi(st_union(a.geom)) as geom
 from aportes a
 join lotes l on a.idlote = l.idlote
@@ -422,6 +441,8 @@ where  round((st_area(st_transform(st_setsrid(a.geom,4326),8857)) / 10000)::nume
 group by 
 l.iddata,
 l.nombre,
+l.explotacion,
+l.cultivo,
 a.codigo,
 a.ambiente,
 a.ndvimax,
@@ -429,7 +450,8 @@ a.segmento,
 a.ceap,
 a.uf,
 a.uf_etiqueta, 
-a.necesidades_iniciales, 
+a.necesidades_iniciales,
+a.necesidades_finales, 
 a.fertilizantefondoformula, 
 a.fertilizantefondocalculado,
 a.fertilizantecob1formula, 
@@ -442,15 +464,18 @@ a.necesidades_finales),
 fert_intraparcelaria as (
 select distinct
 uf.iddata,
-uf.codigo,
+uf.explotacion,
 uf.lote,
+uf.cultivo,
+uf.codigo,
 uf.ambiente,
 uf.ndvimax,
 uf.segmento,
 uf.ceap,
 uf.uf, 
 uf.uf_etiqueta, 
-uf.necesidades_iniciales, 
+uf.necesidades_iniciales,
+uf.necesidades_finales,
 uf.fertilizantefondoformula as formulafondo, 
 uf.fertilizantefondocalculado as dosisfondo,
 uf.fertilizantecob1formula as formulacob1, 
@@ -532,6 +557,5 @@ sum(area_ha) area_ha,
 st_asText(st_union(geom)) as geom
 from fert_intraparcelaria
 group by iddata,lote,formulafondo,formulacob1,formulacob2,formulacob3)
+-- select distinct * from fert_report;
 {}
--- select * from fert_report
-
