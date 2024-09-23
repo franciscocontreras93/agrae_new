@@ -240,7 +240,7 @@ class aGraeComposerTools():
 
         pc = layout.pageCollection()
         # pc.page(0).setPageSize('A4', QgsLayoutItemPage.Orientation.Portrait)
-        for l in range(0,15):
+        for l in range(0,14):
             pc.addPage(QgsLayoutItemPage(layout=layout))
             pc.page(l).setPageSize('A4', QgsLayoutItemPage.Orientation.Portrait)
 
@@ -292,7 +292,7 @@ class aGraeComposerTools():
         self.setLayersToMap([layout.itemById('map_hierro'),layout.itemById('map_manganeso')],[lotes,self.layers['Hierro'],self.layers['Manganeso']],basemap) #* PAG 14
         self.setLayersToMap([layout.itemById('map_aluminio'),layout.itemById('map_boro')],[lotes,self.layers['Aluminio'],self.layers['Boro']],basemap) #* PAG 15
         self.setLayersToMap([layout.itemById('map_cinq'),layout.itemById('map_cobre')],[lotes,self.layers['Cinq'],self.layers['Cobre']],basemap) #* PAG 16
-        self.setLayersToMap([layout.itemById('map_materia_organica'),layout.itemById('map_rel_cn')],[lotes,self.layers['Materia Organica'],self.layers['Relacion CN']],basemap) #* PAG 17
+        # self.setLayersToMap([layout.itemById('map_materia_organica'),layout.itemById('map_rel_cn')],[lotes,self.layers['Materia Organica'],self.layers['Relacion CN']],basemap) #* PAG 17
         # # self.setLayersToMap([layout.itemById('map_cic')],[layers[_LOTES_],layers[_CIC_]],basemap) #* PAG 10
         
         # # print(layers[_UNIDADES_I_])
@@ -314,7 +314,7 @@ class aGraeComposerTools():
         self.setLegendsToLayout(layout.itemById('legend_14'),[self.layers['Hierro'],self.layers['Manganeso']],['Hierro','Manganeso'])
         self.setLegendsToLayout(layout.itemById('legend_15'),[self.layers['Aluminio'],self.layers['Boro']],['Aluminio','Boro'])
         self.setLegendsToLayout(layout.itemById('legend_16'),[self.layers['Cinq'],self.layers['Cobre']],['Cinq','Cobre'])
-        self.setLegendsToLayout(layout.itemById('legend_17'),[self.layers['Materia Organica'],self.layers['Relacion CN']],['Materia Organica','Relacion Carbono/Nitrogeno'])
+        # self.setLegendsToLayout(layout.itemById('legend_17'),[self.layers['Materia Organica'],self.layers['Relacion CN']],['Materia Organica','Relacion Carbono/Nitrogeno'])
 
 
         cic_table = layout.itemById('cic_table')

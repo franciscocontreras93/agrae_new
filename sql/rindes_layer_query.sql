@@ -14,7 +14,8 @@ with data as (
 reticula_base as (select rb.*, round((st_area(st_transform(rb.geom,8857)) / 10000)::numeric,2) area from agrae.reticula_base rb join data d on d.idlote = rb.idlote),
 rindes as (select dr.volumen,dr.humedad,r.*,dr.geom,d.idlote from field.data_rindes dr
 join data d on d.idcampania = dr.idcampania and d.idexplotacion = d.idexplotacion and d.geom && dr.geom
-join monitor.rindes r on r.iddata = d.iddata and r.idpoi = dr.id
+-- join monitor.rindes r on r.iddata = d.iddata and r.idpoi = dr.id
+join monitor.rindes r on r.idpoi = dr.id
 ),
 rindes_grid as ( select 
 	rb.idlote,

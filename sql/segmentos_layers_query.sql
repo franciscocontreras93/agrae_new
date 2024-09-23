@@ -2,8 +2,10 @@ with data as (select distinct
 	d.iddata,
 	d.idcampania,
 	d.idexplotacion,
+	ex.nombre as explotacion,
 	d.idlote,
-	d.idcultivo, 
+	d.idcultivo,
+	c.nombre as cultivo,
 	d.idregimen,
 	d.fertilizantefondoformula,
 	d.fertilizantefondoajustado,
@@ -24,12 +26,15 @@ with data as (select distinct
 	d.prod_esperada 
 	from campaign.data d 
 	left join agrae.cultivo c on c.idcultivo = d.idcultivo
-	where d.idcampania = {} and d.idexplotacion = {}), -- REQUIERE EL ID DE LA CAMPANIA Y DE LA EXPLOTACION
-lotes as (select l.*, 
+	join agrae.explotacion ex on d.idexplotacion = ex.idexplotacion
+	where d.idcampania = {} and d.idexplotacion = {} ), -- REQUIERE EL ID DE LA CAMPANIA Y DE LA EXPLOTACION
+lotes as (select l.idlote, l.nombre, st_transform(st_buffer(st_transform(l.geom,8857),-0.1),4326) as geom,
 	d.iddata,
 	d.idcampania,
 	d.idexplotacion,
 	d.idcultivo,
+	d.explotacion,
+	d.cultivo,
 	d.idregimen as regimen,
 	d.ms_cosecha,
 	d.extraccioncosechan,
@@ -44,12 +49,15 @@ segmentos as (select distinct
 s.idsegmento,
 s.ceap,
 s.segmento,
-st_multi(st_intersection(s.geometria,l.geom)) as geometria,
-st_area(st_multi(st_intersection(s.geometria,l.geom))) area, 
+st_intersection(s.geometria,l.geom) as geometria,
+--st_collectionextract(st_union(st_multi(st_intersection(s.geometria,l.geom)),3)) as geometria,
+--st_area(st_transform(st_multi(st_intersection(s.geometria,l.geom)),8857)) area,
 l.idlote, 
 l.iddata, 
 l.regimen 
-from agrae.segmentos s join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),4)::geometry,s.geometria)),
+from agrae.segmentos s 
+join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),0)::geometry,s.geometria)
+group by s.idsegmento,s.ceap,s.segmento,l.idlote,l.iddata,l.regimen,l.geom),
 segm_analitica as (select distinct
 	m.codigo,
 	d.idlote,
@@ -138,6 +146,6 @@ segm_analitica as (select distinct
 	LEFT JOIN analytic.sodio na ON na.suelo = txt.grupo AND a.na >= na.limite_inferior AND a.na < na.limite_superior
     LEFT JOIN analytic.fosforo_nuevo p_n on p_n.metodo = a.metodo AND p_n.textura = txt.grupo and p_n.carbonatos = carb.nivel AND a.p >= p_n.limite_inferior AND a.p < p_n.limite_superior
 	LEFT JOIN analytic.p_metodos met on a.metodo = met.id
-	where s.area > 0
+	where not st_isEmpty(s.geometria)
 	)
 {} --QUERY DE LA SELECCION
