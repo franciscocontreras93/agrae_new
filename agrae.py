@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QAction, QMessageBox
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QCoreApplication, Qt
+from qgis.PyQt.QtWidgets import *
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication, Qt,QSize
 
 
 from .gui import agraeGUI
@@ -8,10 +8,14 @@ from .dialogs.main import agraeMainWidget
 from .dialogs.lotes_dialog import LotesMainWindow
 from .dialogs.tools_dockwidget import *
 from .dialogs.config_dialog import agraeConfigDialog
+from .dialogs.gee_dialog import aGraeGEEDialog
+
 
 
 from .db import agraeDataBaseDriver
 from .tools import aGraeTools
+
+from .dialogs import aGraeDialogs
 
 
 
@@ -121,9 +125,20 @@ class aGraeToolbox:
         # self.action = QAction('Go!', self.iface.mainWindow())
         # self.action.triggered.connect(self.run)
         # self.iface.addToolBarIcon(self.action)
+        # self.CargarLotesDialogAction = self.tools.getAction(None,agraeGUI().getIcon('add'),'Cargar Nuevos Lotes',callback=aGraeDialogs.cargarLotesDialog)
+        # self.CrearCEDialogAction = self.tools.getAction(None,agraeGUI().getIcon('map-base'),'Cargar Datos Base',callback=aGraeDialogs.cargarCEDialog)
+        
+        # tools_agrae_actions = [self.CargarLotesDialogAction,self.CrearCEDialogAction]
+
+        # self.tools_agrae = self.tools.getToolButton(tools_agrae_actions,agraeGUI().getIcon('tools'),setMainIcon=True)
+        # self.toolbar.addWidget(self.tools_agrae)
+
         self.add_action(agraeGUI().getIcon('lotes'),'Cargar Lotes',self.agraeGestionLotes,add_to_menu=False,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('main'),'aGrae GIS',self.agraeDock,add_to_toolbar=True)
+        # self.add_action(agraeGUI().getIcon('main'),'aGrae GIS',self.testGee,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('settings'),'Ajustes aGrae GIS',self.agraeConfig,add_to_menu=True,add_to_toolbar=False)
+
+
 
     def unload(self):
         for action in self.actions:
@@ -173,3 +188,10 @@ class aGraeToolbox:
     def agraeConfig(self):
         dialog = agraeConfigDialog()
         dialog.exec()
+
+
+    def testGee(self):
+        dialog = aGraeGEEDialog()
+        dialog.exec()
+
+    

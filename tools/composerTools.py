@@ -128,8 +128,8 @@ class aGraeComposerTools():
                 data = cursor.fetchone()
                 out = open(os.path.join(os.path.dirname(__file__),'img/dist_logo.png'),'wb')
                 out.write(data[2])
-                self.nombre_explotacion = data[0]
-                self.direccion_explotacion = data[1]
+                self.nombre_explotacion = data[0].upper()
+                self.direccion_explotacion = data[1].upper()
                 
                 # image = Image.open(BytesIO(data))
                 # print(image)
@@ -143,8 +143,11 @@ class aGraeComposerTools():
                 out.close()
                 pass
     def setTextOverElements(self,elements,text):
-        for e in elements:
-            e.setText(text)
+        try:
+            for e in elements:
+                e.setText(text.upper())
+        except:
+            pass
     def layoutGenerator(self,
             basemap,
             preview=False,
@@ -237,12 +240,12 @@ class aGraeComposerTools():
 
         pc = layout.pageCollection()
         # pc.page(0).setPageSize('A4', QgsLayoutItemPage.Orientation.Portrait)
-        for l in range(0,15):
+        for l in range(0,14):
             pc.addPage(QgsLayoutItemPage(layout=layout))
             pc.page(l).setPageSize('A4', QgsLayoutItemPage.Orientation.Portrait)
 
 
-        tmpfile = self.plugin_dir + '/templates/prescripcion.qpt'
+        tmpfile = self.plugin_dir + '/templates/prescripcion_dev.qpt'
         with open(tmpfile) as f:
             template_content = f.read()
             
@@ -260,8 +263,8 @@ class aGraeComposerTools():
             l.setPicturePath(os.path.join(os.path.dirname(__file__),'img/dist_logo.png'))
 
 
-        self.setTextOverElements(nombres_exp,self.nombre_explotacion)
-        self.setTextOverElements(direcciones,self.direccion_explotacion)
+        self.setTextOverElements(nombres_exp,self.nombre_explotacion.upper())
+        self.setTextOverElements(direcciones,self.direccion_explotacion.upper())
         
 
 
@@ -274,7 +277,7 @@ class aGraeComposerTools():
 
         lotes = self.layers['Atlas']
 
-
+        
         self.setLayersToMap([layout.itemById('ceap36_txt'),layout.itemById('ceap90_txt')],[lotes,self.layers['Ceap36 Textura'],self.layers['Ceap36 Infiltracion']],basemap) #*  PAG 01
         self.setLayersToMap([layout.itemById('ceap36_inf'),layout.itemById('ceap90_inf')],[lotes,self.layers['Ceap90 Textura'],self.layers['Ceap90 Infiltracion']],basemap) #* PAG 02
         self.setLayersToMap([layout.itemById('map_nitrogeno'),layout.itemById('map_fosforo')],[lotes,self.layers['Nitrogeno'],self.layers['Fosforo']],basemap) #* PAG 03
@@ -289,7 +292,7 @@ class aGraeComposerTools():
         self.setLayersToMap([layout.itemById('map_hierro'),layout.itemById('map_manganeso')],[lotes,self.layers['Hierro'],self.layers['Manganeso']],basemap) #* PAG 14
         self.setLayersToMap([layout.itemById('map_aluminio'),layout.itemById('map_boro')],[lotes,self.layers['Aluminio'],self.layers['Boro']],basemap) #* PAG 15
         self.setLayersToMap([layout.itemById('map_cinq'),layout.itemById('map_cobre')],[lotes,self.layers['Cinq'],self.layers['Cobre']],basemap) #* PAG 16
-        self.setLayersToMap([layout.itemById('map_materia_organica'),layout.itemById('map_rel_cn')],[lotes,self.layers['Materia Organica'],self.layers['Relacion CN']],basemap) #* PAG 17
+        # self.setLayersToMap([layout.itemById('map_materia_organica'),layout.itemById('map_rel_cn')],[lotes,self.layers['Materia Organica'],self.layers['Relacion CN']],basemap) #* PAG 17
         # # self.setLayersToMap([layout.itemById('map_cic')],[layers[_LOTES_],layers[_CIC_]],basemap) #* PAG 10
         
         # # print(layers[_UNIDADES_I_])
@@ -311,7 +314,7 @@ class aGraeComposerTools():
         self.setLegendsToLayout(layout.itemById('legend_14'),[self.layers['Hierro'],self.layers['Manganeso']],['Hierro','Manganeso'])
         self.setLegendsToLayout(layout.itemById('legend_15'),[self.layers['Aluminio'],self.layers['Boro']],['Aluminio','Boro'])
         self.setLegendsToLayout(layout.itemById('legend_16'),[self.layers['Cinq'],self.layers['Cobre']],['Cinq','Cobre'])
-        self.setLegendsToLayout(layout.itemById('legend_17'),[self.layers['Materia Organica'],self.layers['Relacion CN']],['Materia Organica','Relacion Carbono/Nitrogeno'])
+        # self.setLegendsToLayout(layout.itemById('legend_17'),[self.layers['Materia Organica'],self.layers['Relacion CN']],['Materia Organica','Relacion Carbono/Nitrogeno'])
 
 
         cic_table = layout.itemById('cic_table')
@@ -326,7 +329,7 @@ class aGraeComposerTools():
             self.atlas,
             nombres_lotes,
             self.layers,
-            [layout.itemById('panel_00')],
+            [layout.itemById('panel_00'),layout.itemById('panel_02'),layout.itemById('panel_01'),layout.itemById('panel_03')],
             table_item
             ))
 
@@ -378,8 +381,12 @@ class aGraeComposerTools():
          
             self.setTextOverElements(nombresLotes,nombre_lote)
 
+            # print(self.panels_path)
             
             panels[0].setPicturePath(self.panels_path+'/Panel00'+nombre_lote+'.png')
+            panels[1].setPicturePath(self.panels_path+'/Panel02'+nombre_lote+'.png')
+            panels[2].setPicturePath(self.panels_path+'/Panel01'+nombre_lote+'.png')
+            panels[3].setPicturePath(self.panels_path+'/Panel03'+nombre_lote+'.png')
             
             extent = map.extent()
             atlas.coverageLayer().getFeature(atlas.currentFeatureNumber()+1)

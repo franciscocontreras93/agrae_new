@@ -23,3 +23,5 @@ insert into campaign.data (idcampania,idexplotacion,idlote,idcultivo,idregimen,p
 select idcampania, idexplotacion,(select idlote from new_lote),idcultivo,idregimen,produccion
 from union_data
 returning iddata
+
+

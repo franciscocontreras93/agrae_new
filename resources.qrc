@@ -5,6 +5,7 @@
         <file>gui\icons\icon.svg</file>
 
         <file>gui\icons\arrow.svg</file>
+        <file>gui\icons\arrow-cultivo.svg</file>
         <file>gui\icons\pen-solid.svg</file>
         <file>gui\icons\pen-to-square-solid.svg</file>
         <file>gui\icons\trash-solid.svg</file>
@@ -42,6 +43,10 @@
         <file>gui\icons\pois.svg</file>
         <file>gui\icons\gear-solid.svg</file>
         <file>gui\icons\minus-solid.svg</file>
+        <file>gui\icons\rindes.svg</file>
+        <file>gui\icons\satellite-solid.svg</file>
+        <file>gui\icons\tools.svg</file>
+        <file>gui\icons\map-regular.svg</file>
 
         <!-- PLOT GRAPHS -->
         <file>gui\base\lgnd1.svg</file>
@@ -81,7 +86,7 @@
         <file>gui\icons\print-solid.svg</file>
         
         <file>gui\icons\square-check-solid.svg</file>
-        <file>gui\icons\rindes.svg</file>
+        
         <file>gui\icons\flask-solid.svg</file>
         <file>gui\icons\regression.svg</file> -->
         <!-- <file>gui\img\lgnd1.svg</file>

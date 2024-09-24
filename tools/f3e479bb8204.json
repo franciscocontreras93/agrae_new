@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "ee-agraeproyectos",
+  "private_key_id": "f3e479bb820459c20136c78362d3fa9d202df66c",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCLBNNxWVXcWPeu\nTwFcl4haCbGCviqbO4KPPhRyulfXBXGRnnDfnvCxZM5Aegm4uMyG8FL19bVccvI+\nG6YhO82Tz6hklogcdIIVjah+6uogwEqzNzBOMZ1SQ7gBbk16fkrtn1FrI8cqgn0u\n2jmFzXpv7q+YAfORvL7Mw5MkN2S6w5DTKo8IGaBc5kZoN5JnLbkoK9UXFYC/fp/s\ngPymFVzalX/Kby1+uKD2Vy7wvmTxntddNJY/XZ2kSZMlmmgI+Rcf0nxSY7PNBQE7\ntCkKtDmnMTmbVw0F1PWfzWY9pZlzfcZxzHXOroGptztjGbHpLwtjZ6mq1X6IHJrI\njLT2mECDAgMBAAECggEAAWc8tzt4aw2P9i5FRoakYyJbNgobtVzNeXzLLPkS5SNb\n1hln+w0kzN/6fYV/Bo0wn1Wh4QuaBtFylpNZ8mmZg+ErkXqWG2bVAPOxY44jYhnO\nNqLwlt6Ctihe35YoUfIgOcHuqb3PnvPNxD2odSxS+dQpIhPqOWgtDrowqcPCC75p\nxk07HOI20sPO2bGNUr2bNsjkz3UPcCRz3c6t8awpRMDyNfgdGRk0FEnEpVEElIWb\nlit8dsp33kOvS9RbyGCNAvO25JbLaZrlIOuwiLFKcrofbitpmkeGKV+Nl2ThWdnT\nNkxdTKrLOIKIxm5K5hb+nQldwler2hqXYXReuaQdbQKBgQDEWVHfsmG9dP6rdlds\nMQ4zsHb4P50jMrl+x2X3qs3dZem3IXYVFutSo+Jj29okbLfa1kOMY79vVoJ4pQ4B\n5BvJNW+rAJwpqIcjuf/ScJe4BK/7Ipf2Vr4Qwg0oxsEu00jG4LR2n6i8LLH8EMrD\nSGg05wWtlaM1N3TkGMK3A8ejxwKBgQC1QMPdO7xmW30QIHNzxe1KBdCF/oME51uh\ntQz0hUg1aUA9QlHlHtrNimeltJ07Qg/FRKlRJ7prOFgwgudRGUMhNEhvJ0Lc7+/r\nPKKDCuPU1dECDB+2nE7MnMNbVRJDt35kZfsJNhwUkn4CnYjxwx9xCRfBwwxF4/5j\nY9DUqNBFZQKBgGlgFlSbg2EOPO8AYAKsgRa0ieTJHygYvPyRPuQgQsOjQj8KMjk3\nR6veUE2PXA9YWYOUokPh9IdoQjVFP7M8HL1rdDat6SFiVMSTufvSeVpFCb0Z37xQ\n6UhNHIrZwCvFMLWrOq6/GOuEgTDqQidz4JkjsyRpvmF9FbqknzthR+9ZAoGAbNQk\nRlO1vWe1Ydd6OstevJFdMPcuR+V6WU/SJYdZYeh+T8ngTkgGbF9r+EzIE2qI+ZNO\nbpICFprQKOCQb1tRuUAhNcxHE01lqsLPeQsy3Po88pPA/u4/Sg/eJJqhytMEKtgo\nsNEybw++ZWedcDwORtqEzyyD0/sfJSIro2RxGRkCgYAZy5A9W+kSFTix+avYgryI\n7AKJdqKsTB456HdID5pj46QDDz61nLYpCCZxLNVqbXsnXbMwO4feY5UG83r7Ifl9\nKsuU3zxU/2HGTkQOnmNMTXY4Y1umh1ckOclKNnY4Gw6QAgeDDraguQgKXGLH8KN6\nG7yAi/aK1JPG1g4Wcb71XA==\n-----END PRIVATE KEY-----\n",
+  "client_email": "upload-qr-agraegis@ee-agraeproyectos.iam.gserviceaccount.com",
+  "client_id": "104545636481010276760",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/upload-qr-agraegis%40ee-agraeproyectos.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

@@ -61,6 +61,7 @@ class agraeConfigDialog(QtWidgets.QDialog,dialog):
 
         self.readParams(self.paths_params,self.paths_lines)
         self.readParams(self.db_params,self.db_lines)
+        self.setModal(False)
 
         
 

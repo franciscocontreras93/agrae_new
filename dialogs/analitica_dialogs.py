@@ -18,6 +18,7 @@ class agraeAnaliticaDialog(QtWidgets.QDialog,analiticaDialog):
         self.tools = aGraeTools()
         self.UIComponents()
         self.loadData()
+        self.setModal(False)
 
     def UIComponents(self):
         self.ImportarArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('upload'),'Guardar datos de Analitica',self)

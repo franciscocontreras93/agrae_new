@@ -1,0 +1,11 @@
+<plugins>
+  <pyqgis_plugin name="aGrae GIS" version="2.0">         
+    <name>aGrae GIS</name>
+    <description>Sistema de gestion agricola, aGrae GIS</description>
+    <version>3.0</version>
+
+    <qgis_minimum_version>3.28.0</qgis_minimum_version>
+    <qgis_maximum_version>3.99.0</qgis_maximum_version>
+
+  </pyqgis_plugin>
+</plugins>

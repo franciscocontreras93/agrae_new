@@ -7,7 +7,24 @@ import time
 
 # from datetime import date
 from psycopg2 import InterfaceError, errors, extras
+
 from qgis.PyQt.QtWidgets import *
+from qgis.PyQt.QtWidgets import (
+    QDialog,
+    QGridLayout,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+    QGroupBox,
+    QLabel,
+    QPlainTextEdit,
+    QComboBox,
+    QMessageBox,
+    QTabWidget,
+    QWidget
+ 
+    
+    )
 from qgis.PyQt.QtCore import pyqtSignal, QSettings, QVariant, Qt, QSize
 from qgis.core import *
 from qgis.gui import * 
@@ -19,6 +36,11 @@ from ..gui import agraeGUI
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..tools import aGraeTools
+
+from ..gui.CustomLineEdit import CustomLineEdit
+from ..gui.CustomLineSearch import CustomLineSearch
+from ..gui.CustomTable import CustomTable
+from ..gui.CustomPushButton import CustomPushButton
 
 class CreateExplotacionDialog(QDialog):
     closingPlugin = pyqtSignal()
@@ -51,7 +73,8 @@ class CreateExplotacionDialog(QDialog):
         self.groupBox.setTitle('Crear Nueva Explotacion')
         self.label_1 = QLabel('Nombre de la nueva Explotacion')
         self.label_1.setMaximumSize(QSize(200,15))
-        self.line_nombre = QLineEdit()
+        self.line_nombre = CustomLineEdit()
+        # self.line_nombre.textChanged.connect(lambda v: agraeGUI().formatUpper(self.line_nombre,v))
 
         self.label_2 = QLabel('Direccion de la Explotacion')
         self.text_direccion = QPlainTextEdit()
@@ -167,8 +190,9 @@ class UpdateExplotacionDialog(QDialog):
 
         self.label_1 = QLabel('Nombre de la Explotacion')
         self.label_1.setMaximumSize(QSize(200,15))
-        self.line_nombre = QLineEdit()
+        self.line_nombre = CustomLineEdit()
         self.line_nombre.setText(self.nombreExplotacion)
+        # self.line_nombre.textChanged.connect(lambda v: agraeGUI().formatUpper(self.line_nombre,v))
 
         self.label_2 = QLabel('Direccion de la Explotacion')
         self.text_direccion = QPlainTextEdit()
@@ -381,7 +405,7 @@ class GestionExplotacionDialog(QDialog):
         self.tableWidget.setColumnHidden(0, True)
         self.tableWidget.doubleClicked.connect(self.getExplotacionData)
 
-
+        
         self.ln_search.setCompleter(self.completer)
         self.ln_search.returnPressed.connect(self.getData)
         self.ln_search.textChanged.connect(self.getData)
@@ -474,7 +498,7 @@ class GestionExplotacionDialog(QDialog):
                     nombre = (select nombre from data),
                     direccion = (select direccion from data)
                     where agrae.explotacion.idexplotacion = {} ;'''.format(nombre,direccion,self.idExplotacion)
-                print(sql)
+                # print(sql)
                 with self.conn.cursor() as cursor:
                     cursor.execute(sql)
                     self.conn.commit()
@@ -542,11 +566,209 @@ class GestionExplotacionDialog(QDialog):
 
 
 
-
-
-
+class GestionarExplotacionesDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.tools = aGraeTools()
+        self.conn = agraeDataBaseDriver().connection()
+        self.completer = self.tools.dataCompleter('select nombre,direccion from agrae.explotacion')
+        self.idExplotacion = None
+        self.UIComponents()
+        self.getData()
 
     
+    def UIComponents(self):
+        self.setMinimumSize(QSize(600,350))
+        self.setWindowTitle('Gestion de Explotaciones')
+        self.setWindowIcon(agraeGUI().getIcon('explotacion'))
+        self.tabWidget = QTabWidget()
+        
+
+        widgetConsulta = QWidget()
+        layoutConsulta = QGridLayout()
+        columnsLabels = ['id','Nombre','Direccion','Agricultores']
+        self.tableWidget = CustomTable(widgetConsulta,['id','Nombre','Agricultores','Direccion'])
+        self.tableWidget.doubleClicked.connect(self.getExplotacionData)
+
+        self.ln_search = CustomLineSearch(self.completer,self.getData,placeholder='Ingresa el Nombre o Direccion de la explotacion a buscar')
+        self.btn_delete = CustomPushButton(widgetConsulta,icon=agraeGUI().getIcon('trash'),action=self.delete)
+
+        
+
+        layoutConsulta.addWidget(self.ln_search,0,0,1,1)
+        layoutConsulta.addWidget(self.tableWidget,1,0)
+        layoutConsulta.addWidget(self.btn_delete,1,2)
+        widgetConsulta.setLayout(layoutConsulta)
+        self.tabWidget.addTab(widgetConsulta,agraeGUI().getIcon('search'),'Consultar')
+
+        widgetEdicion = QWidget()
+        layoutEdicion = QHBoxLayout()
+        layoutGroup = QGridLayout()
+        groupEdicion = QGroupBox('Formulario de Registro')
+        self.ln_name = CustomLineEdit()
+        self.ln_dir = QPlainTextEdit()
+        self.btn_create = CustomPushButton(widgetEdicion,icon=agraeGUI().getIcon('save'),action=self.create)
+
+        layoutGroup.addWidget(QLabel('Nombre Explotacion:'),0,0)
+        layoutGroup.addWidget(self.ln_name,1,0)
+        layoutGroup.addWidget(QLabel('Direccion Explotacion:'),2,0)
+        layoutGroup.addWidget(self.ln_dir,3,0)
 
 
+        layoutEdicion.addWidget(groupEdicion)
+        layoutEdicion.addWidget(self.btn_create)
+        groupEdicion.setLayout(layoutGroup)
+        widgetEdicion.setLayout(layoutEdicion)
+
+        self.tabWidget.addTab(widgetEdicion,agraeGUI().getIcon('edit'),'Crear o Modificar')
+
+        self.tabWidget.currentChanged.connect(self.clean)
+        
+
+        # self.tab.addTab(QWidget(),'Crear o Modificar')
+
+        grid_layout = QGridLayout()
+        central_layout = QVBoxLayout()
+
+        central_layout.addWidget(self.tabWidget)
+        self.setLayout(central_layout)
+
+
+
+    def getData(self):
+        param = str(self.ln_search.text()).rstrip()
+        if param == '':
+            sql =  sql = ''' select e.idexplotacion, e.nombre,count(a.idagricultor) agricultores, e.direccion from agrae.explotacion e
+            left join agrae.agricultor a on a.idexplotacion = e.idexplotacion
+            group by e.idexplotacion, e.nombre, e.direccion
+            order by e.idexplotacion desc   '''
+            try:
+                self.tools.populateTable(sql, self.tableWidget)
+            except IndexError as ie:
+                self.conn.rollback()
+                pass
+            except Exception as ex:
+                self.conn.rollback()
+                print(ex)
+        else:
+            sql = ''' select e.idexplotacion,e.nombre, count(a.idagricultor) agricultores, e.direccion from agrae.explotacion e 
+            left join agrae.agricultor a on a.idexplotacion = e.idexplotacion 
+            where e.nombre ilike '%{}%' or e.direccion ilike '%{}%' 
+            group by e.idexplotacion,e.nombre,e.direccion 
+            order by e.idexplotacion desc '''.format(param, param)
+            try:
+                # print(sql)
+                self.tools.populateTable(sql, self.tableWidget)
+            except IndexError as ie:
+                print(ie)
+                self.conn.rollback()
+                pass
+            except Exception as ex:
+                print(ex)
+                self.conn.rollback()
+        
+    def create(self):
+        nombre = self.ln_name.text()
+        direccion = self.ln_dir.toPlainText()
+        
+        
+        try:
+            if nombre != '' and direccion != '' and  self.idExplotacion == None:
+                # sql = '''with data as (select '{}' as nombre, '{}' as direccion)
+                #     INSERT INTO agrae.explotacion (nombre,direccion)
+                #     select * from data
+                #     ON CONFLICT(nombre,direccion) 
+                #     DO UPDATE SET
+                #     nombre = (select nombre from data),
+                #     direccion = (select direccion from data)
+                #     where agrae.explotacion.idexplotacion = {} ;'''.format(nombre,direccion,self.idExplotacion)
+                sql = '''with data as (select '{}' as nombre, '{}' as direccion)
+                    INSERT INTO agrae.explotacion (nombre,direccion)
+                    select * from data
+                    '''.format(nombre,direccion,self.idExplotacion)
+                # print(sql)
+            if nombre != '' and direccion != '' and self.idExplotacion != None:
+                sql = '''
+                with data as (select '{}' as nombre, '{}' as direccion)
+                update agrae.explotacion set
+                nombre = (select nombre from data),
+                direccion = (select direccion from data)
+                where agrae.explotacion.idexplotacion = {};
+                '''.format(nombre,direccion,self.idExplotacion)
+                
+            with self.conn.cursor() as cursor:
+                cursor.execute(sql)
+                self.conn.commit()
+                QgsMessageLog.logMessage("Explotacion {} creada correctamente".format(nombre), 'aGrae GIS', level=3)
+                QMessageBox.about(self, "aGrae GIS:", "Explotacion {} creada correctamente".format(nombre))
+                self.tools.clearWidget([
+                    self.ln_name, 
+                    self.ln_dir
+                ])
+                self.getData()
+            
+        except Exception as ex:
+            # print(ex)
+            QgsMessageLog.logMessage("{}".format(ex), 'aGrae GIS', level=1)
+            QMessageBox.about(self, "aGrae GIS:", "Ocurrio un Error, revisar el panel de registros.".format())
+            self.conn.rollback()
+
+        finally:
+            self.tabWidget.setCurrentIndex(0)
+
+
+        
+
+        
+
+    def delete(self):
+        row = self.tableWidget.currentRow()
+
+        try:
+            id = self.tableWidget.item(row,0).text()
+            nombre = self.tableWidget.item(row,1).text()
+            sql = '''DELETE FROM agrae.explotacion
+            WHERE idexplotacion ={};
+            '''.format(id)
+            question = 'Quieres eliminar la Explotacion {}?, esta acción eliminará\nsolo los datos asociados a la campaña seleccionada.'.format(nombre)
+            self.tools.deleteAction(question,sql)
+
+        except  errors.lookup('23503'):
+            QgsMessageLog.logMessage("Explotacion {} esta referido en otras tablas".format(nombre), 'aGrae GIS', level=1)
+            QMessageBox.about(self, "aGrae GIS:", "No se puede borrar la Explotacion {}.".format(nombre))
+            self.conn.rollback()
+        except Exception as ex:
+            QgsMessageLog.logMessage("{}".format(ex), 'aGrae GIS', level=1)
+            QMessageBox.about(self, "aGrae GIS:", "Ocurrio un Error, revisar el panel de registros.".format())
+            self.conn.rollback()
+        finally:
+            self.getData()
+
+    def getExplotacionData(self): 
+        with self.conn.cursor() as cursor: 
+            try: 
+                row = self.tableWidget.currentRow() 
+                self.idExplotacion = self.tableWidget.item(row,0).text()
+                sql = '''SELECT nombre,direccion
+                FROM agrae.explotacion where idexplotacion = {} ; '''.format(self.idExplotacion)
+                cursor.execute(sql)
+                data = cursor.fetchone()                
+                self.ln_name.setText(data[0])
+                self.ln_dir.setPlainText(data[1])
+                
+                
+
+
+            except Exception as ex:
+                print(ex)
+                self.conn.rollback()
+                pass
+            finally:
+                self.tabWidget.setCurrentIndex(1)
+                pass
+
+    def clean(self):
+        if self.tabWidget.currentIndex() == 0:
+            self.ln_name.clear()
+            self.ln_dir.clear()
       

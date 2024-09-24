@@ -1,25 +1,33 @@
 import os, csv
 import pandas as pd
 import numpy as np
+import processing
 from io import BytesIO
 from PIL import Image
 
-from psycopg2 import extras, Binary
+import psycopg2
+from psycopg2 import extras, Binary, errors, InterfaceError
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtWidgets import *
 from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import Qt
 from qgis.utils import iface 
 from qgis.core import *
-from qgis.PyQt.QtCore import  QVariant, QSettings, QSize,QDateTime
+from qgis.PyQt.QtCore import  Qt,QVariant, QSettings, QSize,QDateTime,pyqtSignal
 
 
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 
+from .agraeQR import aGraeLabelGenerator
+
 
 class aGraeTools():
+    MuestreoEndSignal = pyqtSignal(bool)
+
     def __init__(self):
         self.instance = QgsProject.instance()
+        self.dsn = agraeDataBaseDriver().dsn
         try:
             self.conn = agraeDataBaseDriver().connection()
         except Exception as ex:
@@ -48,9 +56,59 @@ class aGraeTools():
             toolbutton.setIcon(icon)
         else:
             toolbutton.setDefaultAction(actions[0])
+    
+    def getToolButton(self,actions=None,icon:QIcon=None,setMainIcon=False) -> QToolButton:
+        toolButton = QToolButton()
+        toolButton.setMenu(QtWidgets.QMenu())
+        toolButton.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
+        toolButton.setIconSize(QSize(15,15))
+        if actions:
+           
+            for i in range(len(actions)):
+                toolButton.menu().addAction(actions[i])
 
+        if setMainIcon:
+            toolButton.setIcon(icon)
+        else:
+            toolButton.setDefaultAction(actions[0])
+        
+        return toolButton
+    
+    def getAction(self,parent,icon,text,callback) -> QAction:
+        action = QAction(icon, text)
+        action.triggered.connect(callback)
 
-    def messages(self,title:str,text:str,level,duration:int=2,alert=False):
+        return action
+    
+    def getCampaniasData(self,combo:QComboBox):
+        combo.clear()
+        with self.conn.cursor() as cursor:
+            # try:
+                cursor.execute('''SELECT DISTINCT concat(upper(prefix),'-',UPPER(nombre)) as nombre , id  FROM campaign.campanias ORDER BY id desc''')
+                data_camp = cursor.fetchall()
+                for e in data_camp:
+                    combo.addItem(e[0],e[1])
+    
+    def getExplotacionData(self,combo:QComboBox,idcampania):
+
+        combo.clear()
+        sql = '''select distinct e.nombre , d.idexplotacion from campaign.data d
+        join campaign.campanias c on c.id = d.idcampania 
+        join agrae.explotacion e on e.idexplotacion = d.idexplotacion 
+        where c.id = {}
+        order by e.nombre'''.format(idcampania)
+        # print(idcampania)
+        if idcampania != None:
+            with self.conn.cursor() as cursor: 
+                cursor.execute(sql)
+                data = cursor.fetchall()
+                # print(idcampania)
+                if len(data) >= 1:
+                    for e in data:
+                        combo.addItem(e[0],e[1])
+    
+
+    def messages(self,title:str,text:str,level:int=0,duration:int=2,alert=False):
         """Levels:\n
         0.  Info\n
         1.  Warning\n
@@ -79,7 +137,7 @@ class aGraeTools():
                     self.conn.commit()
                 except Exception as ex:
                     self.conn.rollback()
-                    print('{}'.format(ex))
+                    raise Exception(ex)
         
         if widget and actions:
             widget.setChecked(False)
@@ -94,18 +152,22 @@ class aGraeTools():
 
         pass
     
-    def dataCompleter(self,sql:str) -> list:
-        with self.conn.cursor() as cursor:
-            cursor.execute(sql)
-            data = []
-            for t in cursor.fetchall():
-                for i in t:
-                    data.append(i)
+    def dataCompleter(self,sql:str=None,data_combo:list=None) -> list:
+        if sql:
+            with self.conn.cursor() as cursor:
+                cursor.execute(sql)
+                data = []
+                for t in cursor.fetchall():
+                    for i in t:
+                        data.append(i)
+        if data_combo:
+            data = data_combo
 
-            data = set(data)
-            completer = QCompleter(data)
-            completer.setCaseSensitivity(False)
-            return completer
+        data = set(data)
+        completer = QCompleter(data)
+        completer.setCaseSensitivity(False)
+        completer.setFilterMode(Qt.MatchContains)
+        return completer
     
     def searchGetData(self,lineWidget:QLineEdit,tableWidget:QTableWidget,param:str,query_empty:str,query_param:str):
         if param == '':
@@ -131,7 +193,6 @@ class aGraeTools():
                 print(ex)
                 self.conn.rollback()
 
-
     def populateTable(self,sql:str,tableWidget:QtWidgets.QTableWidget, action=False):
         with self.conn.cursor() as cursor:
                 try:
@@ -154,6 +215,7 @@ class aGraeTools():
                                 else:
                                     item  = QtWidgets.QTableWidgetItem(str('N/D'))  
                                 tableWidget.setItem(j, i, item)
+                                # tableWidget.resizeRowToContext()
                 except IndexError as ie:
                     pass
     
@@ -162,7 +224,7 @@ class aGraeTools():
             for e in elements:
                 if isinstance(e,QCheckBox):
                     # print('is checkBox')
-                    e.setChecked(False)
+                    e.setChecked(True)
                 e.setEnabled(True)
         else:
             for e in elements:
@@ -193,9 +255,6 @@ class aGraeTools():
 
         dirname = QFileDialog.getExistingDirectory(None, "Selecciona una Carpeta")
         return dirname
-
-        
-
      
     def processImageToBytea(self,path):
         try:
@@ -211,10 +270,10 @@ class aGraeTools():
         except:
             return ''
     
-    def crearSegmento(self,layer,field_segmento):
+    def crearSegmento(self,layer,field_segmento,field_ceap):
         lyr = layer
         srid = lyr.crs().authid()[5:]
-        sql = """ insert into agrae.segmentos(segmento,geometria) values """
+        sql = """ insert into agrae.segmentos(segmento,ceap,geometria) values """
         if len(lyr.selectedFeatures()) > 0: features = lyr.selectedFeatures() 
         else: features = lyr.getFeatures()
         try:
@@ -222,8 +281,9 @@ class aGraeTools():
                 try: 
                     for f in features :
                         segm = f[field_segmento] 
+                        ceap = f[field_ceap]
                         geometria = f.geometry() .asWkt()
-                        sql = sql + f""" ({segm},st_multi(st_force2d(st_transform(st_geomfromtext('{geometria}',{srid}),4326)))),\n"""                   
+                        sql = sql + f""" ({segm},{ceap},st_multi(st_force2d(st_transform(st_geomfromtext('{geometria}',{srid}),4326)))),\n"""                   
                     # print(sql)
                     cursor.execute(sql[:-2])   
                     self.conn.commit() 
@@ -279,8 +339,15 @@ class aGraeTools():
         lyr = layer
         srid = lyr.crs().authid()[5:]
         sql = """ insert into agrae.ce(ce36, kf36, ce90, kf90 ,geometria) values """
-        if len(lyr.selectedFeatures()) > 0: features = lyr.selectedFeatures() 
-        else: features = lyr.getFeatures()
+        if len(list(lyr.selectedFeatures())) > 0:
+            features = list(lyr.selectedFeatures())
+        else:
+            features = list(lyr.getFeatures())
+
+        # print(len(features))
+
+        # print(len(list(features)))
+
         try:
             reply = QtWidgets.QMessageBox.question(None,'aGrae Toolbox','Se cargaran {} poligonos a la base de datos,\n este proceso puede tardar. Quiere Continuar?'.format(len(features)),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
             if reply == QtWidgets.QMessageBox.Yes:
@@ -299,10 +366,10 @@ class aGraeTools():
                         # print(sql)
                         cursor.execute(sql[:-2])   
                         self.conn.commit() 
-                        QMessageBox.about(None, 'aGrae GIS', 'CE Cargados Correctamente \na la base de datos')
+                        QMessageBox.about(None, 'aGrae GIS', 'CE Cargados Correctamente a la base de datos')
 
                     except Exception as ex:
-
+                        
                         QgsMessageLog.logMessage(f'{ex}', 'aGrae GIS', level=1)
                         self.conn.rollback()
     
@@ -310,8 +377,52 @@ class aGraeTools():
             QgsMessageLog.logMessage(f'{ex}', 'aGrae GIS', level=1)
             self.conn.rollback()
 
-        pass
         
+    def crearRindes(self,
+                     layer:QgsVectorLayer,
+                     field_volumen:QgsField,
+                     field_humedad:QgsField,
+                     fecha:str,
+                     idcampania:int,
+                     idexplotacion:int,
+                     target_crs: QgsCoordinateReferenceSystem  = QgsCoordinateReferenceSystem("EPSG:4326")):
+        layer = layer
+        if layer.crs() != target_crs:
+            layer = self.reprojectLayer(layer,target_crs)
+        
+        srid = target_crs.authid()[5:]
+
+        # srid = lyr.crs().authid()[5:]
+        sql = """ INSERT INTO field.data_rindes(volumen, humedad, fecha_muestreo, geom,idcampania,idexplotacion) VALUES"""
+        if len(layer.selectedFeatures()) > 0: features = layer.selectedFeatures() 
+        else: features = layer.getFeatures()
+        for f in features:
+            volumen = f[field_volumen] 
+            humedad = f[field_humedad] 
+            geometria = f.geometry() .asWkt()
+            sql = sql + """ ({},{},'{}',st_geomfromtext('{}',{}),{},{}),\n""".format(volumen,humedad,fecha,geometria,srid,idcampania,idexplotacion)                 
+        
+        with self.conn.cursor() as cursor:
+            try: 
+                
+                cursor.execute(sql[:-2])   
+                self.conn.commit() 
+                self.messages('Monitor de Rendimiento', 'Datos de Rendimiento cargados a la base de datos',3)
+
+            except Exception as ex:
+                self.messages('Monitor de Rendimiento', ex,2,alert=True)
+                self.conn.rollback()
+    
+    def reprojectLayer(self,layer,target_crs):
+        parameter = {
+            'INPUT': layer,
+            'TARGET_CRS': target_crs,
+            'OUTPUT': 'memory:Reprojected'
+        }
+       
+        return processing.run('native:reprojectlayer', parameter)['OUTPUT']
+
+
     def getLotesLayer(self):
         sql = aGraeSQLTools().getSql('lotes_layer.sql')
         layer = self.getDataBaseLayer(sql,layername='aGrae Lotes',styleName='lotes_asignados',memory=False)
@@ -319,63 +430,65 @@ class aGraeTools():
         iface.actionSelect().trigger()
         iface.setActiveLayer(layer)
 
-
-    def getDataBaseLayerUri(self,idcampania,idexplotacion,name):
+    def getDataBaseLayerUri(self,idcampania,idexplotacion,name,sql:str=None):
         dns = agraeDataBaseDriver().getDSN()
         styleUri = os.path.join(os.path.dirname(__file__), 'styles/{}.qml'.format('ambientes'))
-        sql = ''' with data as (select distinct 
-            d.iddata,
-            d.idcampania,
-            d.idexplotacion,
-            d.idlote,
-            d.idcultivo, 
-            d.idregimen,
-            d.fertilizantefondoformula,
-            d.fertilizantefondoajustado,
-            d.fertilizantecob1formula,
-            d.fertilizantecob1ajustado,
-            d.fertilizantecob2formula,
-            d.fertilizantecob2ajustado,
-            d.fertilizantecob3formula,
-            d.fertilizantecob3ajustado,
-            c.ms_cosecha,
-            c.extraccioncosechan,
-            c.extraccioncosechap,
-            c.extraccioncosechak, 
-            c.ms_residuo,
-            c.extraccionresiduon,
-            c.extraccionresiduop,
-            c.extraccionresiduok, 
-            d.prod_esperada 
-            from campaign.data d 
-            join agrae.cultivo c on c.idcultivo = d.idcultivo
-            where d.idcampania = {} and d.idexplotacion = {} ),
-        lotes as (select l.*, 
-            d.iddata,
-            d.idcampania,
-            d.idexplotacion,
-            d.idcultivo,
-            d.idregimen as regimen,
-            d.ms_cosecha,
-            d.extraccioncosechan,
-            d.extraccioncosechap,
-            d.extraccioncosechak, 
-            d.ms_residuo,
-            d.extraccionresiduon,
-            d.extraccionresiduop,
-            d.extraccionresiduok, 
-            d.prod_esperada from data d join agrae.lotes l on d.idlote = l.idlote ),
-        ambientes as (select distinct l.nombre as lote,a.idambiente,a.ambiente,a.ndvimax,st_collectionextract(st_multi(st_intersection(l.geom,a.geometria)),3) as geom, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_intersects(l.geom,a.geometria))
-        select row_number() over () as id , lote,idambiente,ambiente,ndvimax::numeric,(geom) as geom from ambientes
-        '''.format(idcampania,idexplotacion)
+        if sql:
+            sql = sql
+        else :
+            sql = ''' with data as (select distinct 
+                d.iddata,
+                d.idcampania,
+                d.idexplotacion,
+                d.idlote,
+                d.idcultivo, 
+                d.idregimen,
+                d.fertilizantefondoformula,
+                d.fertilizantefondoajustado,
+                d.fertilizantecob1formula,
+                d.fertilizantecob1ajustado,
+                d.fertilizantecob2formula,
+                d.fertilizantecob2ajustado,
+                d.fertilizantecob3formula,
+                d.fertilizantecob3ajustado,
+                c.ms_cosecha,
+                c.extraccioncosechan,
+                c.extraccioncosechap,
+                c.extraccioncosechak, 
+                c.ms_residuo,
+                c.extraccionresiduon,
+                c.extraccionresiduop,
+                c.extraccionresiduok, 
+                d.prod_esperada 
+                from campaign.data d 
+                left join agrae.cultivo c on c.idcultivo = d.idcultivo
+                where d.idcampania = {} and d.idexplotacion = {} ),
+            lotes as (select l.*, 
+                d.iddata,
+                d.idcampania,
+                d.idexplotacion,
+                d.idcultivo,
+                d.idregimen as regimen,
+                d.ms_cosecha,
+                d.extraccioncosechan,
+                d.extraccioncosechap,
+                d.extraccioncosechak, 
+                d.ms_residuo,
+                d.extraccionresiduon,
+                d.extraccionresiduop,
+                d.extraccionresiduok, 
+                d.prod_esperada from data d join agrae.lotes l on d.idlote = l.idlote ),
+            ambientes as (select distinct l.nombre as lote,a.idambiente,a.ambiente,a.ndvimax,st_collectionextract(st_multi(st_intersection(l.geom,a.geometria)),3) as geom, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_intersects(l.geom,a.geometria))
+            select row_number() over () as id , lote,idambiente,ambiente,ndvimax::numeric,(geom) as geom from ambientes
+            '''.format(idcampania,idexplotacion)
 
         uri = QgsDataSourceUri() 
         uri.setConnection(dns['host'], dns['port'], dns['dbname'], dns['user'], dns['password'])
         uri.setDataSource('', f'({sql})', 'geom', '', 'id')
             # uriUnidades.setDataSource('public', 'unidades', 'geometria', f'"idlotecampania" = {idlotecampania}', 'id')
-        lyrAmbientes = QgsVectorLayer(uri.uri(), '{}-Ambientes'.format(name), 'postgres')
-        lyrAmbientes.loadNamedStyle(styleUri)
-        return lyrAmbientes
+        lyr = QgsVectorLayer(uri.uri(), '{}-Ambientes'.format(name), 'postgres')
+        lyr.loadNamedStyle(styleUri)
+        return lyr
     
     def getDataBaseLayer(self, sql:str, layername:str ='Resultados' ,styleName:str ='',memory=True,save=False,debug=False) -> QgsVectorLayer:
         col_types = {
@@ -388,12 +501,14 @@ class aGraeTools():
             1043: QVariant.String,
             1082: QVariant.String,
         }
-        if styleName.lower() in ['fosforo','potasio','calcio','magnesio','sodio']: estilo = 'analisis_ppm' 
+        if styleName.lower() in ['fosforo','potasio','calcio','magnesio','sodio','azufre']: estilo = 'analisis_ppm' 
         else: estilo = styleName
-
+       
         styleUri = os.path.join(os.path.dirname(__file__), 'styles/{}.qml'.format(estilo))
+        cursor = agraeDataBaseDriver().cursor(self.conn,extras.RealDictCursor)
 
-        with self.conn.cursor(cursor_factory=extras.RealDictCursor) as cursor:
+        # with self.conn.cursor(cursor_factory=extras.RealDictCursor) as cursor:
+        with cursor:
             if memory:
                 lyr = QgsVectorLayer('MultiPolygon?crs=epsg:4326&index=yes'.format(type),layername,'memory')
                 provider = lyr.dataProvider()
@@ -405,8 +520,9 @@ class aGraeTools():
                     
                     data = cursor.fetchall()
                     if debug:
+                        # print(sql)
                         # print(data)
-                        print(coldesc)
+                        print(set([c[1] for c in coldesc]))
                     # QgsMessageLog.logMessage('{}'.format(sql), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
                     # QgsMessageLog.logMessage('{}'.format(coldesc), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
                     fields = [QgsField(c[0],col_types[c[1]]) for c in coldesc]
@@ -415,16 +531,17 @@ class aGraeTools():
                     geom = QgsGeometry()
                     features = []
                     for r in data:
-                        # if debug:
-                        #     print(r['geom'])
+                        if debug:
+                            # print(r['geom'])
+                            pass
                         feat = QgsFeature()
                         feat.setFields(lyr.fields())
                         for c in fields:
                             feat.setAttribute(c.name(),r[c.name()])
                         feat.setGeometry(geom.fromWkt(r['geom']))
                         features.append(feat)
-                        if debug:
-                            print(feat)
+                        # if debug:
+                        #     print(feat)
                         # QgsMessageLog.logMessage('{}'.format(feat.geometry().asWkt()), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
                         provider.addFeatures([feat])
                     
@@ -444,12 +561,14 @@ class aGraeTools():
                     else:
                         # print(lyr.isValid())
                         QgsMessageLog.logMessage('Capa: <b>{}</b> INCORRECTA'.format(lyr.name()), self.plugin_name, level=Qgis.Warning)
-                        # return lyr
+                        return QgsVectorLayer()
                 
                 except Exception as ex:
                     iface.messageBar().pushMessage("Error:", "Ocurrio un Error, revisa el panel de mensajes del Registro", level=Qgis.Critical)
-                    # print(ex)
+                    print(ex)
                     QgsMessageLog.logMessage('{}'.format(ex), self.plugin_name, level=Qgis.Critical)
+                    self.conn.rollback()
+                    return QgsVectorLayer()
 
             else:
                 dns = agraeDataBaseDriver().getDSN()
@@ -493,8 +612,12 @@ class aGraeTools():
         file = self.openFileDialog()
         # print(file)
         if file != None:
-            df = pd.read_csv(file,delimiter=';')
-            df = df.astype(object).replace(np.nan, 'NULL')
+            try:
+                df = pd.read_csv(file,delimiter=';')
+                df = df.astype(object).replace(np.nan, 'NULL')
+            except UnicodeDecodeError:
+                df = pd.read_csv(file,delimiter=';',encoding='windows-1252')
+                df = df.astype(object).replace(np.nan, 'NULL')
             # print(df)
             
             # print(data)
@@ -503,16 +626,9 @@ class aGraeTools():
             return pd.DataFrame()
         
     def guardarReporteAnalitica(self,df):
-        # QMessageBox.about(self, 'aGrae GIS', f'Asignando parcelas al Lote, este proceso puede demorar un momento.')        
-        # file_path = str(self.an_lbl_file.text())        
-        # df = pd.read_csv(file_path,delimiter=';')
-        # df1 = df1.astype(object).replace(np.nan, 'NULL')
         df1 = df
         columns = [c for c in df1.columns]
-        # sql = aGraeSQLTools().getSql('csv_report_verify.sql').format(idcampania,idexplotacion)
-        # _SQL_INSERT = '''INSERT INTO analytic.analitica (cod,ceap,ph,ce,carbon,caliza,ca,mg,k,na,n,p,organi,al,b,fe,mn,cu,zn,s,mo,arcilla,limo,arena,ni,co,ti,"as",pb,cr,metodo) VALUES\n'''
         _VALUES = list()
-        # print(columns)   
         with self.conn.cursor() as cursor:
             try:   
                 for index, r in df1.iterrows():
@@ -520,39 +636,19 @@ class aGraeTools():
                     
                     try:
                         cursor.execute(sql)
-                        QgsMessageLog.logMessage('Analitica ({}) Cargada Correctamente'.format(r['COD']), 'aGrae Laboratorio', level=Qgis.Success)
-                        self.conn.commit()
+                        
                     except Exception as ex:
                         self.conn.rollback()
                         raise Exception('Ocurrio un Error: {}'.format(ex))
-                    
+                
+                self.conn.commit()
+                self.messages('aGrae GIS','Analitica  Cargada Correctamente',alert=True)
+
             except Exception as ex:
                 QMessageBox.about(None, self.plugin_name, 'Ocurrio un error, revisa el panel de registros para más información')
                 QgsMessageLog.logMessage(f'{ex}', self.plugin_name, level=1)
                 self.conn.rollback()
-            # try:     
-            #     cursor.execute(_SQL_INSERT + ' ,\n'.join(_VALUES))
-            #     self.conn.commit()
-            #     # self.tools.actualizarNecesidades()
-            #     iface.messageBar().pushMessage(self.plugin_name, 'Analitica Cargada Correctamente', level=Qgis.Success)
-            #     QgsMessageLog.logMessage('Analitica Cargada Correctamente', self.plugin_name, level=Qgis.Success)
-                    
-
-            # except errors.lookup('23505'):
-            #     # QMessageBox.about(None, self.plugin_name,'El analisis con codigo: {} ya existe en la base de datos.\nComprueba la informacion'.format(row['COD']))
-            #     # QgsMessageLog.logMessage('El analisis con codigo: {} ya existe en la base de datos.\nComprueba la informacion'.format(row['COD']), self.plugin_name, level=Qgis.Warning)
-            #     # self.conn.rollback()
-            #     _SQL_UPDATE = '''UPDATE analytic.analitica
-            #     SET             idanalitica=nextval('analytic.analitica_idanalitica_seq'::regclass), ceap=0, ph=0, ce=0, carbon=0, caliza=0, ca=0, mg=0, k=0, na=0, n=0, p=0, organi=0, cox=0, rel_cn=0, ca_eq=0, mg_eq=0, k_eq=0, na_eq=0, cic=0, ca_f=0, mg_f=0, k_f=0, na_f=0, al=0, b=0, fe=0, mn=0, cu=0, zn=0, s=0, mo=0, arcilla=0, limo=0, arena=0, ni=0, co=0, ti=0, "as"=0, pb=0, cr=0, metodo=0
-            #     WHERE cod='';'''
-            
-            # except Exception as ex:
-            #     QMessageBox.about(None, self.plugin_name, 'Ocurrio un error, revisa el panel de registros para más información')
-            #     QgsMessageLog.logMessage(f'{ex}', self.plugin_name, level=1)
-            #     self.conn.rollback()
-
-            # self.an_save_bd.setEnabled(False)
-            # QMessageBox.about(self, f"aGrae GIS:",f"Analitica almacenada correctamente")
+           
         
     def crearReporteTest(self):
         #! CREAR BASE DEL ANALISIS DE LABORATORIO
@@ -623,24 +719,9 @@ class aGraeTools():
         s = QSettings('agrae','dbConnection')
         path = s.value('ufs_path')
         fn = os.path.join(path,'UFS_{}.shp'.format(nameExp))
-        print(fn)
-        q = '''select distinct 
-        row_number() OVER (ORDER BY (st_dump(geom)).geom) as id,
-        uf,
-        uf_etiqueta,
-        lote, prod_esperada, prod_ponderada, 
-        fertilizantefondoformula for_1, 
-        fertilizantefondocalculado dos_1,
-        fertilizantecob1formula for_2, 
-        fertilizantecob1calculado dos_2,
-        fertilizantecob2formula for_3, 
-        fertilizantecob2calculado dos_3,
-        fertilizantecob3formula for_4, 
-        fertilizantecob3calculado dos_4,
-        round((st_area(st_transform(((st_dump(geom)).geom),8857))/10000)::numeric,2)::double precision area_ha,
-        st_asText(st_multi((st_dump(geom)).geom)) as geom
-        from uf_final;'''
-        query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,q)
+        
+        query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,'''select * from fert_intraparcelaria''')
+        print(query)
         layer = self.getDataBaseLayer(query,'UFS_{}'.format(nameExp),styleName='Fert Variable Intraparcelaria',memory=True)
         try:
             self.saveLayer(layer,fn,nameExp)
@@ -649,7 +730,6 @@ class aGraeTools():
 
             print(ex)
 
-       
     def exportarResumenFertilizacion(self,idcampania:int,idexplotacion:int,nameExp:str):
         s = QSettings('agrae','dbConnection')
         path = s.value('reporte_path')
@@ -842,3 +922,95 @@ class aGraeTools():
             
         except Exception as ex:
             print(ex)
+
+    def asignarMultiplesCultivos(self,idcultivo:int,data:list):
+        sql = '''UPDATE campaign.data
+        SET idcultivo={}
+        WHERE iddata in ({})'''.format(idcultivo,','.join(data))
+        with self.conn.cursor() as cursor:
+            try:
+                cursor.execute(sql)
+                self.conn.commit()
+
+                self.messages('aGrae Tools','Se Asignaron los cultivos Correctamente.',3)
+            
+            except Exception as ex:
+                self.messages('aGrae Tools','No se pudieron asignar los cultivos.\n {}'.format(ex),2,alert=True)
+                raise Exception(ex)
+
+    def crearPuntosMuestreo(self,ids:list,segmentos:list):
+        # TODO
+        from .gdriveCore import GDrive
+        ids = ','.join([str(id) for id in ids])
+        segmentos = ','.join([str(seg) for seg in segmentos])
+        data = None
+        query = aGraeSQLTools().getSql('query_create_muestreo.sql').format(ids,segmentos)
+        core = aGraeLabelGenerator()
+        drive = GDrive()
+
+        # print(query)
+
+        
+        try:
+            
+            cursor = agraeDataBaseDriver().cursor(self.conn)
+            cursor.execute(query)
+            data = cursor.fetchall()
+            # cursor.close()
+            self.conn.commit()
+            self.messages('aGrae GIS','Muestras generadas correctamente.',3,5)
+                
+        except errors.lookup('23505'):
+            self.messages('aGrae GIS','Ya Existen muestras para los lotes en la campaña actual.')
+            self.conn.rollback()
+        except Exception as ex:
+            print(ex)
+            self.messages('Error:','{}'.format(ex),1,5)
+            self.conn.rollback()
+        
+        if data:
+            try:
+                cursor = agraeDataBaseDriver().cursor(self.conn)
+                query_update = '''UPDATE field.muestras as m set label = q.label from (values {}) as q(label,codigo) where m.codigo = q.codigo'''
+                values = ''
+                for r in data:
+                    codigo = r[1]
+                    uid = r[0]
+
+                    qr = core.generateQR(codigo)
+                    label = core.generateLabel(qr,codigo)
+                    url = drive.upload_file(label)
+                    values = values + ''' ('{}' ,'{}'),\n'''.format(url,codigo)
+                    
+                # print(values[:-2])
+                query_update = query_update.format(values[:-2])
+                # print(query_update)
+
+                cursor.execute(query_update)
+                self.conn.commit()     
+            except Exception as ex:
+                self.conn.rollback()
+                print(ex)
+
+        # self.MuestreoEndSignal.emit(False)
+
+
+
+    
+    def cargarLabelsDRIVE(self,file_path:str):
+        from .gdriveCore import GDrive
+        # file_path = r"D:\GeoSIG\aGrae\test\test_labels\label_A410201.pdf"
+        core = aGraeLabelGenerator()
+        qr,code = core.generateQR('A410205')
+        label = core.generateLabel(qr,code)
+
+        drive = GDrive()
+        url = drive.upload_file(label)
+
+    
+
+
+
+
+            
+

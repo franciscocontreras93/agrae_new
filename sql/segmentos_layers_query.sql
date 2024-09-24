@@ -2,8 +2,10 @@ with data as (select distinct
 	d.iddata,
 	d.idcampania,
 	d.idexplotacion,
+	ex.nombre as explotacion,
 	d.idlote,
-	d.idcultivo, 
+	d.idcultivo,
+	c.nombre as cultivo,
 	d.idregimen,
 	d.fertilizantefondoformula,
 	d.fertilizantefondoajustado,
@@ -23,13 +25,16 @@ with data as (select distinct
 	c.extraccionresiduok, 
 	d.prod_esperada 
 	from campaign.data d 
-	join agrae.cultivo c on c.idcultivo = d.idcultivo
-	where d.idcampania = {} and d.idexplotacion = {}), -- REQUIERE EL ID DE LA CAMPANIA Y DE LA EXPLOTACION
-lotes as (select l.*, 
+	left join agrae.cultivo c on c.idcultivo = d.idcultivo
+	join agrae.explotacion ex on d.idexplotacion = ex.idexplotacion
+	where d.idcampania = {} and d.idexplotacion = {} ), -- REQUIERE EL ID DE LA CAMPANIA Y DE LA EXPLOTACION
+lotes as (select l.idlote, l.nombre, st_transform(st_buffer(st_transform(l.geom,8857),-0.1),4326) as geom,
 	d.iddata,
 	d.idcampania,
 	d.idexplotacion,
 	d.idcultivo,
+	d.explotacion,
+	d.cultivo,
 	d.idregimen as regimen,
 	d.ms_cosecha,
 	d.extraccioncosechan,
@@ -40,8 +45,20 @@ lotes as (select l.*,
 	d.extraccionresiduop,
 	d.extraccionresiduok, 
 	d.prod_esperada from data d join agrae.lotes l on d.idlote = l.idlote ),	
-segmentos as (select distinct s.idsegmento,s.ceap,s.segmento,st_multi(st_intersection(s.geometria,l.geom)) as geometria, l.idlote, l.iddata, l.regimen from agrae.segmentos s join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),4)::geometry,s.geometria)),
-segm_analitica as (select 
+segmentos as (select distinct 
+s.idsegmento,
+s.ceap,
+s.segmento,
+st_intersection(s.geometria,l.geom) as geometria,
+--st_collectionextract(st_union(st_multi(st_intersection(s.geometria,l.geom)),3)) as geometria,
+--st_area(st_transform(st_multi(st_intersection(s.geometria,l.geom)),8857)) area,
+l.idlote, 
+l.iddata, 
+l.regimen 
+from agrae.segmentos s 
+join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),0)::geometry,s.geometria)
+group by s.idsegmento,s.ceap,s.segmento,l.idlote,l.iddata,l.regimen,l.geom),
+segm_analitica as (select distinct
 	m.codigo,
 	d.idlote,
 	d.nombre,
@@ -53,25 +70,9 @@ segm_analitica as (select
     n.tipo AS n_tipo,
     n.incremento AS n_inc,
  	a.p,
-    a.metodo AS p_metodo,
-        CASE
-            WHEN a.metodo = 1 THEN ( SELECT DISTINCT p.tipo
-               FROM analytic.fosforo p
-              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND p.suelo = txt.grupo AND a.p >= p.limite_inferior AND a.p < p.limite_superior)
-            WHEN a.metodo = 2 THEN ( SELECT DISTINCT p.tipo
-               FROM analytic.fosforo p
-              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND a.p >= p.limite_inferior AND a.p <= p.limite_superior)
-            ELSE NULL::character varying
-        END AS p_tipo,
-        CASE
-            WHEN a.metodo = 1 THEN ( SELECT DISTINCT p.incremento
-               FROM analytic.fosforo p
-              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND p.suelo = txt.grupo AND a.p >= p.limite_inferior AND a.p < p.limite_superior)
-            WHEN a.metodo = 2 THEN ( SELECT DISTINCT p.incremento
-               FROM analytic.fosforo p
-              WHERE p.metodo = a.metodo AND p.regimen = s.regimen AND a.p >= p.limite_inferior AND a.p <= p.limite_superior)
-            ELSE NULL::double precision
-        END AS p_inc,
+	met.nombre AS p_metodo,
+    p_n.etiqueta as p_tipo,
+    p_n.incremento as p_inc,
     a.k,
     k.tipo AS k_tipo,
     k.incremento AS k_inc,
@@ -130,18 +131,21 @@ segm_analitica as (select
 	s.geometria as geom
 	FROM segmentos s 
 	JOIN lotes d  on  s.iddata = d.iddata
-	JOIN field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and m.idsegmento = s.idsegmento --join MUESTRAS
-	JOIN analytic.analitica a on m.codigo = a.cod
-	JOIN analytic.ph ph ON a.ph > ph.limite_inferior AND a.ph <= ph.limite_superior
-	JOIN analytic.textura txt ON a.arena >= txt.arena_i AND a.arena <= txt.arena_s AND a.arcilla >= txt.arcilla_i AND a.arcilla <= txt.arcilla_s AND a.ceap >= txt.ceap_i AND a.ceap <= txt.ceap_s
-	LEFT JOIN analytic.conductividad_electrica ce ON a.ce >= ce.limite_i AND a.ce <= ce.limite_s
+	LEFT JOIN field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and m.segmento = s.segmento --join MUESTRAS
+	LEFT JOIN analytic.analitica a on m.codigo = a.cod
+	LEFT JOIN analytic.ph ph ON a.ph > ph.limite_inferior AND a.ph < ph.limite_superior
+	LEFT JOIN analytic.textura txt ON  a.ceap >= txt.ceap_i AND a.ceap < txt.ceap_s
+	LEFT JOIN analytic.conductividad_electrica ce ON a.ce >= ce.limite_i AND a.ce < ce.limite_s
 	LEFT JOIN analytic.carbonatos carb ON (a.carbon / 100::double precision) >= carb.limite_inferior AND (a.carbon / 100::double precision) < carb.limite_superior
-	LEFT JOIN analytic.caliza_activa ca_ac ON a.caliza >= ca_ac.limite_i AND a.caliza <= ca_ac.limite_s
-	LEFT JOIN analytic.calcio ca ON ca.suelo = txt.grupo AND a.ca >= ca.limite_inferior AND a.ca <= ca.limite_superior
-	LEFT JOIN analytic.magnesio mg ON mg.suelo = txt.grupo AND a.mg >= mg.limite_inferior AND a.mg <= mg.limite_superior
-	LEFT JOIN analytic.cic cic ON a.cic >= cic.limite_i AND a.cic <= cic.limite_s
-	LEFT JOIN analytic.nitrogeno n ON a.n >= n.limite_inferior AND a.n <= n.limite_superior
-	LEFT JOIN analytic.potasio k ON k.regimen = s.regimen AND k.suelo = txt.grupo AND a.k >= k.limite_inferior AND a.k < k.limite_superior
-	LEFT JOIN analytic.sodio na ON na.suelo = txt.grupo AND a.na >= na.limite_inferior AND a.na <= na.limite_superior
+	LEFT JOIN analytic.caliza_activa ca_ac ON a.caliza >= ca_ac.limite_i AND a.caliza < ca_ac.limite_s
+	LEFT JOIN analytic.calcio ca ON ca.suelo = txt.grupo AND a.ca >= ca.limite_inferior AND a.ca < ca.limite_superior
+	LEFT JOIN analytic.magnesio mg ON mg.suelo = txt.grupo AND a.mg >= mg.limite_inferior AND a.mg < mg.limite_superior
+	LEFT JOIN analytic.cic cic ON a.cic >= cic.limite_i AND a.cic < cic.limite_s
+	LEFT JOIN analytic.nitrogeno n ON a.n >= n.limite_inferior AND a.n < n.limite_superior and n.textura = txt.grupo
+	LEFT JOIN analytic.potasio k ON k.textura = txt.grupo AND a.k >= k.limite_inferior AND a.k < k.limite_superior
+	LEFT JOIN analytic.sodio na ON na.suelo = txt.grupo AND a.na >= na.limite_inferior AND a.na < na.limite_superior
+    LEFT JOIN analytic.fosforo_nuevo p_n on p_n.metodo = a.metodo AND p_n.textura = txt.grupo and p_n.carbonatos = carb.nivel AND a.p >= p_n.limite_inferior AND a.p < p_n.limite_superior
+	LEFT JOIN analytic.p_metodos met on a.metodo = met.id
+	where not st_isEmpty(s.geometria)
 	)
 {} --QUERY DE LA SELECCION

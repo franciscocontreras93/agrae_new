@@ -71,6 +71,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         self.produccion = produccion_esperada.upper()
 
         self.dataSuelo = dataSuelo
+        
         self.dataExtraccion = dataExtraccion
         self.iddata = iddata
         self.lote = lote 
@@ -329,29 +330,38 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         :param _type_ i: _description_
         """
         d = None
+        # if i == 1:
+        #     adjust_factor = 0.20
+        # elif i == 2:
+        #     adjust_factor = 0.50
+        # elif i == 3:
+        #     adjust_factor = 1
+        # elif i == 4:
+        #     adjust_factor = 1
+        adjust_factor = 1
+      
         try:
             if index != 0 and self.dataValidator == False:
                 precio = precio.text()
                 data = self.dataExtraccion
-                # print(precio)
-                # print(self.dataExtraccion)
                 area = [float(e[5]) for e in data]
                 npk = [str(e[4]) for e in data]
                 lista = [e.split(' / ') for e in npk ]
-                n = [int(e[0]) for e in lista ]
+                n = [int(e[0])*adjust_factor for e in lista ]
                 p = [int(e[1]) for e in lista ]
                 k = [int(e[2]) for e in lista ]
+
+                # print(n,p,k)
             elif self.dataValidator == True:
                 precio = precio.text()
                 data = self.dataNecesidades
                 data = list(zip(*[data[col] for col in data]))
-                # print(data)
                 area = [float(e[5]) for e in self.dataExtraccion]
                 uf = [e[0] for e in data]
-                n = [int(e[1]) for e in data]
+                n = [int(e[1]) * adjust_factor for e in data]
                 p = [int(e[2]) for e in data]
                 k = [int(e[3]) for e in data]
-
+                # print(n,p,k)
 
 
             f_n = int(self.formula[0])/100 # FACTOR NITROGENO EN DOSIS APLICADA
@@ -360,6 +370,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
 
 
             cols = [0,(index)]
+            
             d = self.ajustesFertilizantes(n=n,x=f_n,p=p,y=f_p,k=k,z=f_k)
             # print(d)        
             datagen = ([f[col] for col in cols] for f in d)
@@ -588,7 +599,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         if data[12] != None and data[13] != None and data[14] != None :
             f4 = str(data[12])
             txt = txt + '''<p align="center"><span style=" font-weight:600;">APORTE 4 {} </span></p>'''.format(f4)
-            self.line_formula_4.setText(data[13])
+            self.line_formula_4.setText(data[12])
             self.line_precio_4.setText(str(int(round(data[13]))))
             self.combo_ajuste_4.setCurrentText(str(data[14]).upper())
             # self.line_cantidad_4.setText(str(float(data[15])))
@@ -680,7 +691,8 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
 
         # print('huella de carbono')
         data = self.dataExtraccion
-        with self.conn.cursor() as cursor: 
+        cursor = agraeDataBaseDriver().cursor(self.conn)
+        with cursor: 
             try:
                 sql = '''select ca.unidadesnpktradicionales  from campaign."data" d 
                 join agrae.agricultor ag on ag.idexplotacion  = d.idexplotacion 
@@ -736,7 +748,8 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
             #! REDUCCION HUELLA DE CARBONO: 
             try: 
                 _reduccion = -huella_carbono_fp+huella_carbono_fv
-                _percent = round((+_reduccion/huella_carbono_fp)*100)
+                # _percent = round((+_reduccion/huella_carbono_fp)*100)
+                _percent = round((+_reduccion/huella_carbono_fp),1)
                 # print('**** REDUCCION HUELLA DE CARBONO: {} KgCO2eq/ha o un {} % ****'.format(_reduccion,_percent))
 
 
@@ -791,7 +804,7 @@ class MplCanvas(FigureCanvasQTAgg):
         plt.savefig(path)
 
     def plot(self,data):
-        # print(data)
+        
         
 
         def valores(suelo):
@@ -804,17 +817,14 @@ class MplCanvas(FigureCanvasQTAgg):
                 elif i == 'Alto':
                     colors.append('#5AB8E2')
                     values.append(4)
-                elif i == 'Medio':
+                elif i == 'Medio' or i == 'Normal':
                     colors.append('#5EE25A')
                     values.append(3)
-                elif i == 'Normal':
-                    colors.append('#5EE25A')
-                    values.append(3)
-                
+                                
                 elif i == 'Bajo':
                     colors.append('#FFAB66')
                     values.append(2)
-                elif i == 'Muy Bajo':
+                elif i == 'Muy Bajo' or i == 'Muy bajo':
                     colors.append('#FF6666')
                     # colors.append('#FF3333')
                     values.append(1)
@@ -851,12 +861,16 @@ class MplCanvas(FigureCanvasQTAgg):
                 else: 
                     values = [0,0,0,0]
                     # print(values)
-            except IndexError as ie:
+            except IndexError:
+                values = [0,0,0,0]
+                # print(values)
+                return values
+            except KeyError:
                 values = [0,0,0,0]
                 # print(values)
                 return values
 
-            
+            # print(values)
             return values   
 
     
@@ -875,6 +889,9 @@ class MplCanvas(FigureCanvasQTAgg):
         suelo_1 = getValues(1)
         suelo_2 = getValues(2)
         suelo_3 = getValues(3)
+        # print(suelo_1)
+        # print(suelo_2)
+        # print(suelo_3)
 
         
 
@@ -884,6 +901,8 @@ class MplCanvas(FigureCanvasQTAgg):
         values_1, colors_1 = valores(suelo_1)
         values_2, colors_2 = valores(suelo_2)
         values_3, colors_3 = valores(suelo_3)
+
+        # print(values_1,values_2,values_3)
 
         barGenerator(self.ax1,values_3,colors_3,categorias,y_pos,'',False)
         barGenerator(self.ax2,values_2,colors_2,categorias,y_pos,'',False)

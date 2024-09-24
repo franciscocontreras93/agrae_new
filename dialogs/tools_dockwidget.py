@@ -5,6 +5,7 @@ import psycopg2
 
 from psycopg2 import extras
 
+
 from qgis.PyQt import QtWidgets, uic
 from qgis.PyQt.QtCore import pyqtSignal, Qt,QDate,QSize
 from qgis.PyQt.QtGui import QIcon
@@ -17,8 +18,9 @@ from ..sql import aGraeSQLTools
 from ..gui import agraeGUI
 from ..tools import aGraeTools
 
+from ..dialogs import aGraeDialogs
 
-from .explotacion_dialogs import CopyExplotacionDialog, CreateExplotacionDialog, UpdateExplotacionDialog, GestionExplotacionDialog
+from .explotacion_dialogs import CopyExplotacionDialog, CreateExplotacionDialog, UpdateExplotacionDialog, GestionExplotacionDialog,GestionarExplotacionesDialog
 from .campania_dialogs import CloneCampaniaDialog, CreateCampaniaDialog, UpdateCampaniaDialog
 from .lotes_dialog import LoteWeatherDialog
 from .analitica_dialogs import agraeAnaliticaDialog
@@ -30,8 +32,12 @@ from .composer_dialog import agraeComposer
 from .cultivos_dialog import GestionarCultivosDialog
 from .parametros_dialog import GestionarParametrosDialog
 from .plots_dialog import agraePlotsDialog
-
+from .monitor_dialogs import MonitorRendimientosDialog
+from .gee_dialog import aGraeGEEDialog
+from .reportes_dialog import ReportesDialog
 toolsDialog, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui/agrae_tools.ui'))
+
+
 
 class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     def __init__(self,
@@ -56,10 +62,14 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.nombreLote = None
         self.idCultivo = None
         self.idRegimen = None
+        self.prodEsperada = None
+        self.prodFinal = None
+        
         self.fechaSiembra = ''
         self.fechaCosecha = ''
         self.FechaDesde = QDate()
         self.FechaHasta = QDate()
+        
 
         self.getCampaniasData()
         self.getCultivosData()
@@ -74,7 +84,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     def UIComponents(self):
         self.setWindowIcon(agraeGUI().getIcon('main'))
         self.date_siembra.dateChanged.connect(self.dateSiembraChanged)
-        self.date_cosecha.dateChanged.connect(self.dateCosechaChanged)
+        # self.date_cosecha.dateChanged.connect(self.dateCosechaChanged)
         self.toolBox.setCurrentIndex(0)
         # self.toolBox.setItemIcon(0,agraeGUI().getIcon('main'))
         self.toolBox.setItemIcon(0,agraeGUI().getIcon('info'))
@@ -111,13 +121,15 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         # TOOLBUTTONS 
         # TOOL_EXP_2
 
-       
-        self.AsignarLotesExplotacion = QtWidgets.QAction(agraeGUI().getIcon('selection'),'Asignar Lotes a Explotacion',self)
+        self.AsignarLotesExplotacion = QtWidgets.QAction(agraeGUI().getIcon('selection'),'Asignar Lotes Seleccionados a Explotacion',self)
         self.AsignarLotesExplotacion.triggered.connect(self.asignarLotesExp)
+
+        self.AsignarCultivosLotes = QtWidgets.QAction(agraeGUI().getIcon('select-cultivo'),'Asignar Cultivo a Lotes Seleccionados',self)
+        self.AsignarCultivosLotes.triggered.connect(self.asignarCultivosLotes)
 
         self.CargarCapasExplotacion = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar capas de Explotacion',self)
         self.CargarCapasExplotacion.triggered.connect(self.generarCapasExplotacion)
-        self.GenerarReporteFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('printer'),'Generar Reporte de Fertiliacion',self)
+        self.GenerarReporteFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('printer'),'Generar Reporte de Fertilizacion',self)
         self.GenerarReporteFertilizacion.triggered.connect(self.generateComposerDialog)
 
         #TODO
@@ -127,20 +139,37 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Fertiliacion',self)
         self.GenerarResumenFertilizacion.triggered.connect(self.exportarResumen)
 
-        actions_exp = [self.AsignarLotesExplotacion,self.CargarCapasExplotacion,self.GenerarReporteFertilizacion,self.GenerarUnidadesFertilizacion,self.GenerarResumenFertilizacion]
+        self.GenerarAmbientes = QtWidgets.QAction(agraeGUI().getIcon('satelite'),'Generar Mapas de Ambientes',self)
+        self.GenerarAmbientes.triggered.connect(self.geeDialog)
+        #TODO
+        self.MonitorDeRendimiento = QtWidgets.QAction(agraeGUI().getIcon('rindes'),'Monitor de Rendimiento',self)
+        self.MonitorDeRendimiento.triggered.connect(self.monitorRendimientoDialog)
+
+        actions_exp = [
+            self.AsignarLotesExplotacion,
+            self.AsignarCultivosLotes,
+            self.CargarCapasExplotacion,
+            self.GenerarReporteFertilizacion,
+            self.GenerarUnidadesFertilizacion,
+            self.GenerarResumenFertilizacion,
+            self.GenerarAmbientes,
+            self.MonitorDeRendimiento]
+        # actions_exp = [self.AsignarLotesExplotacion,self.CargarCapasExplotacion,self.GenerarReporteFertilizacion,self.GenerarUnidadesFertilizacion,self.GenerarResumenFertilizacion]
         self.tools.settingsToolsButtons(self.tool_exp_2,actions_exp,icon=agraeGUI().getIcon('explotacion'),setMainIcon=True)
 
         # TOOL_LAB
         #TODO 
-        self.CargarCapaMuestras = QtWidgets.QAction(agraeGUI().getIcon('pois'),'Cargar Capa de Muestras',self)
-        # self.CargarCapaMuestras.triggered.connect(self.crearFormatoAnalitica)
-        
+        self.CargarCapaMuestras = QtWidgets.QAction(agraeGUI().getIcon('pois'),'Generar Puntos de Muestreo.',self)
+        # self.CargarCapaMuestras.triggered.connect(self.createMuestreoPoints) #TODO
+        self.CargarCapaMuestras.triggered.connect(aGraeDialogs.muestreoDialog)
 
-        self.CrearArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Crear Archivo de Laboratorio',self)
+        self.ActualziarProyectoMuestreo = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Actualizar capas de Muestreo',self)
+
+        self.CrearArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Archivo de Laboratorio',self)
         self.CrearArchivoAnalisis.triggered.connect(self.crearFormatoAnalitica)
         self.ImportarArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('import'),'Cargar Archivo de Laboratorio',self)
         self.ImportarArchivoAnalisis.triggered.connect(self.cargarAnalitica)
-        actions_lab = [self.CargarCapaMuestras,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis]
+        actions_lab = [self.CargarCapaMuestras,self.ActualziarProyectoMuestreo,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis]
         self.tools.settingsToolsButtons(self.tool_lab,actions_lab,icon=agraeGUI().getIcon('matraz'),setMainIcon=True)
         # TOOL_DATA
         self.GestionarPersonas = QtWidgets.QAction(agraeGUI().getIcon('users'),'Gestionar Personas',self)
@@ -169,7 +198,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.IndentifyLoteAction.triggered.connect(self.identify)
         
         self.CargarLotes = QtWidgets.QAction(agraeGUI().getIcon('add'),'Cargar Nuevos Lotes',self)
-        self.CargarLotes.triggered.connect(self.cargarLotes)
+        self.CargarLotes.triggered.connect(self.cargarLotesDialog)
 
         self.CrearCE = QtWidgets.QAction(agraeGUI().getIcon('segmentos'),'Cargar CE',self)
         self.CrearCE.triggered.connect(lambda : self.gestionarDatosBaseDialog(0))
@@ -182,7 +211,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         actions_agrae = [self.IndentifyLoteAction,self.CargarLotes,self.CrearCE,self.CrearSegmentos,self.CrearAmbientes]
 
-        self.tools.settingsToolsButtons(self.tool_agrae,actions_agrae,icon=agraeGUI().getIcon('main'),setMainIcon=True)
+        self.tools.settingsToolsButtons(self.tool_agrae,actions_agrae,icon=agraeGUI().getIcon('tools'),setMainIcon=True)
 
         # TOOL_CAMP
         self.CrearCampaniaAction = QtWidgets.QAction(agraeGUI().getIcon('add'),'Crear Campaña',self)
@@ -253,7 +282,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.GenerarPanelesDialogAction.triggered.connect(self.loteAnliticDialog)
 
         self.EditarLoteAction.triggered.connect(lambda: self.tools.enableElements(self.EditarLoteAction,[self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.ActualizarLoteAction,self.EliminarLoteAction, self.check_siembra, self.check_cosecha]))
-        actions_lote = [self.GenerarPanelesDialogAction,self.EditarLoteAction,self.ActualizarLoteAction,self.ClimaLoteAction,self.EliminarLoteAction]
+        actions_lote = [self.EditarLoteAction,self.ActualizarLoteAction,self.ClimaLoteAction,self.GenerarPanelesDialogAction,self.EliminarLoteAction,]
         self.tools.settingsToolsButtons(self.tool_lote, actions_lote)
 
         # TOOL_FERT
@@ -346,7 +375,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         pass
 
     def gestionExplotacionDialog(self):
-        dlg = GestionExplotacionDialog()
+        dlg = GestionarExplotacionesDialog()
+        # dlg = GestionExplotacionDialog()
         # dlg.idExplotacionSignal.connect()
         dlg.exec()
     
@@ -360,8 +390,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         dlg.exec()
         # print(idExplotacion)
     
-
-
     def gestionAgricultorDialog(self):
         dlg = GestionAgricultorDialog()
         dlg.exec()
@@ -381,13 +409,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         
         pass
     
-    def cargarLotes(self):
-        layer = iface.activeLayer()
-        dlg = CrearLotesDialog(layer)
-        # dlg.expCreated.connect(lambda e: self.tools.messages('aGrae Tools','Explotacion {} creada correctamente'.format(e),3))
-        # dlg.loteCreated.connect(self.afterLotesCreated)
+    def cargarLotesDialog(self):
+        
+        dlg = CrearLotesDialog()
         dlg.exec()
-
 
     def generateComposerDialog(self):
         group  = '{}-{}'.format(self.combo_campania.currentText()[2:],self.combo_explotacion.currentText())
@@ -396,6 +421,41 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
        
 
         dlg = agraeComposer(self.atlasLayers,self.combo_campania.currentData(),self.combo_explotacion.currentData())
+        dlg.exec()
+
+    def geeDialog(self):
+        dlg = aGraeGEEDialog(self.layer,self.combo_explotacion.currentData())
+        dlg.exec()
+
+    def asignarCultivosLotes(self):
+            
+        dlg = GestionarCultivosDialog()
+        dlg.tableWidget.doubleClicked.disconnect()
+        dlg.tableWidget.doubleClicked.connect(dlg.getIdCultivoSignal)
+        dlg.idCultivoSignal.connect(self.getIdCultivo)
+        
+        dlg.exec()
+
+        lotes = [str(f['iddata']) for f in self.layer.selectedFeatures()]
+        try:
+            self.tools.asignarMultiplesCultivos(self.idCultivo,lotes)
+        except Exception as ex:
+          print(ex)
+          
+        finally:
+          self.idCultivo = None
+        
+
+    def getIdCultivo(self,data):
+        self.idCultivo = data
+        
+
+    def monitorRendimientoDialog(self):
+
+        dlg = MonitorRendimientosDialog(
+            idcampania=self.combo_campania.currentData(),
+            idexplotacion= self.combo_explotacion.currentData()
+        )
         dlg.exec()
 
     # FUCNTIONS
@@ -415,8 +475,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                     data = self.tools.checkData(data)
                 return data
             except Exception as ex:
-                # print(ex)
-                self.conn.close()
+                print(ex)
+                self.conn.rollback()
 
     def afterLotesCreated(self,idexp):
         self.updateComboExp()
@@ -428,8 +488,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             dlg = LoteWeatherDialog(self.featureLote)
             dlg.exec()
         
-    
-
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
 
@@ -453,7 +511,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             toolbutton.setDefaultAction(actions[0])
 
     def dateSiembraChanged(self,e):
-        self.fechaSiembra = self.date_siembra.date()
+        self.fechaSiembra = QDate(self.date_siembra.date())
         self.date_cosecha.setMinimumDate(self.date_siembra.date().addDays(15))
         
     def dateCosechaChanged(self,e):
@@ -478,8 +536,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             # else:
             variable = ''
             
-
-
     def infoLote(self,i):
         if i == 1:
             iface.mapCanvas().setMapTool(self.identifyTool)
@@ -511,12 +567,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 self.FechaDesde = data[0]
                 self.FechaHasta = data[1]
 
-                self.date_siembra.setMinimumDate(data[0])
-                self.date_siembra.setMaximumDate(data[1])
-                self.date_cosecha.setMinimumDate(data[0])
-                self.date_cosecha.setMaximumDate(data[1])
-                self.date_aplicacion.setMinimumDate(data[0])
-                self.date_aplicacion.setMaximumDate(data[1])
+                self.date_siembra.setMinimumDate(self.FechaDesde)
+                self.date_siembra.setMaximumDate(self.FechaHasta)
+                self.date_cosecha.setMinimumDate(self.FechaDesde)
+                self.date_cosecha.setMaximumDate(self.FechaHasta)
+                self.date_aplicacion.setMinimumDate(self.FechaDesde)
+                self.date_aplicacion.setMaximumDate(self.FechaHasta)
                 # print(data)
 
 
@@ -588,17 +644,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         else: 
             print('Debe seleccionar uno o mas lotes')
 
-
-
-
-
-
-
     def getLotesExplotacionLayer(self):
        
 
         sql = aGraeSQLTools().getSql('view_lotes.sql')
-
 
         try:
             sql = sql.format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
@@ -615,8 +664,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
 
         except Exception as ex:
-            self.conn.rollback()
-            print(ex)
+            # self.conn.rollback()
+            # print(ex)
+            pass
 
                 
         self.reloadLayer()
@@ -631,14 +681,19 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         pass
     
     def focusExp(self):
+        reset = ''
+        self.layer.setSubsetString(reset)
         if self.combo_explotacion.currentData() != None:
-            exp = QgsExpression("\"idexplotacion\"={}".format(self.combo_explotacion.currentData()))
-            it = self.layer.getFeatures(QgsFeatureRequest(exp))
-            ids = [f.id() for f in it]
-            self.layer.selectByIds(ids)
-            bbox = self.layer.boundingBoxOfSelected()
-            iface.actionZoomToSelected().trigger()
-            self.layer.removeSelection()
+            # exp = QgsExpression("\"idexplotacion\"={}".format(self.combo_explotacion.currentData()))
+            # it = self.layer.getFeatures(QgsFeatureRequest(exp))
+            # ids = [f.id() for f in it]
+            # self.layer.selectByIds(ids)
+            self.layer.setSubsetString("\"idexplotacion\"={}".format(self.combo_explotacion.currentData()))
+            # bbox = self.layer.boundingBoxOfSelected()
+            # iface.actionZoomToSelected().trigger()
+            iface.mapCanvas().setExtent(self.layer.extent())
+            iface.mapCanvas().refresh()
+            # self.layer.removeSelection()
 
     def getCampaniaCultivoCombo(self,idexp):
         self.combo_cultivo_2.clear()
@@ -690,7 +745,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         sql = '''select distinct e.nombre , d.idexplotacion from campaign.data d
         join campaign.campanias c on c.id = d.idcampania 
         join agrae.explotacion e on e.idexplotacion = d.idexplotacion 
-        where c.id = {}'''.format(idcampania)
+        where c.id = {}
+        order by e.nombre'''.format(idcampania)
         # print(idcampania)
         if idcampania != None:
             with self.conn.cursor() as cursor:
@@ -699,8 +755,13 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                     data = cursor.fetchall()
                     # print(idcampania)
                     if len(data) >= 1 and self.combo_campania.currentData() != None:
+                        data_completer = [e[0] for e in data]
                         for e in data:
                             self.combo_explotacion.addItem(e[0],e[1])
+                        
+                        exp_completer = self.tools.dataCompleter(data_combo=data_completer)
+                        self.combo_explotacion.setCompleter(exp_completer)
+
                         
                         sql_date_camp = 'select fecha_desde, fecha_hasta from campaign.campanias where id = {}'.format(self.combo_campania.currentData())
                         cursor.execute(sql_date_camp)
@@ -713,7 +774,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                             self.date_siembra.setMaximumDate(data[1])
                             self.date_cosecha.setMinimumDate(data[0])
                             self.date_cosecha.setMaximumDate(data[1])
-                        except:
+                        except Exception as ex:
+                            print(ex)
                             pass
 
                     
@@ -723,9 +785,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                     self.conn.rollback()
                     print(ex,'Error getExpData')
             
-            
-    
-
     def getCultivosData(self):
         with self.conn.cursor() as cursor:
             try:
@@ -792,7 +851,19 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 self.conn.rollback()
                 print(ex)
 
-    # LOTES
+    
+    def createMuestreoPoints(self):
+        
+        if len(list(self.layer.getSelectedFeatures())) > 0:
+            ids  = [f['iddata'] for f in  list(self.layer.getSelectedFeatures())]
+        else:
+            ids = [f['iddata'] for f in  list(self.layer.getFeatures())]
+        
+        reply = QtWidgets.QMessageBox.question(self,'aGrae Toolbox','Quieres generar los puntos de muestreo para:\n{} Lotes de la explotacion :\n{}?'.format(len(ids) , self.combo_explotacion.currentText()),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+
+                self.tools.crearPuntosMuestreo(ids)
+ 
     def checkData(self,condition,label,value,widget):
         styleNormal = "QLabel { background-color : transparent; color : black; font-weight : normal }"
         styleBackgroudRed = "QLabel { background-color : red; color : white; font-weight : bold }"
@@ -829,7 +900,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.featureLote = feat
 
         self.date_siembra.setDate(self.FechaDesde)
-        self.date_cosecha.setDate(self.FechaDesde)
+        self.date_cosecha.setDate(self.FechaHasta)
 
         self.toolBox.setCurrentIndex(0)
 
@@ -839,6 +910,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.idCultivo = feat['idcultivo']
         self.idRegimen = feat['idregimen']
         self.prodEsperada = feat['prod_esperada']
+        self.prodFinal = feat['prod_final']
         self.line_nombre.setText(self.nombreLote)
 
 
@@ -853,7 +925,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             else:
                 self.date_siembra.setEnabled(False)
 
-            self.label_status.setText('Siembra Activa')
+            self.label_status.setText('Cultivando')
             self.label_status.setStyleSheet("QLabel { background-color : green; color : white; }")
             self.fechaSiembra = feat['fechasiembra'].toString('yyyy-MM-dd')
             self.date_siembra.setDate(feat['fechasiembra'])
@@ -883,30 +955,32 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         regimen = self.combo_regimen.currentData() 
         nombre = self.line_nombre.text()
         produccion = self.line_produccion.value()
+        # prod_final = self.line_prod_final.value()
         fechaSiembra = ''
         fechaCosecha = ''
-        if self.fechaSiembra != '':
-            fechaSiembra = self.fechaSiembra.toString('yyyy-MM-dd')
-        
-        if self.fechaCosecha != '':
-            fechaCosecha = self.fechaCosecha.toString('yyyy-MM-dd')
+        if self.check_siembra.isChecked():
+            fechaSiembra = self.date_siembra.date().toString('yyyy-MM-dd')
+       
+        if self.check_cosecha.isChecked():
+            fechaCosecha = self.date_cosecha.date().toString('yyyy-MM-dd')
         
         sql_lote = '''update agrae.lotes set nombre = '{}' where idlote = {}'''.format(nombre,self.idLote)
 
         sql_data = '''update campaign.data set idcultivo = {}, idregimen = {}, fechasiembra = nullif('{}','')::date, fechacosecha = nullif('{}','')::date, prod_esperada = {} where iddata = {} '''.format(cultivo,regimen,fechaSiembra,fechaCosecha,produccion,self.idData)
-       
+        # print(sql_data)
         with self.conn.cursor() as cursor:
             try:
                 if self.nombreLote != self.line_nombre.text():
                     cursor.execute(sql_lote)
                     self.conn.commit()
-                if  self.idCultivo != cultivo or self.idRegimen != regimen or self.prodEsperada != produccion or self.fechaSiembra != '' or self.fechaCosecha != '':
-                
-                    cursor.execute(sql_data)
-                    self.conn.commit()
-                    self.tools.messages('aGrae Tools','Lote actualizado correctamente',3)
-                    # self.updateLotesLayer()
-                    self.reloadLayer()
+                # if  self.idCultivo != cultivo or self.idRegimen != regimen or self.prodEsperada != produccion:
+                # if  self.idCultivo != cultivo or self.idRegimen != regimen or self.prodEsperada != produccion or self.fechaSiembra != '' or self.fechaCosecha != '':
+                   
+                cursor.execute(sql_data)
+                self.conn.commit()
+                self.tools.messages('aGrae Tools','Lote actualizado correctamente',3)
+                # self.updateLotesLayer()
+                self.reloadLayer()
             
             except Exception as ex:
                 self.conn.rollback()
@@ -1073,7 +1147,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         question = 'Quieres eliminar el lote {}?, esta acción eliminará\nsolo los datos asociados a la campaña.'.format(self.nombreLote)
         sql = '''delete from campaign.data where iddata = {}'''.format(self.idData)
         actions = [self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.date_siembra,self.date_cosecha,self.ActualizarLoteAction,self.EliminarLoteAction]
-        self.tools.deleteAction(question,sql,self.EditarLoteAction,actions)
+        try:
+            self.tools.deleteAction(question,sql,self.EditarLoteAction,actions)
+            self.tools.messages('aGrae Tools','Se elimino el lote {} de la explotacion actual.'.format(self.nombreLote),3,duration=5)
+        except Exception as ex:
+            print(ex)
+            self.tools.messages('aGrae Tools','No se pudo eliminar el lote'.format(self.nombreLote),2,alert=True)
 
 
     def crearFormatoAnalitica(self):
@@ -1081,14 +1160,25 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         exp = self.combo_explotacion.currentText().replace(' ','_')
         camp  = self.combo_campania.currentText()[2:].replace(' ','_')
         name = '{}_{}'.format(camp,exp)
-        self.tools.crearFormatoAnalitica(self.combo_campania.currentData(),self.combo_explotacion.currentData(),name)
+        reply = QtWidgets.QMessageBox.question(self,'aGrae Toolbox','Quieres generar el archivo de Analitica para la explotacion:\n{}?'.format(name),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.tools.crearFormatoAnalitica(self.combo_campania.currentData(),self.combo_explotacion.currentData(),name)
     
     def cargarAnalitica(self):
         data = self.tools.cargarReporteAnalitica()
         if not data.empty:
             dlg = agraeAnaliticaDialog(data)
             dlg.exec()
+    
+    def new_generarCapasExplotacion(self):
+        self.atlasLayers = {}
+        self.atlasLayers['Atlas'] = self.layer.clone()
         
+        dlg = ReportesDialog()
+        dlg.exec()
+
+        pass
+
     def generarCapasExplotacion(self):
         self.atlasLayers = {}
         self.atlasLayers['Atlas'] = self.layer.clone()
@@ -1096,39 +1186,44 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         name_camp = self.combo_campania.currentText()[2:]
         name_exp = self.combo_explotacion.currentText()
         queries = {
-            'Segmentos': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,segmento,ceap,st_asText(geom) as geom from segm_analitica;'''),
-            'Nitrogeno': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,n,lower(n_tipo) as tipo, n_inc as incremento, st_asText(geom) as geom from segm_analitica;'''),
-            'Fosforo': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,p,lower(p_tipo) as tipo, p_inc as incremento,st_asText(geom) as geom from segm_analitica;'''),
-            'Potasio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,k,lower(k_tipo) as tipo, k_inc as incremento,st_asText(geom) as geom from segm_analitica;'''),
-            'PH': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,ph as valor,lower(ph_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
-            'Conductividad Electrica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,ce ,st_asText(geom) as geom from segm_analitica;'''),
-            'Calcio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,ca,lower(ca_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
-            'Magnesio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,mg,lower(mg_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
-            'Sodio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,na,lower(na_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
-            'Azufre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,s as valor,st_asText(geom) as geom from segm_analitica;'''),
-            'CIC': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,
-            (case when segmento = 1 then 'Rojo' when segmento = 2 then 'Verde' when segmento = 3 then 'Azul' end) as segmento,
-            round(cic::numeric,2)::double precision as cic, 
-            round(ca::numeric,2)::double precision as ca,
-            round(mg::numeric,2)::double precision as mg, 
-            round(k::numeric,2)::double precision as k, 
-            round(na::numeric,2)::double precision as na,
-            st_asText(geom) as geom from segm_analitica;'''),
-            'Hierro': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,fe,st_asText(geom) as geom from segm_analitica;'''),
-            'Manganeso': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,mn as valor,st_asText(geom) as geom from segm_analitica;'''),
-            'Aluminio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,al as valor,st_asText(geom) as geom from segm_analitica;'''),
-            'Boro': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,b,st_asText(geom) as geom from segm_analitica;'''),
-            'Cinq': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,zn,st_asText(geom) as geom from segm_analitica;'''),
-            'Cobre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,cu,st_asText(geom) as geom from segm_analitica;'''),
-            'Materia Organica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,organi,st_asText(geom) as geom from segm_analitica;'''),
-            'Relacion CN': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,rel_cn,st_asText(geom) as geom from segm_analitica;'''),
-            'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select lote,uf, uf_etiqueta, necesidades_iniciales, fertilizantefondoformula, fertilizantefondocalculado,fertilizantecob1formula, fertilizantecob1calculado,fertilizantecob2formula, fertilizantecob2calculado,fertilizantecob3formula, fertilizantecob3calculado,area_ha,st_asText(geom) as geom from uf_final uf'''),
-            'Fert Variable Parcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct lote,fertilizantefondoformula,round(sum(fertilizantefondocalculado * area_ha))::integer dosisfondo,fertilizantecob1formula,round(sum(fertilizantecob1calculado * area_ha))::integer dosiscob1,fertilizantecob2formula,round(sum(fertilizantecob2calculado * area_ha))::integer dosiscob2,fertilizantecob3formula,round(sum(fertilizantecob3calculado * area_ha))::integer dosiscob3,sum(area_ha) area_ha,st_asText(st_union(geom)) geom from uf_final group by lote,fertilizantefondoformula,fertilizantecob1formula,fertilizantecob2formula,fertilizantecob3formula'''),
+            # 'Ambientes': aGraeSQLTools().getSql('ambientes_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
+            'Segmentos': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,segmento,ceap,st_asText(geom) as geom from segm_analitica;'''),
+            'Nitrogeno': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,n as valor,lower(n_tipo) as tipo, n_inc as incremento, st_asText(geom) as geom from segm_analitica;'''),
+            'Fosforo': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,p as valor,lower(p_tipo) as tipo, p_inc as incremento,st_asText(geom) as geom from segm_analitica;'''),
+            'Potasio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,k as valor,lower(k_tipo) as tipo, k_inc as incremento,st_asText(geom) as geom from segm_analitica;'''),
+            'PH': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,ph as valor,lower(ph_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
+            'Conductividad Electrica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,ce/100 as ce ,st_asText(geom) as geom from segm_analitica;'''),
+            'Calcio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,ca as valor,lower(ca_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
+            'Magnesio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,mg as valor,lower(mg_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
+            'Sodio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,na as valor,lower(na_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
+            'Azufre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,s as valor,st_asText(geom) as geom from segm_analitica;'''),
+            'CIC': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''
+            select distinct idlote,nombre as lote,codigo as codigo_muestra,
+            (case when segmento = 1 then 'Rojo' when segmento = 2 then 'Verde' when segmento = 3 then 'Azul' end) as "SEGMENTO",
+            round(cic::numeric,1)::double precision as "CIC", 
+            round(round(ca::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "CA",
+            round(round(mg::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "MG",
+            round(round(k::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "K",
+            round(round(na::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "NA",
+            st_asText(st_union(geom)) as geom 
+            from segm_analitica
+            group by idlote,nombre,codigo,segmento,cic,ca,mg,k,na;'''),
+            'Hierro': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,fe,st_asText(geom) as geom from segm_analitica;'''),
+            'Manganeso': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,mn as valor,st_asText(geom) as geom from segm_analitica;'''),
+            'Aluminio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,al,st_asText(geom) as geom from segm_analitica;'''),
+            'Boro': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,b,st_asText(geom) as geom from segm_analitica;'''),
+            'Cinq': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,zn ,st_asText(geom) as geom from segm_analitica;'''),
+            'Cobre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,cu,st_asText(geom) as geom from segm_analitica;'''),
+            # 'Materia Organica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,organi ,st_asText(geom) as geom from segm_analitica;'''),
+            # 'Relacion CN': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,rel_cn,st_asText(geom) as geom from segm_analitica;'''),
+            # 'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select * from fert_report'''),
+            'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('new_uf_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
+            'Fert Variable Parcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select * from fert_parcelaria'''),
             'Ceap36 Textura': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap36 Infiltracion': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap90 Textura': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap90 Infiltracion': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
-            
+            'Rendimiento' : aGraeSQLTools().getSql('rindes_layer_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
         }
 
         
@@ -1142,7 +1237,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 layer = self.tools.getDataBaseLayer(queries[q],name,'ceap_infiltracion')
             
             elif 'Intraparcelaria' in q:
-                layer = self.tools.getDataBaseLayer(queries[q],name,q,debug=False)
+                layer = self.tools.getDataBaseLayer(queries[q],name,q,debug=True)
 
             else:
                 layer = self.tools.getDataBaseLayer(queries[q],name,q)

@@ -1,9 +1,15 @@
 import os
 from PyQt5.QtGui import QIcon, QPixmap
+from qgis.PyQt.QtCore import pyqtSignal, QSize, QDate
+from qgis.PyQt.QtWidgets import QLineEdit
 
 class agraeGUI():
+
+    
+
     def __init__(self):
-                
+        self._DIALOG_SIZE = QSize(450,300)
+
         self.icons = {
          'main' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\icon.svg')),
          'info' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\info.png')),
@@ -40,9 +46,13 @@ class agraeGUI():
          'circle_info' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\circle-info-solid.svg')),
          'printer' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\print-solid.svg')),
          'selection' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\arrow.svg')),
+         'select-cultivo' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\arrow-cultivo.svg')),
          'tractor' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\tractor-solid.svg')),
          'pois' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\pois.svg')),
          'settings' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\gear-solid.svg')),
+         'rindes' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\rindes.svg')),
+         'satelite' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\satellite-solid.svg')),
+         'map-base' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\map-regular.svg')),
          
 
         }
@@ -86,3 +96,6 @@ class agraeGUI():
         'leyenda' - 'p1'  - 'co2' """
 
         if name: return self.images_base[name]
+
+    def formatUpper(self,widget:QLineEdit,v:str):
+        widget.setText(v.upper())
