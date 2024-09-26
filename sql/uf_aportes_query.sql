@@ -28,7 +28,7 @@ with data as (select distinct
 	left join agrae.cultivo c on c.idcultivo = d.idcultivo
 	join agrae.explotacion ex on d.idexplotacion = ex.idexplotacion
 	where d.idcampania = {} and d.idexplotacion = {} ),
-lotes as (select l.idlote, l.nombre, st_transform(st_buffer(st_transform(l.geom,8857),-0.1),4326) as geom,
+lotes as (select l.idlote, l.nombre, st_transform(st_buffer(st_transform(l.geom,8857),-0.5),4326) as geom,
 	d.iddata,
 	d.idcampania,
 	d.idexplotacion,
@@ -133,7 +133,7 @@ segm_analitica as (select distinct
 	JOIN lotes d  on  s.iddata = d.iddata
 	left JOIN field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and st_intersects(m.geom,s.geometria) --join MUESTRAS
 	left JOIN analytic.analitica a on m.codigo = a.cod
-	LEFT JOIN analytic.ph ph ON a.ph > ph.limite_inferior AND a.ph < ph.limite_superior
+	LEFT JOIN analytic.ph ph ON a.ph >= ph.limite_inferior AND a.ph < ph.limite_superior
 	LEFT JOIN analytic.textura txt ON  a.ceap >= txt.ceap_i AND a.ceap < txt.ceap_s
 	LEFT JOIN analytic.conductividad_electrica ce ON a.ce >= ce.limite_i AND a.ce < ce.limite_s
 	LEFT JOIN analytic.carbonatos carb ON (a.carbon / 100::double precision) >= carb.limite_inferior AND (a.carbon / 100::double precision) < carb.limite_superior

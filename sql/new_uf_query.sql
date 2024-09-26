@@ -2,8 +2,10 @@ with data as (select distinct
 	d.iddata,
 	d.idcampania,
 	d.idexplotacion,
+	ex.nombre as explotacion,
 	d.idlote,
-	d.idcultivo, 
+	d.idcultivo,
+	c.nombre as cultivo,
 	d.idregimen,
 	d.fertilizantefondoformula,
 	d.fertilizantefondoajustado,
@@ -24,8 +26,9 @@ with data as (select distinct
 	d.prod_esperada 
 	from campaign.data d 
 	left join agrae.cultivo c on c.idcultivo = d.idcultivo
+	join agrae.explotacion ex on d.idexplotacion = ex.idexplotacion
 	where d.idcampania = {} and d.idexplotacion = {} ),
-lotes as (select l.*, 
+lotes as (select l.idlote, l.nombre, st_transform(st_buffer(st_transform(l.geom,8857),-0.5),4326) as geom,
 	d.iddata,
 	d.idcampania,
 	d.idexplotacion,
@@ -40,7 +43,7 @@ lotes as (select l.*,
 	d.extraccionresiduop,
 	d.extraccionresiduok, 
 	d.prod_esperada from data d join agrae.lotes l on d.idlote = l.idlote ),	
-segmentos as (select distinct s.idsegmento,s.ceap,s.segmento,st_multi(st_intersection(s.geometria,l.geom)) as geometria, l.idlote, l.iddata, l.regimen from agrae.segmentos s join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),4)::geometry,s.geometria)),
+segmentos as (select distinct s.idsegmento,s.ceap,s.segmento,st_multi(st_intersection(s.geometria,l.geom)) as geometria, l.idlote, l.iddata, l.regimen from agrae.segmentos s join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),0)::geometry,s.geometria)),
 segm_analitica as (select distinct
 	m.codigo,
 	d.idlote,

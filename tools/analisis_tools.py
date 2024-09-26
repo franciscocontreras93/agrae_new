@@ -78,21 +78,6 @@ for id in df['idlote'].unique():
             row['CU'] = rand / adjust_index['CU'] + scope_row['CU']
             row['AL'] = rand / adjust_index['AL'] + scope_row['AL']
     
-
-    
-
-        
-
-
-
-
-
-
-
-
-
-
-
 # for d in data:
 #     print(d)
 #     new_df = pd.DataFrame(d)

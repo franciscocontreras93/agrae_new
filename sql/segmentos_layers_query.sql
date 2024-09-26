@@ -28,7 +28,7 @@ with data as (select distinct
 	left join agrae.cultivo c on c.idcultivo = d.idcultivo
 	join agrae.explotacion ex on d.idexplotacion = ex.idexplotacion
 	where d.idcampania = {} and d.idexplotacion = {} ), -- REQUIERE EL ID DE LA CAMPANIA Y DE LA EXPLOTACION
-lotes as (select l.idlote, l.nombre, st_transform(st_buffer(st_transform(l.geom,8857),-0.1),4326) as geom,
+lotes as (select l.idlote, l.nombre, st_transform(st_buffer(st_transform(l.geom,8857),-0.5),4326) as geom,
 	d.iddata,
 	d.idcampania,
 	d.idexplotacion,
