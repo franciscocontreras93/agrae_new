@@ -71,6 +71,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         self.produccion = produccion_esperada.upper()
 
         self.dataSuelo = dataSuelo
+        # print(self.dataSuelo)
         
         self.dataExtraccion = dataExtraccion
         self.iddata = iddata
@@ -804,9 +805,6 @@ class MplCanvas(FigureCanvasQTAgg):
         plt.savefig(path)
 
     def plot(self,data):
-        
-        
-
         def valores(suelo):
             values = []
             colors = []
@@ -858,8 +856,9 @@ class MplCanvas(FigureCanvasQTAgg):
                 if i <= len(n_values):  
                     values = [n_values[i], p_values[i], k_values[i], carb_values[i]]
                     # print(values)
-                else: 
-                    values = [0,0,0,0]
+                else:
+                    values = [n_values[i], p_values[i], k_values[i], carb_values[i]]
+                    # values = [0,0,0,0]
                     # print(values)
             except IndexError:
                 values = [0,0,0,0]
@@ -889,9 +888,7 @@ class MplCanvas(FigureCanvasQTAgg):
         suelo_1 = getValues(1)
         suelo_2 = getValues(2)
         suelo_3 = getValues(3)
-        # print(suelo_1)
-        # print(suelo_2)
-        # print(suelo_3)
+       
 
         
 

@@ -25,7 +25,7 @@ with data as (select distinct
 	from campaign.data d 
 	join agrae.cultivo c on c.idcultivo = d.idcultivo
 	where d.idcampania = {} and d.idexplotacion = {} and d.idlote = {}),
-lotes as (select l.*, 
+lotes as (select l.idlote, l.nombre, st_transform(st_buffer(st_transform(l.geom,8857),-0.5),4326) as geom, 
 	d.iddata,
 	d.idcampania,
 	d.idexplotacion,
