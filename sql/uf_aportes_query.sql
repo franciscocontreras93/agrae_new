@@ -418,6 +418,7 @@ join data d using (iddata)
 uf_final as (select 
 l.explotacion,
 l.cultivo,
+l.prod_esperada,
 l.nombre as lote,
 l.iddata,
 a.codigo,
@@ -437,7 +438,7 @@ a.fertilizantecob2formula,
 a.fertilizantecob2calculado,
 a.fertilizantecob3formula, 
 a.fertilizantecob3calculado,
-st_multi(st_union(a.geom)) as geom
+st_union(a.geom) as geom
 from aportes a
 join lotes l on a.idlote = l.idlote
 where  round((st_area(st_transform(st_setsrid(a.geom,4326),8857)) / 10000)::numeric,2) > 0
@@ -446,6 +447,7 @@ l.iddata,
 l.nombre,
 l.explotacion,
 l.cultivo,
+l.prod_esperada,
 a.codigo,
 a.ambiente,
 a.ndvimax,
@@ -470,9 +472,10 @@ uf.iddata,
 uf.explotacion,
 uf.lote,
 uf.cultivo,
+uf.prod_esperada,
 uf.codigo,
 uf.ambiente,
-uf.ndvimax,
+uf.ndvimax::numeric,
 uf.segmento,
 uf.ceap,
 uf.uf, 
@@ -488,10 +491,32 @@ uf.fertilizantecob2calculado as d_cob2,
 uf.fertilizantecob3formula as  f_cob3, 
 uf.fertilizantecob3calculado as d_cob3,
 round((st_area(st_transform(uf.geom,8857)) / 10000)::numeric,2)::double precision area_ha,
-st_asText(uf.geom) as geom
+uf.geom
 from uf_final uf),
 fert_report as (select 
-	uf.*,
+	uf.iddata,
+	uf.explotacion,
+	uf.lote,
+	uf.cultivo,
+	uf.prod_esperada,
+	uf.codigo,
+	uf.ambiente,
+	uf.ndvimax::numeric,
+	uf.segmento,
+	uf.ceap,
+	uf.uf, 
+	uf.uf_etiqueta, 
+	uf.necesidades_iniciales,
+	uf.necesidades_finales,
+	uf.f_fondo,
+	uf.d_fondo,
+	uf.f_cob1,
+	uf.d_cob1,
+	uf.f_cob2,
+	uf.d_cob2,
+	uf.f_cob3,
+	uf.d_cob3,
+	round(uf.area_ha::numeric,2)::numeric area_ha,
 	s.suelo,
 	s.n,
 	s.n_tipo,
@@ -511,7 +536,7 @@ fert_report as (select
 	s.carb_tipo,
 	s.caliza,
 	s.caliza_tipo,
-	s.cic,
+	s.cic::numeric,
 	s.cic_tipo,
 	s.cic_caso,
 	s.na,
@@ -559,6 +584,7 @@ round(sum(d_cob3) / sum(area_ha)) d_cob3,
 sum(area_ha) area_ha,
 st_asText(st_union(geom)) as geom
 from fert_intraparcelaria
-group by iddata,lote,f_fondo,f_cob1,f_cob2,f_cob3)
---  select distinct * from fert_report;
+group by iddata,lote,f_fondo,f_cob1,f_cob2,f_cob3),
+mapa_sig as (select distinct row_number() over () as id,fp.*,st_asText(fi.geom) as geom from fert_intraparcelaria  fi join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf)
+--select * from mapa_sig
 {}

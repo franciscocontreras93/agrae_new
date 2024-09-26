@@ -65,7 +65,7 @@ for id in df['idlote'].unique():
             row['CE'] = rand / adjust_index['CE'] + scope_row['CE']
             row['N'] = rand / adjust_index['N'] + scope_row['N']
             row['P'] = rand / adjust_index['P'] + scope_row['P']
-            row['K'] = rand / adjust_index['K'] + scope_row['P']
+            row['K'] = rand / adjust_index['K'] + scope_row['K']
             row['CARBON'] = scope_row['CARBON']
             row['CA'] = rand / adjust_index['CA'] + scope_row['CA']
             row['MG'] = rand / adjust_index['MG'] + scope_row['MG']

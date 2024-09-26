@@ -7,7 +7,7 @@ from psycopg2 import extras
 
 
 from qgis.PyQt import QtWidgets, uic
-from qgis.PyQt.QtCore import pyqtSignal, Qt,QDate,QSize
+from qgis.PyQt.QtCore import pyqtSignal, Qt,QDate,QSize,QSettings
 from qgis.PyQt.QtGui import QIcon
 
 from qgis.core import *
@@ -129,14 +129,14 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         self.CargarCapasExplotacion = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar capas de Explotacion',self)
         self.CargarCapasExplotacion.triggered.connect(self.generarCapasExplotacion)
-        self.GenerarReporteFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('printer'),'Generar Reporte de Fertilizacion',self)
+        self.GenerarReporteFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('printer'),'Generar Reporte de Preescripcion',self)
         self.GenerarReporteFertilizacion.triggered.connect(self.generateComposerDialog)
 
         #TODO
-        self.GenerarUnidadesFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('tractor'),'Exportar Unidades de Fertilizacion',self)
+        self.GenerarUnidadesFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('tractor'),'Exportar SHP de Preescripcion',self)
         self.GenerarUnidadesFertilizacion.triggered.connect(self.exportarUFS)
         #TODO
-        self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Fertiliacion',self)
+        self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Preescripcion',self)
         self.GenerarResumenFertilizacion.triggered.connect(self.exportarResumen)
 
         self.GenerarAmbientes = QtWidgets.QAction(agraeGUI().getIcon('satelite'),'Generar Mapas de Ambientes',self)
@@ -1185,6 +1185,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         name_camp = self.combo_campania.currentText()[2:]
         name_exp = self.combo_explotacion.currentText()
+        sql_intra = '''select row_number() over () as id, explotacion,cultivo,lote,uf,uf_etiqueta,f_fondo,d_fondo,f_cob1,d_cob1,f_cob2,d_cob2,f_cob3,d_cob3,area_ha,st_asText(geom) as geom from fert_intraparcelaria'''
+        # sql_intra = '''select * from mapa_sig'''
+
         queries = {
             # 'Ambientes': aGraeSQLTools().getSql('ambientes_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Segmentos': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,segmento,ceap,st_asText(geom) as geom from segm_analitica;'''),
@@ -1216,8 +1219,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             'Cobre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,cu,st_asText(geom) as geom from segm_analitica;'''),
             # 'Materia Organica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,organi ,st_asText(geom) as geom from segm_analitica;'''),
             # 'Relacion CN': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,rel_cn,st_asText(geom) as geom from segm_analitica;'''),
-            # 'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select * from fert_intraparcelaria'''),
-            'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('new_uf_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
+            'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),sql_intra),
+            # 'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('new_uf_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Fert Variable Parcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select * from fert_parcelaria'''),
             'Ceap36 Textura': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap36 Infiltracion': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
@@ -1269,8 +1272,26 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         idcampania = self.combo_campania.currentData()
         idexplotacion = self.combo_explotacion.currentData()
         nameExp = str(self.combo_explotacion.currentText()).replace(' ','_')
-        self.tools.exportarUFS(idcampania,idexplotacion,nameExp)
-    
+        name_folder = '{}{}_{}'.format(idcampania,idexplotacion,nameExp)
+
+        # self.tools.exportarUFS(idcampania,idexplotacion,nameExp)
+        s = QSettings('agrae','dbConnection')
+        path = s.value('ufs_path')
+        path = os.path.join(path,name_folder)
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        if len(self.layer.selectedFeatures()) > 0:
+            lotes = [f for f in self.layer.selectedFeatures()]
+        else:
+            lotes = [f for f in self.layer.getFeatures()]
+        
+        for lote in lotes:
+            name = lote['lote']
+            self.tools.exportarUFS(path,lote['iddata'],lote['lote'])
+
+
     def exportarResumen(self):
         idcampania = self.combo_campania.currentData()
         idexplotacion = self.combo_explotacion.currentData()

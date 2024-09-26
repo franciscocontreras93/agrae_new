@@ -522,6 +522,7 @@ class aGraeTools():
                     if debug:
                         # print(sql)
                         # print(data)
+                        print(coldesc)
                         print(set([c[1] for c in coldesc]))
                     # QgsMessageLog.logMessage('{}'.format(sql), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
                     # QgsMessageLog.logMessage('{}'.format(coldesc), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
@@ -715,16 +716,23 @@ class aGraeTools():
             # print('Debe Seleccionar al menos un segmento')
             pass
 
-    def exportarUFS(self,idcampania:int,idexplotacion:int,nameExp:str):
-        s = QSettings('agrae','dbConnection')
-        path = s.value('ufs_path')
-        fn = os.path.join(path,'UFS_{}.shp'.format(nameExp))
+    def exportarUFS(self,path,iddata:int,nameLote:str):
+
+        # s = QSettings('agrae','dbConnection')
+        # path = s.value('ufs_path')
+        pn = os.path.join(path,'RX_{}'.format(nameLote.replace(' ','_')))
+        if not os.path.exists(pn):
+            os.makedirs(pn)
+
+        fn = os.path.join(pn,'rx_{}.shp'.format(nameLote))
+        sql_intra = 'select row_number() over () as id,f_fondo,d_fondo,f_cob1,d_cob1,f_cob2,d_cob2,f_cob3,d_cob3,st_asText((st_dump(geom)).geom) as geom from fert_intraparcelaria'
         
-        query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,'''select * from fert_intraparcelaria''')
-        print(query)
-        layer = self.getDataBaseLayer(query,'UFS_{}'.format(nameExp),styleName='Fert Variable Intraparcelaria',memory=True)
+        query  = aGraeSQLTools().getSql('uf_monitor.sql').format(iddata,sql_intra)
+        # print(query)
+
+        layer = self.getDataBaseLayer(query,'UFS_{}'.format(nameLote),styleName='Fert Variable Intraparcelaria',memory=True)
         try:
-            self.saveLayer(layer,fn,nameExp)
+            self.saveLayer(layer,fn,nameLote)
             self.messages('aGrae GIS','Se ha generado el archivo UFS correctamente.',3,alert=True)
         except Exception as ex:
 
@@ -733,35 +741,7 @@ class aGraeTools():
     def exportarResumenFertilizacion(self,idcampania:int,idexplotacion:int,nameExp:str):
         s = QSettings('agrae','dbConnection')
         path = s.value('reporte_path')
-        q = '''select 
-        lote,
-        cultivo,
-        agricultor,
-        area_lote,
-        prod_esperada,
-        fertilizantefondoformula, 
-        sum(round((fertilizantefondocalculado * area_ha))) as fertilizantefondoaplicado,
-        round(sum((fertilizantefondocalculado * area_ha) / area_lote)) as fertilizantefondomedia,
-        fertilizantecob1formula, 
-        sum(round((fertilizantecob1calculado * area_ha))) as fertilizantecob1aplicado,
-        round(sum((fertilizantecob1calculado * area_ha) / area_lote)) as fertilizantecob1media,
-        fertilizantecob2formula, 
-        sum(round((fertilizantecob2calculado * area_ha))) as fertilizantecob2aplicado,
-        round(sum((fertilizantecob2calculado * area_ha) / area_lote)) as fertilizantecob2media,
-        fertilizantecob3formula, 
-        sum(round((fertilizantecob3calculado * area_ha))) as fertilizantecob3aplicado,
-        round(sum((fertilizantecob3calculado * area_ha) / area_lote)) as fertilizantecob3media
-        from uf_final
-        group by
-        lote,
-        cultivo,
-        agricultor,
-        area_lote,
-        prod_esperada,
-        fertilizantefondoformula, 
-        fertilizantecob1formula,
-        fertilizantecob2formula, 
-        fertilizantecob3formula;'''
+        q = '''select * from fert_report order by iddata,uf_etiqueta;'''
         query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,q)
         try: 
             with self.conn.cursor() as cursor:  
@@ -773,7 +753,7 @@ class aGraeTools():
                     with open(os.path.join(os.path.dirname(__file__), 'extras/resumen.csv'),'r',newline='') as base:
                         csv_reader = csv.reader(base,delimiter=';')
                         header = next(csv_reader)
-                    with open(os.path.join(path, 'resumen_{}_{}.csv'.format(nameExp,QDateTime.currentDateTime().toString('yyyyMMddHHmmss'))),'w',newline='') as file:
+                    with open(os.path.join(path, 'resumen_{}_{}.csv'.format(nameExp,QDateTime.currentDateTime().toString('yyyyMMddHH'))),'w',newline='') as file:
                             csv_writer = csv.writer(file,delimiter=';')          
                             csv_writer.writerow(header)
                             csv_writer.writerows(data)
