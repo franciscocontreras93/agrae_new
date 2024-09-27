@@ -7,12 +7,9 @@ import random
 file_path = r"D:\GeoSIG\aGrae\ANALITICA\CAMPAÑA_25_DUJOSAGRI_SL.csv"
 df = pd.read_csv(file_path,delimiter=';',encoding='utf-8')
 df = df.replace(np.nan,0).replace('#¡VALOR!',0).replace('#N/D',0)
-# df = df.replace('#¡VALOR!',0)
-# .replace('#N/D', 0, inplace=True)
-# .replace('#¡VALOR!', 0, inplace=True)
-# df = df.replace('#N/D', 0, inplace=True)
-# df = df.replace('#¡VALOR!', 0, inplace=True)
+print(df.head())
 
+df_procesado = pd.DataFrame(columns=df.head())
 adjust_index = {
     'PH' : -476.00,
     'CE' : 10.00,
@@ -77,7 +74,11 @@ for id in df['idlote'].unique():
             row['MN'] = rand / adjust_index['MN'] + scope_row['MN']
             row['CU'] = rand / adjust_index['CU'] + scope_row['CU']
             row['AL'] = rand / adjust_index['AL'] + scope_row['AL']
-    
+        # print(row)
+        # df_procesado.concat(row,ignore_index=True)
+
+
+# print(df_procesado)
 # for d in data:
 #     print(d)
 #     new_df = pd.DataFrame(d)

@@ -747,6 +747,7 @@ class aGraeTools():
             with self.conn.cursor() as cursor:  
                 cursor.execute(query) 
                 data = [r for r in list(cursor.fetchall())]
+                print(data)
                 # expName = list(set([r[0] for r in data]))
                 # print(expName[0])
                 try: 

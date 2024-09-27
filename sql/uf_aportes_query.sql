@@ -498,7 +498,6 @@ fert_report as (select
 	uf.explotacion,
 	uf.lote,
 	uf.cultivo,
-	uf.prod_esperada,
 	uf.codigo,
 	uf.ambiente,
 	uf.ndvimax::numeric,

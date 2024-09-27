@@ -1240,7 +1240,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 layer = self.tools.getDataBaseLayer(queries[q],name,'ceap_infiltracion')
             
             elif 'Intraparcelaria' in q:
-                layer = self.tools.getDataBaseLayer(queries[q],name,q,debug=True)
+                layer = self.tools.getDataBaseLayer(queries[q],name,q,debug=False)
 
             else:
                 layer = self.tools.getDataBaseLayer(queries[q],name,q)
