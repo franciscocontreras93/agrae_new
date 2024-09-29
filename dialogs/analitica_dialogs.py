@@ -21,9 +21,11 @@ class agraeAnaliticaDialog(QtWidgets.QDialog,analiticaDialog):
         self.setModal(False)
 
     def UIComponents(self):
+        # self.DerivarDatosAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Derivar datos de Analitica',self)
+
         self.ImportarArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('upload'),'Guardar datos de Analitica',self)
         self.ImportarArchivoAnalisis.triggered.connect(self.guardarAnalitica)
-        self.tools.settingsToolsButtons(self.toolButton,[self.ImportarArchivoAnalisis,self.ImportarArchivoAnalisis],icon=agraeGUI().getIcon('tools'),setMainIcon=True)
+        self.tools.settingsToolsButtons(self.toolButton,[self.ImportarArchivoAnalisis],icon=agraeGUI().getIcon('tools'),setMainIcon=True)
 
         pass
 

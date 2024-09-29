@@ -35,6 +35,7 @@ class MuestreoDialog(QDialog):
         
         self.combo_layer = QgsMapLayerComboBox()
         self.check_seleccionados = QCheckBox('Lotes seleccionados')
+        self.check_seleccionados.setChecked(True)
 
         
         
@@ -73,26 +74,37 @@ class MuestreoDialog(QDialog):
 
     def createMuestreoPoints(self):
         layer = self.combo_layer.currentLayer()
-        segmentos = []
-
+        segmentos = [1,2,3]
+        selected = []
+        segmentos_remuestreo = [0]
+        
         if self.check_segmento_1.isChecked():
-             segmentos.append(1)
+             selected.append(1)
         if self.check_segmento_2.isChecked():
-             segmentos.append(2)
+             selected.append(2)
         if self.check_segmento_3.isChecked():
-             segmentos.append(3)
+             selected.append(3)
 
         if self.check_seleccionados.isChecked():
             ids  = [f['iddata'] for f in  list(layer.getSelectedFeatures())]
         else:
             ids = [f['iddata'] for f in  list(layer.getFeatures())]
-
+        
+        if len(selected) < 3:
+            segmentos_remuestreo = selected
+            for x in selected:
+                segmentos.remove(x)
+        
+        # print(ids)
+        # segmentos = ','.join([str(x) for x in segmentos])
+        # segmentos_remuestreo = ','.join([str(x) for x in segmentos_remuestreo])
+        # print(segmentos_remuestreo,'---',segmentos)
         
         
-        reply = QMessageBox.question(self,'aGrae Toolbox','Quieres generar los puntos de muestreo para:\n{} Lotes?'.format(len(ids)),QMessageBox.Yes, QMessageBox.No)
-        if reply == QMessageBox.Yes:
+        # reply = QMessageBox.question(self,'aGrae Toolbox','Quieres generar los puntos de muestreo para:\n{} Lotes?'.format(len(ids)),QMessageBox.Yes, QMessageBox.No)
+        # if reply == QMessageBox.Yes:
 
-            self.tools.crearPuntosMuestreo(ids,segmentos)
+            self.tools.crearPuntosMuestreo(ids,segmentos,segmentos_remuestreo)
             #! TRABAJAR EN MULTITHREADING NO ESTA FUNCIONANDO CORRECTAMENTE
             #! self.worker = WorkerGenerarPuntosMuestreo(ids,segmentos)
             #! self.worker.start()

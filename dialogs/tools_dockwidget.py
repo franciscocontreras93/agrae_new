@@ -13,6 +13,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.core import *
 from qgis.utils import iface
 from qgis.gui import QgsMapToolIdentify,QgsMapMouseEvent
+from ..tools.analisis_tools import aGraeResamplearMuestras
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..gui import agraeGUI
@@ -169,7 +170,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.CrearArchivoAnalisis.triggered.connect(self.crearFormatoAnalitica)
         self.ImportarArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('import'),'Cargar Archivo de Laboratorio',self)
         self.ImportarArchivoAnalisis.triggered.connect(self.cargarAnalitica)
-        actions_lab = [self.CargarCapaMuestras,self.ActualziarProyectoMuestreo,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis]
+        self.DerivarDatosAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Derivar datos de Analitica',self)
+        self.DerivarDatosAnalisis.triggered.connect(self.DerivarAnalitica)
+
+        actions_lab = [self.CargarCapaMuestras,self.ActualziarProyectoMuestreo,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis,self.DerivarDatosAnalisis]
         self.tools.settingsToolsButtons(self.tool_lab,actions_lab,icon=agraeGUI().getIcon('matraz'),setMainIcon=True)
         # TOOL_DATA
         self.GestionarPersonas = QtWidgets.QAction(agraeGUI().getIcon('users'),'Gestionar Personas',self)
@@ -1169,6 +1173,15 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         if not data.empty:
             dlg = agraeAnaliticaDialog(data)
             dlg.exec()
+    
+    def DerivarAnalitica(self):
+        file = self.tools.cargarReporteAnalitica(dataframe=False)
+        if file:
+            print(file)
+            modulo = aGraeResamplearMuestras(file)
+            modulo.processing()
+            
+
     
     def new_generarCapasExplotacion(self):
         self.atlasLayers = {}
