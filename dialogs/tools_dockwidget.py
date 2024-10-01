@@ -656,7 +656,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         try:
             sql = sql.format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
             self.getCampaniaCultivoCombo(self.combo_explotacion.currentData())
-            layer = self.tools.getDataBaseLayer(sql,layername='{}-Lotes'.format(self.combo_campania.currentText()[2:]),styleName='lote',memory=False)
+            layer = self.tools.getDataBaseLayer(sql,layername='{}-Lotes'.format(self.combo_campania.currentText()[2:]),styleName='lote',memory=False,idlayer='iddata')
             if layer.id() != self.layer.id():
                 QgsProject.instance().removeMapLayer(self.layer.id())
 
@@ -1177,9 +1177,13 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     def DerivarAnalitica(self):
         file = self.tools.cargarReporteAnalitica(dataframe=False)
         if file:
-            print(file)
-            modulo = aGraeResamplearMuestras(file)
-            modulo.processing()
+            try:
+                print(file)
+                modulo = aGraeResamplearMuestras(file)
+                modulo.processing()
+                self.tools.messages('aGrae GIS','Archivo procesado Correctamente',3,True)
+            except Exception as ex:
+                self.tools.messages('aGrae GIS',ex,2)
             
 
     
@@ -1212,7 +1216,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             'Calcio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,ca as valor,lower(ca_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
             'Magnesio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,mg as valor,lower(mg_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
             'Sodio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,na as valor,lower(na_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
-            'Azufre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,s as valor,st_asText(geom) as geom from segm_analitica;'''),
+            'Azufre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,s as valor,lower(s_tipo),st_asText(geom) as geom from segm_analitica;'''),
             'CIC': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''
             select distinct idlote,nombre as lote,codigo as codigo_muestra,
             (case when segmento = 1 then 'Rojo' when segmento = 2 then 'Verde' when segmento = 3 then 'Azul' end) as "SEGMENTO",

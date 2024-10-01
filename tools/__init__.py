@@ -490,7 +490,7 @@ class aGraeTools():
         lyr.loadNamedStyle(styleUri)
         return lyr
     
-    def getDataBaseLayer(self, sql:str, layername:str ='Resultados' ,styleName:str ='',memory=True,save=False,debug=False) -> QgsVectorLayer:
+    def getDataBaseLayer(self, sql:str, layername:str ='Resultados' ,styleName:str ='',memory=True,save=False,debug=False,idlayer='id') -> QgsVectorLayer:
         col_types = {
             20 : QVariant.Int,
             21: QVariant.Int,
@@ -575,7 +575,7 @@ class aGraeTools():
                 dns = agraeDataBaseDriver().getDSN()
                 uri = QgsDataSourceUri() 
                 uri.setConnection(dns['host'], dns['port'], dns['dbname'], dns['user'], dns['password'])
-                uri.setDataSource('', f'({sql})', 'geom', '', 'id')
+                uri.setDataSource('', f'({sql})', 'geom', '', idlayer)
                     # uriUnidades.setDataSource('public', 'unidades', 'geometria', f'"idlotecampania" = {idlotecampania}', 'id')
                 lyrAmbientes = QgsVectorLayer(uri.uri(), '{}'.format(layername), 'postgres')
                 lyrAmbientes.loadNamedStyle(styleUri)
