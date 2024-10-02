@@ -921,57 +921,55 @@ class aGraeTools():
                 self.messages('aGrae Tools','No se pudieron asignar los cultivos.\n {}'.format(ex),2,alert=True)
                 raise Exception(ex)
 
-    def crearPuntosMuestreo(self,ids:list,segmentos:list,segmentos_remuestreo:list):
+    def crearPuntosMuestreo(self,ids:list,segmento_remuestreo:list,segmento_derivar:list):
         # TODO
         from .gdriveCore import GDrive
         ids = ','.join([str(id) for id in ids])
-        segmentos = ','.join([str(seg) for seg in segmentos])
-        segmentos_remuestreo = ','.join([str(seg) for seg in segmentos_remuestreo])
+        segmentos_remuestreo = ','.join([str(seg) for seg in segmento_remuestreo])
+        segmentos_derivar = ','.join([str(seg) for seg in segmento_derivar])
         data = None
-        query = aGraeSQLTools().getSql('query_create_muestreo.sql').format(ids,segmentos,segmentos_remuestreo)
-        # core = aGraeLabelGenerator()
-        # drive = GDrive()
+        query = aGraeSQLTools().getSql('query_create_muestreo.sql').format(ids,segmentos_remuestreo,segmentos_derivar)
+        core = aGraeLabelGenerator()
+        drive = GDrive()
 
-        print(query)
+        # print(query)
 
         
-        # try:
+        try:
             
-        #     cursor = agraeDataBaseDriver().cursor(self.conn)
-        #     cursor.execute(query)
-        #     data = cursor.fetchall()
-        #     # cursor.close()
-        #     self.conn.commit()
-        #     self.messages('aGrae GIS','Muestras generadas correctamente.',3,5)
+            cursor = agraeDataBaseDriver().cursor(self.conn)
+            cursor.execute(query)
+            data = cursor.fetchall()
+            # cursor.close()
+            self.conn.commit()
+            self.messages('aGrae GIS','Muestras generadas correctamente.',3,5)
                 
-        # except errors.lookup('23505'):
-        #     self.messages('aGrae GIS','Ya Existen muestras para los lotes en la campaña actual.')
-        #     self.conn.rollback()
-        # except Exception as ex:
-        #     print(ex)
-        #     self.messages('Error:','{}'.format(ex),1,5)
-        #     self.conn.rollback()
+        except errors.lookup('23505'):
+            self.messages('aGrae GIS','Ya Existen muestras para los lotes en la campaña actual.')
+            self.conn.rollback()
+        except Exception as ex:
+            print(ex)
+            self.messages('Error:','{}'.format(ex),1,5)
+            self.conn.rollback()
         
-        # if data:
-        #     try:
-        #         cursor = agraeDataBaseDriver().cursor(self.conn)
-        #         query_update = '''UPDATE field.muestras as m set label = q.label from (values {}) as q(label,codigo) where m.codigo = q.codigo'''
-        #         values = ''
-        #         for r in data:
-        #             codigo = r[1]
-        #             uid = r[0]
-        #             qr = core.generateQR(codigo)
-        #             label = core.generateLabel(qr,codigo)
-        #             url = drive.upload_file(label)
-        #             values = values + ''' ('{}' ,'{}'),\n'''.format(url,codigo)
-        #         query_update = query_update.format(values[:-2])
-        #         cursor.execute(query_update)
-        #         self.conn.commit()     
-        #     except Exception as ex:
-        #         self.conn.rollback()
-        #         print(ex)
-
-        # self.MuestreoEndSignal.emit(False)
+        if data:
+            try:
+                cursor = agraeDataBaseDriver().cursor(self.conn)
+                query_update = '''UPDATE field.muestras as m set label = q.label from (values {}) as q(label,codigo) where m.codigo = q.codigo'''
+                values = ''
+                for r in data:
+                    codigo = r[1]
+                    uid = r[0]
+                    qr = core.generateQR(codigo)
+                    label = core.generateLabel(qr,codigo)
+                    url = drive.upload_file(label)
+                    values = values + ''' ('{}' ,'{}'),\n'''.format(url,codigo)
+                query_update = query_update.format(values[:-2])
+                cursor.execute(query_update)
+                self.conn.commit()     
+            except Exception as ex:
+                self.conn.rollback()
+                print(ex)
 
 
 

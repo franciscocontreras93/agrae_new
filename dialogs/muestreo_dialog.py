@@ -76,7 +76,6 @@ class MuestreoDialog(QDialog):
         layer = self.combo_layer.currentLayer()
         segmentos = [1,2,3]
         selected = []
-        segmentos_remuestreo = [0]
         
         if self.check_segmento_1.isChecked():
              selected.append(1)
@@ -89,22 +88,27 @@ class MuestreoDialog(QDialog):
             ids  = [f['iddata'] for f in  list(layer.getSelectedFeatures())]
         else:
             ids = [f['iddata'] for f in  list(layer.getFeatures())]
-        
-        if len(selected) < 3:
-            segmentos_remuestreo = selected
-            for x in selected:
-                segmentos.remove(x)
-        
-        # print(ids)
-        # segmentos = ','.join([str(x) for x in segmentos])
-        # segmentos_remuestreo = ','.join([str(x) for x in segmentos_remuestreo])
-        # print(segmentos_remuestreo,'---',segmentos)
-        
-        
-        # reply = QMessageBox.question(self,'aGrae Toolbox','Quieres generar los puntos de muestreo para:\n{} Lotes?'.format(len(ids)),QMessageBox.Yes, QMessageBox.No)
-        # if reply == QMessageBox.Yes:
 
-            self.tools.crearPuntosMuestreo(ids,segmentos,segmentos_remuestreo)
+        # print(selected,segmentos,segmentos_remuestreo)
+        
+        for x in selected:
+            segmentos.remove(x)
+        if len(selected) == 3:
+            segmentos = [0]
+        
+        
+        # # print(ids)
+        segmento_derivar = segmentos
+        segmento_remuestreo = selected
+        # segmentos_derivar = ','.join([str(x) for x in segmentos])
+        # segmentos_remuestreo = ','.join([str(x) for x in selected])
+        # print(segmentos_remuestreo,'---',segmentos_derivar)
+        
+        
+        reply = QMessageBox.question(self,'aGrae Toolbox','Quieres generar los puntos de muestreo para:\n{} Lotes?'.format(len(ids)),QMessageBox.Yes, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+
+            self.tools.crearPuntosMuestreo(ids,segmento_remuestreo,segmento_derivar)
             #! TRABAJAR EN MULTITHREADING NO ESTA FUNCIONANDO CORRECTAMENTE
             #! self.worker = WorkerGenerarPuntosMuestreo(ids,segmentos)
             #! self.worker.start()
