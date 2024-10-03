@@ -236,6 +236,8 @@ class aGraeComposerTools():
         self.atlas.setEnabled(True)
         self.atlas.seekTo(0)
 
+
+
         feature = self.atlas.coverageLayer().getFeature(self.atlas.currentFeatureNumber()+1)
 
         pc = layout.pageCollection()
@@ -258,6 +260,7 @@ class aGraeComposerTools():
         direcciones = [i for i in items if isinstance(i,QgsLayoutItemLabel) and i.id() == 'exp_dir']
         nombres_exp = [i for i in items if isinstance(i,QgsLayoutItemLabel) and i.id() == 'exp_name']
         nombres_lotes = [i for i in items if isinstance(i,QgsLayoutItemLabel) and i.id() == 'lote_nom']
+        
         
         for l in logos:
             l.setPicturePath(os.path.join(os.path.dirname(__file__),'img/dist_logo.png'))
@@ -293,13 +296,13 @@ class aGraeComposerTools():
         self.setLayersToMap([layout.itemById('map_aluminio'),layout.itemById('map_boro')],[lotes,self.layers['Aluminio'],self.layers['Boro']],basemap) #* PAG 15
         self.setLayersToMap([layout.itemById('map_cinq'),layout.itemById('map_cobre')],[lotes,self.layers['Cinq'],self.layers['Cobre']],basemap) #* PAG 16
         # self.setLayersToMap([layout.itemById('map_materia_organica'),layout.itemById('map_rel_cn')],[lotes,self.layers['Materia Organica'],self.layers['Relacion CN']],basemap) #* PAG 17
-        # # self.setLayersToMap([layout.itemById('map_cic')],[layers[_LOTES_],layers[_CIC_]],basemap) #* PAG 10
+        # self.setLayersToMap([layout.itemById('map_cic')],[layers[_LOTES_],layers[_CIC_]],basemap) #* PAG 10
         
         # # print(layers[_UNIDADES_I_])
 
         
         
-        # #* LEYENDAS 
+        # # #* LEYENDAS 
         self.setLegendsToLayout(layout.itemById('legend_txt'),[self.layers['Ceap36 Textura']],['Texturas'])
         self.setLegendsToLayout(layout.itemById('legend_inf'),[self.layers['Ceap36 Infiltracion']],['Infiltración [mm/h]'])
         self.setLegendsToLayout(layout.itemById('legend_03'),[self.layers['Nitrogeno'],self.layers['Fosforo']],['Nitrogeno','Fosforo'])
@@ -363,7 +366,9 @@ class aGraeComposerTools():
             
 
             feature = atlas.coverageLayer().getFeature(atlas.currentFeatureNumber()+1)
-            nombre_lote = feature.attribute('lote')
+            nombre_lote = atlas.currentFilename()
+            # print(atlas.currentFilename())
+            # print(feature.attributes())
             for l in layers:
                 if l != 'Atlas':
                     layers[l].setSubsetString('''  "lote"= '{}' '''.format(nombre_lote))
@@ -381,7 +386,6 @@ class aGraeComposerTools():
          
             self.setTextOverElements(nombresLotes,nombre_lote)
 
-            # print(self.panels_path)
             
             panels[0].setPicturePath(self.panels_path+'/Panel00'+nombre_lote+'.png')
             panels[1].setPicturePath(self.panels_path+'/Panel02'+nombre_lote+'.png')

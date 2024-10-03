@@ -759,9 +759,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                     data = cursor.fetchall()
                     # print(idcampania)
                     if len(data) >= 1 and self.combo_campania.currentData() != None:
-                        data_completer = ['{}-{}'.format(e[1],e[0]) for e in data]
+                        data_completer = ['{}'.format(e[0]) for e in data]
                         for e in data:
-                            self.combo_explotacion.addItem('{}-{}'.format(e[1],e[0]),e[1])
+                            self.combo_explotacion.addItem('{}'.format(e[0]),e[1])
                         
                         exp_completer = self.tools.dataCompleter(data_combo=data_completer)
                         self.combo_explotacion.setCompleter(exp_completer)
@@ -1235,20 +1235,19 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             # 'Materia Organica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,organi ,st_asText(geom) as geom from segm_analitica;'''),
             # 'Relacion CN': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,rel_cn,st_asText(geom) as geom from segm_analitica;'''),
             'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),sql_intra),
-            # 'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('new_uf_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Fert Variable Parcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select * from fert_parcelaria'''),
             'Ceap36 Textura': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap36 Infiltracion': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap90 Textura': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap90 Infiltracion': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
-            'Rendimiento' : aGraeSQLTools().getSql('rindes_layer_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
+            # 'Rendimiento' : aGraeSQLTools().getSql('rindes_layer_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
         }
 
         
 
         for q in reversed(queries):
             name = '{}-{}-{}'.format(name_camp,name_exp,q)
-            # print(name)
+
             if 'Textura' in q:
                 layer = self.tools.getDataBaseLayer(queries[q],name,'ceap_textura')
             elif 'Infiltracion' in q:
@@ -1268,20 +1267,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.atlasLayers['Ambientes'] = ambientes
         QgsProject.instance().addMapLayer(ambientes)
 
-        
-
-
-
-        
-        # try:
-        #     sql = aGraeSQLTools().getSql('uf_aportes_query.sql')
-        #     sql = sql.format(self.combo_campania.currentData())
-        #     layer = self.tools.getDataBaseLayer(sql,layername='{}-Aportes'.format(self.combo_explotacion.currentText()[2:]))
-        #     # print(layer.isValid())
-        #     if layer.isValid():
-        #         QgsProject.instance().addMapLayer(layer)
-        # except Exception as ex:
-        #     print(ex)
         
     def exportarUFS(self):
         idcampania = self.combo_campania.currentData()

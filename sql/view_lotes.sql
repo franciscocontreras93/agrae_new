@@ -1,5 +1,6 @@
-select row_number() over () as id, 
-d.iddata, 
+select distinct 
+d.iddata as id, 
+d.iddata,
 d.idcampania, 
 d.idexplotacion,
 c.nombre as campania,
