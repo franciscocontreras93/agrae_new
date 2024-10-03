@@ -172,35 +172,6 @@ class aGraeComposerTools():
 
 
 
-        # _LOTES_ = self.layers['atlas']
-        # _NITROGENO_ = self.layers['Nitrogeno']
-        # _FOSFORO_ = self.layers['Fosforo']
-        # _POTASIO_ = self.layers['potasio`']
-        # _AMBIENTES_ = self.layers['Ambientes']
-        # _PH_ = self.layers['PH']
-        # _CONDUCTIVIDAD_ = self.layers['Conductividad Electrica']
-        # _UNIDADES_I_ = self.layers['Fert Variable Intraparcelaria']
-        # _UNIDADES_II_ = self.layers['Fert Variable Intraparcelaria']
-        # _CALCIO_ = self.layers['Calcio']
-        # _MAGNESIO_ = self.layers['Magnesio']
-        # _SODIO_ = self.layers['Sodio']
-        # _AZUFRE_ = self.layers['Azufre']
-        # _CIC_ = self.layers['CIC']
-        # _HIERRO_ = self.layers['Hierro']
-        # _MANGANESO_ = self.layers['Manganeso']
-        # _ALUMINIO_ = self.layers['Aluminio']
-        # _BORO_ = self.layers['Boro']
-        # _CINQ_ = self.layers['Cinq']
-        # _COBRE_ = self.layers['Cobre']
-        # _MATERIA_ORGANICA_ = self.layers['Materia Organica']
-        # _REL_CN_ = self.layers['Relacion CN']
-        # _SEGMENTOS_ = self.layers['Segmentos']
-
-        # _CEAP36_TXT = 'CEAP36 TEXTURA'
-        # _CEAP90_TXT = 'CEAP90 TEXTURA'
-        # _CEAP36_INF = 'CEAP36 INFILTRACION'
-        # _CEAP90_INF = 'CEAP90 INFILTRACION'
-
 
         basemap = self.tools.getBaseMap(basemap,self.basemaps)
         QgsProject.instance().addMapLayer(basemap,False)

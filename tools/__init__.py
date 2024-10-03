@@ -906,10 +906,12 @@ class aGraeTools():
         except Exception as ex:
             print(ex)
 
-    def asignarMultiplesCultivos(self,idcultivo:int,data:list):
+    def asignarMultiplesCultivos(self,idcultivo:int,idregimen:int,prod_esperada:int,data:list):
         sql = '''UPDATE campaign.data
-        SET idcultivo={}
-        WHERE iddata in ({})'''.format(idcultivo,','.join(data))
+        SET idcultivo={},
+        idregimen = {},
+        prod_esperada = {}
+        WHERE iddata in ({})'''.format(idcultivo,idregimen,prod_esperada,','.join(data))
         with self.conn.cursor() as cursor:
             try:
                 cursor.execute(sql)

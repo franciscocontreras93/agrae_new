@@ -36,6 +36,8 @@ from .plots_dialog import agraePlotsDialog
 from .monitor_dialogs import MonitorRendimientosDialog
 from .gee_dialog import aGraeGEEDialog
 from .reportes_dialog import ReportesDialog
+from .asignar_cultivos_dialog import AsignarCultivosDialog
+
 toolsDialog, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui/agrae_tools.ui'))
 
 
@@ -432,22 +434,28 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         dlg.exec()
 
     def asignarCultivosLotes(self):
-            
-        dlg = GestionarCultivosDialog()
-        dlg.tableWidget.doubleClicked.disconnect()
-        dlg.tableWidget.doubleClicked.connect(dlg.getIdCultivoSignal)
-        dlg.idCultivoSignal.connect(self.getIdCultivo)
-        
+        #* NUEVO 
+        iddata = [str(f['iddata']) for f in self.layer.selectedFeatures()]
+        dlg = AsignarCultivosDialog(iddata)
         dlg.exec()
+        pass
+            #! VIEJO
+        # dlg = GestionarCultivosDialog()
+        # dlg.tableWidget.doubleClicked.disconnect()
+        # dlg.tableWidget.doubleClicked.connect(dlg.getIdCultivoSignal)
+        # dlg.idCultivoSignal.connect(self.getIdCultivo)
+        
+        # dlg.exec()
 
-        lotes = [str(f['iddata']) for f in self.layer.selectedFeatures()]
-        try:
-            self.tools.asignarMultiplesCultivos(self.idCultivo,lotes)
-        except Exception as ex:
-          print(ex)
+        # lotes = [str(f['iddata']) for f in self.layer.selectedFeatures()]
+        
+        # try:
+        #     self.tools.asignarMultiplesCultivos(self.idCultivo,lotes)
+        # except Exception as ex:
+        #   print(ex)
           
-        finally:
-          self.idCultivo = None
+        # finally:
+        #   self.idCultivo = None
         
 
     def getIdCultivo(self,data):
