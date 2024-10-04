@@ -115,6 +115,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         self.combo_aplicacion.currentIndexChanged.connect(self.getCultivosCampaniaData)
 
+        self.btn_save_cultivo_exp.clicked.connect(self.actualizarDataCultivo)
+
 
         # self.btn_lote_analitic.setIcon(agraeGUI().getIcon('chart-bar'))
         # self.btn_lote_analitic.setToolTip()
@@ -816,6 +818,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 self.conn.commit()
                 for e in data_reg:
                     self.combo_regimen.addItem(e[0],e[1])
+                    self.combo_regimen_2.addItem(e[0],e[1])
             except Exception as ex:
                 self.conn.rollback()
                 print(ex)
@@ -1307,6 +1310,21 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         nameExp = str(self.combo_explotacion.currentText()).replace(' ','_')
         self.tools.exportarResumenFertilizacion(idcampania,idexplotacion,nameExp)
 
+    
+    def actualizarDataCultivo(self):
+        idcampania = self.combo_campania.currentData()
+        idexplotacion = self.combo_explotacion.currentData()
+        idCultivo = self.combo_cultivo_2.currentData()
+        idRegimen = self.combo_regimen_2.currentData()
+        produccion = self.line_produccion_2.value()
+        if self.combo_regimen_2.currentData() != None:
+            reply = QtWidgets.QMessageBox.question(self,'aGrae Toolbox','Quieres Actualizar la data para todos los cultivos: {}.\nDe la explotacion {}?'.format(self.combo_cultivo_2.currentText() , self.combo_explotacion.currentText()),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.tools.actualizarDataCultivo(idRegimen,produccion,idcampania,idexplotacion,idCultivo)
+
+
+    
+    
     #* DESACTIVADA
     def populateContextMenu(self,menu: QtWidgets.QMenu, event: QgsMapMouseEvent):
         self.subMenu = menu.addMenu('aGrae')

@@ -922,6 +922,23 @@ class aGraeTools():
             except Exception as ex:
                 self.messages('aGrae Tools','No se pudieron asignar los cultivos.\n {}'.format(ex),2,alert=True)
                 raise Exception(ex)
+    
+    def actualizarDataCultivo(self,regimen,produccion,idcampania,idexplotacion,idcultivo):
+        sql = '''UPDATE campaign.data
+        SET 
+        idregimen = {},
+        prod_esperada = {}
+        WHERE idcampania = {} and idexplotacion = {} and idcultivo = {}'''.format(regimen,produccion,idcampania,idexplotacion,idcultivo)
+        with self.conn.cursor() as cursor:
+            try:
+                cursor.execute(sql)
+                self.conn.commit()
+
+                self.messages('aGrae Tools','Se actualizo la informacion de los cultivos Correctamente',3)
+            
+            except Exception as ex:
+                self.messages('aGrae Tools','No se pudieron actualizar la informacion de los cultivos.\n {}'.format(ex),2,alert=True)
+                raise Exception(ex)
 
     def crearPuntosMuestreo(self,ids:list,segmento_remuestreo:list,segmento_derivar:list):
         # TODO
