@@ -662,6 +662,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         sql = aGraeSQLTools().getSql('view_lotes.sql')
 
         try:
+            self.label_info.setText('Campaña: {} | Explotacion: {}'.format(self.combo_campania.currentData(),self.combo_explotacion.currentData()))
             sql = sql.format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
             self.getCampaniaCultivoCombo(self.combo_explotacion.currentData())
             layer = self.tools.getDataBaseLayer(sql,layername='{}-Lotes'.format(self.combo_campania.currentText()[2:]),styleName='lote',memory=False,idlayer='iddata')
