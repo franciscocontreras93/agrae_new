@@ -13,11 +13,12 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.core import *
 from qgis.utils import iface
 from qgis.gui import QgsMapToolIdentify,QgsMapMouseEvent
+from ..tools import aGraeTools
 from ..tools.analisis_tools import aGraeResamplearMuestras
+from ..tools.agrae_csv_tools import aGraeCSVTools
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..gui import agraeGUI
-from ..tools import aGraeTools
 
 from ..dialogs import aGraeDialogs
 
@@ -37,6 +38,8 @@ from .monitor_dialogs import MonitorRendimientosDialog
 from .gee_dialog import aGraeGEEDialog
 from .reportes_dialog import ReportesDialog
 from .asignar_cultivos_dialog import AsignarCultivosDialog
+
+ 
 
 toolsDialog, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui/agrae_tools.ui'))
 
@@ -123,33 +126,41 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         # self.btn_lote_analitic.clicked.connect(self.loteAnliticDialog)
 
     def initTools(self):
-        # TOOLBUTTONS 
-        # TOOL_EXP_2
 
+        # TOOLBUTTONS 
+        # TOOL_AGRAE
+        self.IndentifyLoteAction = QtWidgets.QAction(agraeGUI().getIcon('info'),'Identificar Lotes',self) 
+        self.IndentifyLoteAction.triggered.connect(self.identify)
+        self.CargarLotes = QtWidgets.QAction(agraeGUI().getIcon('add'),'Cargar Nuevos Lotes',self)
+        self.CargarLotes.triggered.connect(self.cargarLotesDialog)
+        self.CrearCE = QtWidgets.QAction(agraeGUI().getIcon('segmentos'),'Cargar CE',self)
+        self.CrearCE.triggered.connect(lambda : self.gestionarDatosBaseDialog(0))
+        self.CrearSegmentos = QtWidgets.QAction(agraeGUI().getIcon('segmentos'),'Cargar Segmentos',self)
+        self.CrearSegmentos.triggered.connect(lambda : self.gestionarDatosBaseDialog(1))
+        self.CrearAmbientes = QtWidgets.QAction(agraeGUI().getIcon('ambientes'),'Cargar Ambientes',self)
+        self.CrearAmbientes.triggered.connect(lambda : self.gestionarDatosBaseDialog(2))
+        self.ActualizarDatosFromCSV = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Actualizar Informacion de Cultivos desde CSV',self)
+        self.ActualizarDatosFromCSV.triggered.connect(self.actualizarDatosCultivosCSV)
+        actions_agrae = [self.IndentifyLoteAction,self.CargarLotes,self.CrearCE,self.CrearSegmentos,self.CrearAmbientes,self.ActualizarDatosFromCSV]
+        self.tools.settingsToolsButtons(self.tool_agrae,actions_agrae,icon=agraeGUI().getIcon('tools'),setMainIcon=True)
+        
+        # TOOL_EXP_2
         self.AsignarLotesExplotacion = QtWidgets.QAction(agraeGUI().getIcon('selection'),'Asignar Lotes Seleccionados a Explotacion',self)
         self.AsignarLotesExplotacion.triggered.connect(self.asignarLotesExp)
-
         self.AsignarCultivosLotes = QtWidgets.QAction(agraeGUI().getIcon('select-cultivo'),'Asignar Cultivo a Lotes Seleccionados',self)
         self.AsignarCultivosLotes.triggered.connect(self.asignarCultivosLotes)
-
         self.CargarCapasExplotacion = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar capas de Explotacion',self)
         self.CargarCapasExplotacion.triggered.connect(self.generarCapasExplotacion)
         self.GenerarReporteFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('printer'),'Generar Reporte de Preescripcion',self)
         self.GenerarReporteFertilizacion.triggered.connect(self.generateComposerDialog)
-
-        #TODO
         self.GenerarUnidadesFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('tractor'),'Exportar SHP de Preescripcion',self)
         self.GenerarUnidadesFertilizacion.triggered.connect(self.exportarUFS)
-        #TODO
         self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Preescripcion',self)
         self.GenerarResumenFertilizacion.triggered.connect(self.exportarResumen)
-
         self.GenerarAmbientes = QtWidgets.QAction(agraeGUI().getIcon('satelite'),'Generar Mapas de Ambientes',self)
         self.GenerarAmbientes.triggered.connect(self.geeDialog)
-        #TODO
         self.MonitorDeRendimiento = QtWidgets.QAction(agraeGUI().getIcon('rindes'),'Monitor de Rendimiento',self)
         self.MonitorDeRendimiento.triggered.connect(self.monitorRendimientoDialog)
-
         actions_exp = [
             self.AsignarLotesExplotacion,
             self.AsignarCultivosLotes,
@@ -163,13 +174,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.tools.settingsToolsButtons(self.tool_exp_2,actions_exp,icon=agraeGUI().getIcon('explotacion'),setMainIcon=True)
 
         # TOOL_LAB
-        #TODO 
-        self.CargarCapaMuestras = QtWidgets.QAction(agraeGUI().getIcon('pois'),'Generar Puntos de Muestreo.',self)
-        # self.CargarCapaMuestras.triggered.connect(self.createMuestreoPoints) #TODO
-        self.CargarCapaMuestras.triggered.connect(aGraeDialogs.muestreoDialog)
-
-        self.ActualziarProyectoMuestreo = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Actualizar capas de Muestreo',self)
-
+        self.GestionarMuestras = QtWidgets.QAction(agraeGUI().getIcon('list-check'),'Gestionar Muestras y Analiticas',self)
+        self.GestionarMuestras.triggered.connect(aGraeDialogs.gestionarMuestrasDialog)
+        self.GenerarPuntosMuestreo = QtWidgets.QAction(agraeGUI().getIcon('pois'),'Generar Puntos de Muestreo.',self)
+        self.GenerarPuntosMuestreo.triggered.connect(aGraeDialogs.muestreoDialog)
         self.CrearArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Archivo de Laboratorio',self)
         self.CrearArchivoAnalisis.triggered.connect(self.crearFormatoAnalitica)
         self.ImportarArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('import'),'Cargar Archivo de Laboratorio',self)
@@ -177,8 +185,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.DerivarDatosAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Derivar datos de Analitica',self)
         self.DerivarDatosAnalisis.triggered.connect(self.DerivarAnalitica)
 
-        actions_lab = [self.CargarCapaMuestras,self.ActualziarProyectoMuestreo,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis,self.DerivarDatosAnalisis]
+        actions_lab = [self.GestionarMuestras,self.GenerarPuntosMuestreo,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis,self.DerivarDatosAnalisis]
         self.tools.settingsToolsButtons(self.tool_lab,actions_lab,icon=agraeGUI().getIcon('matraz'),setMainIcon=True)
+        
         # TOOL_DATA
         self.GestionarPersonas = QtWidgets.QAction(agraeGUI().getIcon('users'),'Gestionar Personas',self)
         self.GestionarPersonas.triggered.connect(self.gestionPersonasDialog)
@@ -201,26 +210,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.tools.settingsToolsButtons(self.tool_data,actions_data,icon=agraeGUI().getIcon('list-check'),setMainIcon=True)
 
 
-        # TOOL_AGRAE
-        self.IndentifyLoteAction = QtWidgets.QAction(agraeGUI().getIcon('info'),'Identificar Lotes',self) 
-        self.IndentifyLoteAction.triggered.connect(self.identify)
-        
-        self.CargarLotes = QtWidgets.QAction(agraeGUI().getIcon('add'),'Cargar Nuevos Lotes',self)
-        self.CargarLotes.triggered.connect(self.cargarLotesDialog)
-
-        self.CrearCE = QtWidgets.QAction(agraeGUI().getIcon('segmentos'),'Cargar CE',self)
-        self.CrearCE.triggered.connect(lambda : self.gestionarDatosBaseDialog(0))
-
-        self.CrearSegmentos = QtWidgets.QAction(agraeGUI().getIcon('segmentos'),'Cargar Segmentos',self)
-        self.CrearSegmentos.triggered.connect(lambda : self.gestionarDatosBaseDialog(1))
-
-        self.CrearAmbientes = QtWidgets.QAction(agraeGUI().getIcon('ambientes'),'Cargar Ambientes',self)
-        self.CrearAmbientes.triggered.connect(lambda : self.gestionarDatosBaseDialog(2))
-
-        actions_agrae = [self.IndentifyLoteAction,self.CargarLotes,self.CrearCE,self.CrearSegmentos,self.CrearAmbientes]
-
-        self.tools.settingsToolsButtons(self.tool_agrae,actions_agrae,icon=agraeGUI().getIcon('tools'),setMainIcon=True)
-
         # TOOL_CAMP
         self.CrearCampaniaAction = QtWidgets.QAction(agraeGUI().getIcon('add'),'Crear Campaña',self)
         self.CrearCampaniaAction.triggered.connect(self.campaniaCreateDialog)
@@ -242,73 +231,53 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.tools.settingsToolsButtons(self.tool_camp,[self.ReloadCampaniaAction,self.CrearCampaniaAction,self.ClonarCampaniaAction,self.EditarCampaniaAction,self.EliminarCampaniaAction])
 
         # TOOL_EXP
-        
-        
-        
         self.CrearExplotacionAction= QtWidgets.QAction(agraeGUI().getIcon('add'),'Crear Explotacion',self)
         self.CrearExplotacionAction.setToolTip('Crear nueva Explotacion')
         self.CrearExplotacionAction.triggered.connect(self.explotacionCreateDialog)
-
         self.AsignarExplotacionCampania = QtWidgets.QAction(agraeGUI().getIcon('selection'),'Asignar Explotacion',self)
         self.AsignarExplotacionCampania.setToolTip('Asignar Explotacion a la campaña')
         self.AsignarExplotacionCampania.triggered.connect(self.getIdExplotacion)
-
-
         self.ClonarExplotacionAction = QtWidgets.QAction(agraeGUI().getIcon('clone'),'Copiar Explotacion',self)
         self.ClonarExplotacionAction.setToolTip('Clonar Explotacion')
         self.ClonarExplotacionAction.triggered.connect(self.explotacionCopyDialog)
-        
         self.EditarExplotacionAction = QtWidgets.QAction(agraeGUI().getIcon('edit'),'Editar Explotacion',self)
         self.EditarExplotacionAction.triggered.connect(self.explotacionUpdateDialog)
-        
         self.EliminarExplotacionAction = QtWidgets.QAction(agraeGUI().getIcon('trash'),'Eliminar Explotacion',self)
         self.EliminarExplotacionAction.triggered.connect(self.deleteExplotacion)
-
         self.tools.settingsToolsButtons(self.tool_exp,[self.CrearExplotacionAction,self.AsignarExplotacionCampania,self.ClonarExplotacionAction,self.EditarExplotacionAction,self.EliminarExplotacionAction])
 
 
         # TOOL_LOTE
         self.ClimaLoteAction = QtWidgets.QAction(agraeGUI().getIcon('weather'),'Clima',self) 
         self.ClimaLoteAction.triggered.connect(self.weatherLoteDialog)
-
-        
         self.EditarLoteAction = QtWidgets.QAction(agraeGUI().getIcon('edit'),'Editar Lote',self)
         self.EditarLoteAction.setCheckable(True)
         self.EditarLoteAction.setToolTip('Editar datos del Lote')
-
         self.ActualizarLoteAction = QtWidgets.QAction(agraeGUI().getIcon('save'),'Actualizar Lote',self)
         self.ActualizarLoteAction.setToolTip('Actualizar datos del Lote')
         self.ActualizarLoteAction.setEnabled(False)
         self.ActualizarLoteAction.triggered.connect(self.updateLote)
-
         self.EliminarLoteAction = QtWidgets.QAction(agraeGUI().getIcon('trash'),'Eliminar Lote',self)
         self.EliminarLoteAction.setToolTip('Eliminar datos del Lote')
         self.EliminarLoteAction.setEnabled(False)
         self.EliminarLoteAction.triggered.connect(self.deleteLote)
-
         self.GenerarPanelesDialogAction = QtWidgets.QAction(agraeGUI().getIcon('chart-bar'),'Panel de Analisis Grafico',self)
         self.GenerarPanelesDialogAction.triggered.connect(self.loteAnliticDialog)
-
         self.EditarLoteAction.triggered.connect(lambda: self.tools.enableElements(self.EditarLoteAction,[self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.ActualizarLoteAction,self.EliminarLoteAction, self.check_siembra, self.check_cosecha]))
         actions_lote = [self.EditarLoteAction,self.ActualizarLoteAction,self.ClimaLoteAction,self.GenerarPanelesDialogAction,self.EliminarLoteAction,]
         self.tools.settingsToolsButtons(self.tool_lote, actions_lote)
 
         # TOOL_FERT
-        
         self.EditarFertilizacionAction = QtWidgets.QAction(agraeGUI().getIcon('edit'),'Editar Datos',self)
         self.EditarFertilizacionAction.setCheckable(True)
         self.EditarFertilizacionAction.setToolTip('Editar Datos de Fertilizacion')
-
         self.ActualizarFertilizacionAction = QtWidgets.QAction(agraeGUI().getIcon('save'),'Guardar Datos',self)
         self.ActualizarFertilizacionAction.setEnabled(False)
         self.ActualizarFertilizacionAction.setToolTip('Guardar Datos de Fertilizacion')
-
         self.EditarFertilizacionAction.triggered.connect(lambda: self.tools.enableElements(self.EditarFertilizacionAction,[self.line_formula,self.line_precio,self.combo_ajuste,self.date_aplicacion,self.ActualizarFertilizacionAction]))
         self.ActualizarFertilizacionAction.triggered.connect(self.saveDataCampania)
-
         self.settingsToolsButtons(self.tool_fert,[self.EditarFertilizacionAction,self.ActualizarFertilizacionAction])
         # self.settingsToolsButtons(self.tool_fert)
-
         self.tool_fert_menu = self.tool_fert.menu()
 
     # DIALOGS
@@ -441,23 +410,20 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         dlg = AsignarCultivosDialog(iddata)
         dlg.exec()
         pass
-            #! VIEJO
-        # dlg = GestionarCultivosDialog()
-        # dlg.tableWidget.doubleClicked.disconnect()
-        # dlg.tableWidget.doubleClicked.connect(dlg.getIdCultivoSignal)
-        # dlg.idCultivoSignal.connect(self.getIdCultivo)
-        
-        # dlg.exec()
+    
+    def actualizarDatosCultivosCSV(self):
+        file = self.tools.openFileDialog()
+        aGraeCSVTools(file).updateCultivoDataFromCSV()
+        # with self.tools.conn.cursor() as cursor:
+        #     try:    
+        #         cursor.execute(sql)
+        #         self.tools.conn.commit()
+        #         self.tools.messages('aGrae Tools','Datos actualizados correctamente',3)
+        #     except Exception as ex:
+        #         self.tools.messages('aGrae Tools | error: ','Ocurrio un Error revisa el panel para mas informacion',2)
+        #         print(ex)
+        #         self.tools.conn.rollback()
 
-        # lotes = [str(f['iddata']) for f in self.layer.selectedFeatures()]
-        
-        # try:
-        #     self.tools.asignarMultiplesCultivos(self.idCultivo,lotes)
-        # except Exception as ex:
-        #   print(ex)
-          
-        # finally:
-        #   self.idCultivo = None
         
 
     def getIdCultivo(self,data):

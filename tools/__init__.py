@@ -490,7 +490,7 @@ class aGraeTools():
         lyr.loadNamedStyle(styleUri)
         return lyr
     
-    def getDataBaseLayer(self, sql:str, layername:str ='Resultados' ,styleName:str ='',memory=True,save=False,debug=False,idlayer='id') -> QgsVectorLayer:
+    def getDataBaseLayer(self, sql:str, layername:str ='Resultados' ,styleName:str ='',geometry:str='MultiPolygon',memory=True,save=False,debug=False,idlayer='id') -> QgsVectorLayer:
         col_types = {
             20 : QVariant.Int,
             21: QVariant.Int,
@@ -510,7 +510,7 @@ class aGraeTools():
         # with self.conn.cursor(cursor_factory=extras.RealDictCursor) as cursor:
         with cursor:
             if memory:
-                lyr = QgsVectorLayer('MultiPolygon?crs=epsg:4326&index=yes'.format(type),layername,'memory')
+                lyr = QgsVectorLayer('{}?crs=epsg:4326&index=yes'.format(geometry),layername,'memory')
                 provider = lyr.dataProvider()
                 try:
                     lyr.startEditing()
