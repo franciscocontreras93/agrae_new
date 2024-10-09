@@ -22,7 +22,10 @@ with data as (select distinct
 	c.ms_residuo,
 	c.extraccionresiduon,
 	c.extraccionresiduop,
-	c.extraccionresiduok, 
+	c.extraccionresiduok,
+    c.cef_n,
+	c.cef_p,
+	c.cef_k,
 	d.prod_esperada 
 	from campaign.data d 
 	left join agrae.cultivo c on c.idcultivo = d.idcultivo
@@ -184,7 +187,10 @@ extracciones as (select
 		) as extraccionresiduop,
 		round( -- EXTRACCION K
 			d.ms_residuo * a.prod_ponderada * d.extraccionresiduok
-		) as extraccionresiduok		
+		) as extraccionresiduok,
+		d.cef_n,
+		d.cef_p,
+		d.cef_k
 	from amb_join a
 	join data d on d.idlote = a.idlote
 	where st_area(a.geometria) > 0
@@ -212,14 +218,14 @@ uf as (select
             WHEN (s.segmento + a.ambiente) = 62 THEN 'UF9'::text
             ELSE NULL::text
         END AS uf_etiqueta,
-	round(max((a.extraccioncosechan + a.extraccionresiduon) * (1 + s.n_inc))) necesidad_n,
-	round(max((a.extraccioncosechap + a.extraccionresiduop) * (1 + s.p_inc))) necesidad_p,
-	round(max((a.extraccioncosechak + a.extraccionresiduok) * (1 + s.k_inc))) necesidad_k,
+	round(max((a.extraccioncosechan + a.extraccionresiduon) * (1 + s.n_inc)) / a.cef_n) necesidad_n,
+	round(max((a.extraccioncosechap + a.extraccionresiduop) * (1 + s.p_inc)) / a.cef_p) necesidad_p,
+	round(max((a.extraccioncosechak + a.extraccionresiduok) * (1 + s.k_inc)) / a.cef_k) necesidad_k,
 	st_multi(st_union(st_multi(ST_CollectionExtract(st_intersection(a.geometria,s.geometria),3)))) as geom
 	from extracciones a 
 	join segm_analitica s on st_intersects(s.geometria , a.geometria)
 	group by a.idlote, a.ambiente, s.segmento, a.iddata
-	,a.prod_esperada, a.prod_ponderada,s.codigo,s.ceap,a.ndvimax
+	,a.prod_esperada, a.prod_ponderada,s.codigo,s.ceap,a.ndvimax,a.cef_n,a.cef_p,a.cef_k
 	),
 necesidades_i as (select --NECESIDADES 1RA APLICACION
 uf.idlote, uf.iddata, uf.uf, uf.uf_etiqueta,

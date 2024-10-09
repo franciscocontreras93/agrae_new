@@ -26,7 +26,8 @@ from qgis.PyQt.QtWidgets import (
     QTableView,
     QWidget,
     QCompleter,
-    QFileDialog 
+    QFileDialog ,
+    QMainWindow
     )
 from qgis.PyQt.QtCore import pyqtSignal, QSettings, QVariant, Qt, QSize, QRegExp
 from qgis.core import *
@@ -136,7 +137,7 @@ class GestionarMuestrasDialog(QDialog):
 
     def exportarDataCSV(self):
         outputh_path = str(QFileDialog.getExistingDirectory(self, "Selecciona el Directorio."))
-        output_query = '''copy ({}) to stdout  with csv header delimiter ';' ; '''.format(aGraeSQLTools().getSql('muestreo_data_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()))
+        output_query = '''copy ({}) to stdout  with csv header delimiter ';' ; '''.format(aGraeSQLTools().getSql('muestreo_data_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select iddata,campania,explotacion,lote,codigo,prioridad,status_mues,status_lab from muestras'))
         with open(os.path.join(outputh_path,'REPORTE_MUESTREO_{}.csv'.format(self.combo_explotacion.currentText())),'w') as file:
             with self.tools.conn.cursor() as cur:
                 cur.copy_expert(output_query,file)
