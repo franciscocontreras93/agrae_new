@@ -663,13 +663,13 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     
     def focusExp(self):
         reset = ''
-        self.layer.setSubsetString(reset)
+        # self.layer.setSubsetString(reset)
         if self.combo_explotacion.currentData() != None:
             # exp = QgsExpression("\"idexplotacion\"={}".format(self.combo_explotacion.currentData()))
             # it = self.layer.getFeatures(QgsFeatureRequest(exp))
             # ids = [f.id() for f in it]
             # self.layer.selectByIds(ids)
-            self.layer.setSubsetString("\"idexplotacion\"={}".format(self.combo_explotacion.currentData()))
+            # self.layer.setSubsetString("\"idexplotacion\"={}".format(self.combo_explotacion.currentData()))
             # bbox = self.layer.boundingBoxOfSelected()
             # iface.actionZoomToSelected().trigger()
             iface.mapCanvas().setExtent(self.layer.extent())

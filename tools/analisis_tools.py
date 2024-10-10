@@ -13,7 +13,7 @@ class aGraeResamplearMuestras():
         #     df = pd.read_csv(r'{}'.format(file_path),delimiter=';',encoding='utf-8')
         # except UnicodeEncodeError:
         #     df = pd.read_csv(r'{}'.format(file_path),delimiter=';',encoding='utf-8')
-        # df = df.replace(np.nan,0).replace('#¡VALOR!',0).replace('#N/D',0)
+        self.df = self.df.replace(np.nan,0).replace('#¡VALOR!',0).replace('#N/D',0)
         
         pass
 

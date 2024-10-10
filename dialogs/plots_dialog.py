@@ -345,6 +345,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
             if index != 0 and self.dataValidator == False:
                 precio = precio.text()
                 data = self.dataExtraccion
+                print(data)
                 area = [float(e[5]) for e in data]
                 npk = [str(e[4]) for e in data]
                 lista = [e.split(' / ') for e in npk ]
@@ -352,10 +353,10 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
                 p = [int(e[1]) for e in lista ]
                 k = [int(e[2]) for e in lista ]
 
-                # print(n,p,k)
             elif self.dataValidator == True:
                 precio = precio.text()
                 data = self.dataNecesidades
+                print(data)
                 data = list(zip(*[data[col] for col in data]))
                 area = [float(e[5]) for e in self.dataExtraccion]
                 uf = [e[0] for e in data]

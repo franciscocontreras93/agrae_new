@@ -162,7 +162,7 @@ producciones as ( -- CALCULO PRODUCCIONES PONDERADAS
 				then a.prod_esperada 
 			else		
 				avg(a.ndvimax) * a.prod_esperada  / (select avg(ndvimed) from amb_40 where idlote = a.idlote) 	
-		  end ) 
+	    end ) 
 		as prod_ponderada 
 	from ambientes a
 	group by a.idambiente,a.ambiente,a.prod_esperada,a.idlote
