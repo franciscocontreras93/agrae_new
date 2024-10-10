@@ -252,8 +252,8 @@ class aGraeComposerTools():
         lotes = self.layers['Atlas']
 
         
-        self.setLayersToMap([layout.itemById('ceap36_txt'),layout.itemById('ceap90_txt')],[lotes,self.layers['Ceap36 Textura'],self.layers['Ceap36 Infiltracion']],basemap) #*  PAG 01
-        self.setLayersToMap([layout.itemById('ceap36_inf'),layout.itemById('ceap90_inf')],[lotes,self.layers['Ceap90 Textura'],self.layers['Ceap90 Infiltracion']],basemap) #* PAG 02
+        self.setLayersToMap([layout.itemById('ceap36_txt'),layout.itemById('ceap90_txt')],[lotes,self.layers['Ceap36 Textura'],self.layers['Ceap90 Textura']],basemap) #*  PAG 01
+        self.setLayersToMap([layout.itemById('ceap36_inf'),layout.itemById('ceap90_inf')],[lotes,self.layers['Ceap36 Infiltracion'],self.layers['Ceap90 Infiltracion']],basemap) #* PAG 02
         self.setLayersToMap([layout.itemById('map_nitrogeno'),layout.itemById('map_fosforo')],[lotes,self.layers['Nitrogeno'],self.layers['Fosforo']],basemap) #* PAG 03
         self.setLayersToMap([layout.itemById('map_potasio'),layout.itemById('map_ambientes')],[lotes,self.layers['Potasio'],self.layers['Ambientes']],basemap) #* PAG 04
         self.setLayersToMap([layout.itemById('map_ph'),layout.itemById('map_conductividad')],[lotes,self.layers['PH'],self.layers['Conductividad Electrica']],basemap) #* PAG 05

@@ -85,7 +85,11 @@ class aGraeResamplearMuestras():
                             row['PH'] = rand / adjust_index['PH'] + scope_row['PH']
                             row['CE'] = rand / adjust_index['CE'] + scope_row['CE']
                             row['N'] = rand / adjust_index['N'] + scope_row['N']
-                            row['P'] = rand / adjust_index['P'] + scope_row['P']
+                            p = rand / adjust_index['P'] + scope_row['P']
+                            if p < 0 :
+                                p = p * -1
+
+                            row['P'] = p
                             row['K'] = rand / adjust_index['K'] + scope_row['K']
                             row['CARBON'] = scope_row['CARBON']
                             row['CA'] = rand / adjust_index['CA'] + scope_row['CA']
