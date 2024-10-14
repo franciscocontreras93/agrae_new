@@ -635,7 +635,7 @@ class aGraeTools():
         with self.conn.cursor() as cursor:
             try:   
                 for index, r in df1.iterrows():
-                    sql = aGraeSQLTools().getSql('csv_report_create.sql').format(r['COD'],r['ceap'],r['PH'],r['CE'],r['CARBON'],r['CALIZA'],r['CA'],r['MG'],r['K'],r['NA'],r['N'],r['P'],r['ORGANI'],r['AL'],r['B'],r['FE'],r['MN'],r['CU'],r['ZN'],r['S'],r['MO'],r['ARCILLA'],r['LIMO'],r['ARENA'],r['NI'],r['CO'],r['TI'],r['AS'],r['PB'],r['CR'],r['METODO_P'])
+                    sql = aGraeSQLTools().getSql('csv_report_create.sql').format(r['COD'],r['ceap'],r['PH'],r['CE'],r['CARBON'],r['CALIZA'],r['CA'],r['MG'],r['K'],r['NA'],r['N'],r['P'],r['ORGANI'],r['AL'],r['B'],r['FE'],r['MN'],r['CU'],r['ZN'],r['S'],r['MO'],r['ARCILLA'],r['LIMO'],r['ARENA'],r['NI'],r['CO'],r['TI'],r['AS'],r['PB'],r['CR'],2)
                     
                     try:
                         cursor.execute(sql)

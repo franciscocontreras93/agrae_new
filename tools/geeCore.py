@@ -318,9 +318,9 @@ class aGraeNDVIMulti:
         )
         
         percentile = self.getPercentiles(NDVIConvolve)
-        print(ee.Number(percentile.get('nd_max_p25').getInfo()).format())
-        print(ee.Number(percentile.get('nd_max_p50').getInfo()).format())
-        print(ee.Number(percentile.get('nd_max_p75').getInfo()).format())
+        # print(ee.Number(percentile.get('nd_max_p25').getInfo()).format())
+        # print(ee.Number(percentile.get('nd_max_p50').getInfo()).format())
+        # print(ee.Number(percentile.get('nd_max_p75').getInfo()).format())
         expression = ee.String('(b(0) <= ').cat(ee.Number(percentile.get('nd_max_p25').getInfo()).format()).cat(') ? 20 : (b(0) < ').cat(ee.Number(percentile.get('nd_max_p50').getInfo()).format()).cat(') ? 40 : 60')
         reclass = NDVIConvolve.expression(expression)
         return reclass
@@ -361,7 +361,7 @@ class aGraeNDVIMulti:
         url=self.vectorDownloadURL(vector)
         request.urlretrieve(url,downloadPath)
         v = QgsVectorLayer(downloadPath,'Ambientes_GEE_Layer')
-        QgsProject.instance().addMapLayer(v)
+        # QgsProject.instance().addMapLayer(v)
         return v
     
         

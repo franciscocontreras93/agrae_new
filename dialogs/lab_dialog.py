@@ -62,6 +62,8 @@ class GestionarMuestrasDialog(QDialog):
         self.resize(400,300)
         self.combo_campania = QComboBox()
         self.combo_explotacion = QComboBox()
+        self.combo_explotacionsetEditable(True)
+        self.combo_explotacionsetInsertPolicy(QComboBox.NoInsert)
         self.getCampaniasData()
         data_muestreo = agraeDataBaseDriver().read(aGraeSQLTools().getSql('muestreo_data_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select iddata,campania,explotacion,lote,codigo,prioridad,status_mues,status_lab from muestras'))
         self.table = CustomTable(
@@ -71,11 +73,11 @@ class GestionarMuestrasDialog(QDialog):
         self.combo_campania.currentIndexChanged.connect(self.updateTable)
         self.combo_explotacion.currentIndexChanged.connect(self.updateTable)
 
-        for c in [self.combo_explotacion]:
-            c.setEditable(True)
-            c.setInsertPolicy(QComboBox.NoInsert)
+        # for c in [self.combo_explotacion]:
+        #     c.setEditable(True)
+        #     c.setInsertPolicy(QComboBox.NoInsert)
             # change completion mode of the default completer from InlineCompletion to PopupCompletion
-            c.completer().setCompletionMode(QCompleter.PopupCompletion)
+            # c.completer().setCompletionMode(QCompleter.PopupCompletion)
         
         self.toolButton = QToolButton()
         self.ExportarDataCSV = QAction(agraeGUI().getIcon('csv'),'Exportar informacion a CSV',self)
@@ -123,11 +125,13 @@ class GestionarMuestrasDialog(QDialog):
                 try:
                     cursor.execute(sql)
                     data = cursor.fetchall()
-                    # print(idcampania)
+
                     if len(data) >= 1 and self.combo_campania.currentData() != None:
-                        data_completer = ['{}'.format(e[0]) for e in data]
                         for e in data:
-                            self.combo_explotacion.addItem('{}'.format(e[0]),e[1])
+                            self.combo_explotacion.addItem('{}-{}'.format(e[1],e[0]),e[1])
+                    
+                    exp_completer = self.tools.dataCompleter(data_combo=['{}-{}'.format(e[1],e[0]) for e in data])
+                    self.combo_explotacion.setCompleter(exp_completer)
                 except Exception as ex:
                     print(ex,'Error getExpData')
 

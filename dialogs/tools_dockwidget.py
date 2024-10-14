@@ -736,12 +736,13 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                     data = cursor.fetchall()
                     # print(idcampania)
                     if len(data) >= 1 and self.combo_campania.currentData() != None:
-                        data_completer = ['{}'.format(e[0]) for e in data]
+                        data_completer = ['{}-{}'.format(e[1],e[0]) for e in data]
                         for e in data:
-                            self.combo_explotacion.addItem('{}'.format(e[0]),e[1])
+                            self.combo_explotacion.addItem('{}-{}'.format(e[1],e[0]),e[1])
                         
                         exp_completer = self.tools.dataCompleter(data_combo=data_completer)
                         self.combo_explotacion.setCompleter(exp_completer)
+
                         sql_date_camp = 'select fecha_desde, fecha_hasta from campaign.campanias where id = {}'.format(self.combo_campania.currentData())
                         cursor.execute(sql_date_camp)
                         data = cursor.fetchone()
@@ -1138,6 +1139,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     def crearFormatoAnalitica(self):
         # METODO PARA CREAR LOS FORMATOS DE REPORTES ANALITICOS EN ARCHIVOS .CSV
         exp = self.combo_explotacion.currentText().replace(' ','_')
+        exp = exp.split('-')[1]
         camp  = self.combo_campania.currentText()[2:].replace(' ','_')
         name = '{}_{}'.format(camp,exp)
         reply = QtWidgets.QMessageBox.question(self,'aGrae Toolbox','Quieres generar el archivo de Analitica para la explotacion:\n{}?'.format(name),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
@@ -1178,6 +1180,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         name_camp = self.combo_campania.currentText()[2:]
         name_exp = self.combo_explotacion.currentText()
+        name_exp = name_exp.split('-')[1]
         sql_intra = '''select row_number() over () as id, explotacion,cultivo,lote,uf,uf_etiqueta,f_fondo,d_fondo,f_cob1,d_cob1,f_cob2,d_cob2,f_cob3,d_cob3,area_ha,st_asText(geom) as geom from fert_intraparcelaria'''
         # sql_intra = '''select * from mapa_sig'''
 
@@ -1220,7 +1223,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             'Ceap90 Infiltracion': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             # 'Rendimiento' : aGraeSQLTools().getSql('rindes_layer_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
         }
-
         
 
         for q in reversed(queries):
