@@ -22,7 +22,8 @@ class agraeAnaliticaDialog(QtWidgets.QDialog,analiticaDialog):
 
     def UIComponents(self):
         # self.DerivarDatosAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Derivar datos de Analitica',self)
-
+        # self.setWindowTitle('aGrae GIS | Cargar Analiticas a la Base de Datos')
+        self.setWindowTitle('aGrae Tools | Cargar Analiticas a la Base de Datos')
         self.ImportarArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('upload'),'Guardar datos de Analitica',self)
         self.ImportarArchivoAnalisis.triggered.connect(self.guardarAnalitica)
         self.tools.settingsToolsButtons(self.toolButton,[self.ImportarArchivoAnalisis],icon=agraeGUI().getIcon('tools'),setMainIcon=True)

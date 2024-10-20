@@ -7,27 +7,20 @@ import time
 # from datetime import date
 from psycopg2 import InterfaceError, errors, extras
 
+
 from qgis.PyQt.QtWidgets import *
 from qgis.PyQt.QtWidgets import (
     QAction,
     QDialog,
-    QLayout,
     QGridLayout,
     QVBoxLayout,
-    QHBoxLayout,
-    QPushButton,
     QGroupBox,
     QLabel,
     QToolButton,
-    QPlainTextEdit,
     QComboBox,
     QMessageBox,
-    QTabWidget,
-    QTableView,
-    QWidget,
-    QCompleter,
     QFileDialog ,
-    QMainWindow
+    QMenu
     )
 from qgis.PyQt.QtCore import pyqtSignal, QSettings, QVariant, Qt, QSize, QRegExp
 from qgis.core import *
@@ -40,6 +33,7 @@ from ..gui import agraeGUI
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..tools import aGraeTools
+from ..tools.analisis_tools import aGraeResamplearMuestras
 
 from ..gui.CustomLineEdit import CustomLineEdit
 from ..gui.CustomLineSearch import CustomLineSearch
@@ -47,8 +41,10 @@ from ..gui.CustomTable import CustomTable
 from ..gui.CustomTableView import (CustomTableView,CustomTableModel)
 from ..gui.CustomPushButton import CustomPushButton
 
+from .analitica_dialogs import agraeAnaliticaDialog
 
-class GestionarMuestrasDialog(QDialog):
+
+class GestionLaboratorioDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.tools = aGraeTools()
@@ -59,11 +55,11 @@ class GestionarMuestrasDialog(QDialog):
     
     def UIComponents(self):
         self.setWindowTitle('aGrae Tools | Gestion de Muestras y Analiticas')
-        self.resize(400,300)
+        self.resize(1200,600)
         self.combo_campania = QComboBox()
         self.combo_explotacion = QComboBox()
-        self.combo_explotacionsetEditable(True)
-        self.combo_explotacionsetInsertPolicy(QComboBox.NoInsert)
+        self.combo_explotacion.setEditable(True)
+        self.combo_explotacion.setInsertPolicy(QComboBox.NoInsert)
         self.getCampaniasData()
         data_muestreo = agraeDataBaseDriver().read(aGraeSQLTools().getSql('muestreo_data_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select iddata,campania,explotacion,lote,codigo,prioridad,status_mues,status_lab from muestras'))
         self.table = CustomTable(
@@ -80,11 +76,41 @@ class GestionarMuestrasDialog(QDialog):
             # c.completer().setCompletionMode(QCompleter.PopupCompletion)
         
         self.toolButton = QToolButton()
-        self.ExportarDataCSV = QAction(agraeGUI().getIcon('csv'),'Exportar informacion a CSV',self)
+        self.toolButton.setMenu(QMenu())
+        self.toolButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.toolButton.setIconSize(QSize(15,15))
+        self.toolMenu = self.toolButton.menu()
+        self.toolMenu.addSeparator().setText('Gestion de Muestras')
+
+
+        self.ExportarDataCSV = QAction(agraeGUI().getIcon('csv'),'Exportar informacion de Explotacion a CSV',self)
         self.ExportarDataCSV.triggered.connect(self.exportarDataCSV)
         self.CargarCapaMuestras = QAction(agraeGUI().getIcon('pois'),'Cargar Capa de Muestras',self)
         self.CargarCapaMuestras.triggered.connect(self.loadLayerMuestreo)
-        self.tools.settingsToolsButtons(self.toolButton,[self.ExportarDataCSV,self.CargarCapaMuestras],agraeGUI().getIcon('tools'),setMainIcon=True)
+        self.GenerarArchivoLaboratorio = QAction(agraeGUI().getIcon('csv'),'Generar Archivo de Laboratorio',self)
+        self.GenerarArchivoLaboratorio.triggered.connect(self.crearFormatoAnalitica)
+        self.ImportarArchivoAnalisis = QAction(agraeGUI().getIcon('import'),'Cargar Archivo de Laboratorio',self)
+        self.ImportarArchivoAnalisis.triggered.connect(self.cargarAnalitica)
+        self.DerivarDatosAnalisis = QAction(agraeGUI().getIcon('csv'),'Derivar datos de Analitica',self)
+        self.DerivarDatosAnalisis.triggered.connect(self.DerivarAnalitica)
+        self.GenerarReporteAnalitica = QAction(agraeGUI().getIcon('chart-bar-2'),'Generar reporte de Laboratorio (Campaña)',self)
+        self.GenerarReporteAnalitica.triggered.connect(self.generarReporteAnalitica)
+
+        # self.tools.settingsToolsButtons(self.toolButton,[self.ExportarDataCSV,self.CargarCapaMuestras,self.GenerarArchivoLaboratorio,self.ImportarArchivoAnalisis,self.DerivarDatosAnalisis,self.GenerarReporteAnalitica],agraeGUI().getIcon('tools'),setMainIcon=True)
+        # self.toolButton.menu().addAction(actions[i])
+
+        self.toolMenu.addAction(self.GenerarArchivoLaboratorio)
+        self.toolMenu.addAction(self.ImportarArchivoAnalisis)
+        self.toolMenu.addAction(self.DerivarDatosAnalisis)
+
+        self.toolMenu.addSeparator().setText('Gestion de Laboratorio')
+
+        self.toolMenu.addAction(self.CargarCapaMuestras)
+        self.toolMenu.addAction(self.ExportarDataCSV)
+        self.toolMenu.addAction(self.GenerarReporteAnalitica)
+  
+        self.toolButton.setIcon(agraeGUI().getIcon('tools'))
+        
 
         main_layout = QVBoxLayout()
         group_combos = QGroupBox()
@@ -101,6 +127,11 @@ class GestionarMuestrasDialog(QDialog):
 
 
         self.setLayout(main_layout)
+
+        self.toolMenu.setStyleSheet('''
+        QMenu {
+            padding:5px;               }
+''')
 
     def getCampaniasData(self):
         self.combo_campania.clear()
@@ -145,9 +176,46 @@ class GestionarMuestrasDialog(QDialog):
         with open(os.path.join(outputh_path,'REPORTE_MUESTREO_{}.csv'.format(self.combo_explotacion.currentText())),'w') as file:
             with self.tools.conn.cursor() as cur:
                 cur.copy_expert(output_query,file)
+                self.tools.messages('aGrae Tools','Archivo exportado Correctamente',3)
 
     def loadLayerMuestreo(self):
         query = aGraeSQLTools().getSql('muestreo_data_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select row_number() over () as id, * from muestras')
         muestras = self.tools.getDataBaseLayer(query,'{}-{}'.format(self.combo_campania.currentText(),self.combo_explotacion.currentText()),'muestreo_status',geometry='MultiPoint')
         QgsProject.instance().addMapLayer(muestras)
         iface.mapCanvas().setExtent(muestras.extent())
+
+    def crearFormatoAnalitica(self):
+        # METODO PARA CREAR LOS FORMATOS DE REPORTES ANALITICOS EN ARCHIVOS .CSV
+        exp = self.combo_explotacion.currentText().replace(' ','_')
+        exp = exp.split('-')[1]
+        camp  = self.combo_campania.currentText()[2:].replace(' ','_')
+        name = '{}_{}'.format(camp,exp)
+        reply = QMessageBox.question(self,'aGrae Toolbox','Quieres generar el archivo de Analitica para la explotacion:\n{}?'.format(name),QMessageBox.Yes, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.tools.crearFormatoAnalitica(self.combo_campania.currentData(),self.combo_explotacion.currentData(),name)
+    
+    def cargarAnalitica(self):
+        data = self.tools.cargarReporteAnalitica()
+        if not data.empty:
+            dlg = agraeAnaliticaDialog(data)
+            dlg.exec()
+
+    
+    def DerivarAnalitica(self):
+        file = self.tools.cargarReporteAnalitica(dataframe=False)
+        if file:
+            try:
+                print(file)
+                modulo = aGraeResamplearMuestras(file)
+                modulo.processing()
+                self.tools.messages('aGrae GIS','Archivo procesado Correctamente',3,True)
+            except Exception as ex:
+                self.tools.messages('aGrae GIS',ex,2)
+    
+    def generarReporteAnalitica(self):
+        outputh_path = str(QFileDialog.getExistingDirectory(self, "Selecciona el Directorio."))
+        output_query = '''copy ({}) to stdout  with csv header delimiter ';' ; '''.format(aGraeSQLTools().getSql('reporte_muestras_general.sql').format(self.combo_campania.currentData()))
+        with open(os.path.join(outputh_path,'REPORTE_GENERAL_{}.csv'.format(self.combo_campania.currentText())),'w') as file:
+            with self.tools.conn.cursor() as cur:
+                cur.copy_expert(output_query,file)
+                self.tools.messages('aGrae Tools','Archivo exportado Correctamente',3)

@@ -23,6 +23,8 @@
         <file>gui\icons\search.svg</file>
         <file>gui\icons\search-lotes.svg</file>
         <file>gui\icons\file-excel-solid.svg</file>
+        <file>gui\icons\file-csv-solid.svg</file>
+        <file>gui\icons\square-poll-horizontal-solid.svg</file>
         <file>gui\icons\file-import-solid.svg</file>
         <file>gui\icons\tools.svg</file>
         <file>gui\icons\upload-db.svg</file>
@@ -47,6 +49,7 @@
         <file>gui\icons\satellite-solid.svg</file>
         <file>gui\icons\tools.svg</file>
         <file>gui\icons\map-regular.svg</file>
+        <file>gui\icons\flask-solid.svg</file>
 
         <!-- PLOT GRAPHS -->
         <file>gui\base\lgnd1.svg</file>

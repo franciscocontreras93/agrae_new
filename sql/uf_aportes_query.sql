@@ -474,7 +474,7 @@ a.fertilizantecob3calculado,
 a.necesidades_finales),
 fert_intraparcelaria as (
 select distinct
-uf.iddata,
+uf.iddata::varchar||uf.uf::varchar as iddata,
 uf.explotacion,
 uf.lote,
 uf.cultivo,
@@ -484,7 +484,7 @@ uf.ambiente,
 uf.ndvimax::numeric,
 uf.segmento,
 uf.ceap,
-uf.uf, 
+uf.uf,
 uf.uf_etiqueta, 
 uf.necesidades_iniciales,
 uf.necesidades_finales,
@@ -590,6 +590,6 @@ sum(area_ha) area_ha,
 st_asText(st_union(geom)) as geom
 from fert_intraparcelaria
 group by iddata,lote,f_fondo,f_cob1,f_cob2,f_cob3),
-mapa_sig as (select distinct row_number() over () as id,fp.*,st_asText(fi.geom) as geom from fert_intraparcelaria  fi join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf)
+mapa_sig as (select distinct row_number() over () as id,fp.*,fi.geom as geom from fert_intraparcelaria  fi join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf)
 --select * from mapa_sig
 {}

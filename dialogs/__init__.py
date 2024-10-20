@@ -1,6 +1,6 @@
 from .datos_base_dialog import CrearLotesDialog
 from .muestreo_dialog import MuestreoDialog
-from .lab_dialog import GestionarMuestrasDialog
+from .lab_dialog import GestionLaboratorioDialog
 
 
 class aGraeDialogs():
@@ -19,5 +19,5 @@ class aGraeDialogs():
         dlg.exec()
 
     def gestionarMuestrasDialog(self):
-        dlg = GestionarMuestrasDialog()
+        dlg = GestionLaboratorioDialog()
         dlg.exec()

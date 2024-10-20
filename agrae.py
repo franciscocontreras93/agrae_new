@@ -9,7 +9,7 @@ from .dialogs.lotes_dialog import LotesMainWindow
 from .dialogs.tools_dockwidget import *
 from .dialogs.config_dialog import agraeConfigDialog
 from .dialogs.gee_dialog import aGraeGEEDialog
-
+from .dialogs.lab_dialog import GestionLaboratorioDialog
 
 
 from .db import agraeDataBaseDriver
@@ -135,6 +135,7 @@ class aGraeToolbox:
 
         self.add_action(agraeGUI().getIcon('lotes'),'Cargar Lotes',self.agraeGestionLotes,add_to_menu=False,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('main'),'aGrae GIS',self.agraeDock,add_to_toolbar=True)
+        self.add_action(agraeGUI().getIcon('laboratorio-icon'),'Gestion Laboratorio',self.GestionarLaboratorio,add_to_toolbar=True)
         # self.add_action(agraeGUI().getIcon('main'),'aGrae GIS',self.testGee,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('settings'),'Ajustes aGrae GIS',self.agraeConfig,add_to_menu=True,add_to_toolbar=False)
 
@@ -192,6 +193,10 @@ class aGraeToolbox:
 
     def testGee(self):
         dialog = aGraeGEEDialog()
+        dialog.exec()
+
+    def GestionarLaboratorio(self):
+        dialog = GestionLaboratorioDialog()
         dialog.exec()
 
     

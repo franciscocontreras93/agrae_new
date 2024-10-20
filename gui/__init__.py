@@ -25,12 +25,14 @@ class agraeGUI():
          'clone' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\clone-solid.svg')),
          'reload' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\reload.svg')),
          'weather' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\weather.svg')),
-         'csv' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\file-excel-solid.svg')),
+         'csv' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\file-csv-solid.svg')),
+         'excel' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\file-excel-solid.svg')),
          'import' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\file-import-solid.svg')),
          'tools' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\tools.svg')),
          'upload' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\upload-db.svg')),
          'add-layer' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\layer-add-o.svg')),
          'chart-bar' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\chart-bar-solid.svg')),
+         'chart-bar-2' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\square-poll-horizontal-solid.svg')),
          'image' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\image-solid.svg')),
          'list-check' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\list-check-solid.svg')),
          'farmer' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\farmer-solid.svg')),
@@ -53,6 +55,7 @@ class agraeGUI():
          'rindes' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\rindes.svg')),
          'satelite' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\satellite-solid.svg')),
          'map-base' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\map-regular.svg')),
+         'laboratorio-icon' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\flask-solid.svg')),
          
 
         }

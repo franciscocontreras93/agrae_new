@@ -581,6 +581,8 @@ class aGraeTools():
                 lyrAmbientes.loadNamedStyle(styleUri)
                 return lyrAmbientes
 
+   
+
     def crearFormatoAnalitica(self,idcampania:int,idexplotacion:int,name:str):
         s = QSettings('agrae','dbConnection')
         path = s.value('analisis_path')
@@ -653,70 +655,11 @@ class aGraeTools():
                 self.conn.rollback()
            
         
-    def crearReporteTest(self):
-        #! CREAR BASE DEL ANALISIS DE LABORATORIO
+    def generarReporteAnalitica(self,idcampania):
         s = QSettings('agrae','dbConnection')
         path = s.value('analisis_path')
-        # print('Crear Reporte')
-        idx = self.tableWidget_2.selectionModel().selectedRows()
-        header = []
-        # print(len(idx))
-        if len(idx) >0: 
-            reporte_path = self.saveFileDialog()
-            if reporte_path != False: 
-                with open(os.path.join(os.path.dirname(__file__), 'extras/reporte.csv'),'r',newline='') as base: 
-                    csv_reader = csv.reader(base,delimiter=';')
-                    header = next(csv_reader)
-                with open(reporte_path,'w',newline='') as file: 
-                    csv_writer = csv.writer(file,delimiter=';')          
-                    csv_writer.writerow(header)
-                    for i in sorted(idx):
-                        idsegmento = self.tableWidget_2.item(i.row(), 0).text()
-                        idlotecampania = self.tableWidget_2.item(i.row(), 1).text()
-                        with self.conn:
-                            query = "select idsegmentoanalisis, cod_muestra , regimen, ceap from segmentos where idsegmento = {} and idlotecampania = {}".format(
-                                idsegmento, idlotecampania)
-                            # cursor = self.conn.cursor(cursor_factory=extras.DictCursor)
-                            cursor = self.conn.cursor() 
-                            cursor.execute(query)
-                            data = cursor.fetchall()
-                            if data[0][3] != None:                            
-                                iter_data = [r for r in list(data)]
-                                csv_writer.writerows(iter_data)
-                            else:
-                                iter_data = []
-                                # print(data['ceap'])
-                                sql = f''' update public.segmento
-                                set ceap = q.ceap
-                                from (select s.idsegmento, percentile_cont(0.5) within group( order by c.ceap) ceap from ceap36 c 
-                                join segmento s on st_intersects(c.geom,s.geometria)
-                                where s.idsegmento in ({idsegmento})
-                                group by s.idsegmento ) as q
-                                where  segmento.idsegmento = q.idsegmento'''
-
-                                try:
-                                    # cursor = self.conn.cursor(cursor_factory=extras.DictCursor)
-                                    cursor.execute(sql)
-                                    self.conn.commit()
-                                    iface.messageBar().pushMessage("aGrae GIS", "Se Calculo el CEAP para el segmento {}".format(idsegmento), level=Qgis.Success)
-
-                                    cursor = self.conn.cursor() 
-                                    cursor.execute("select idsegmentoanalisis, cod_muestra , regimen, ceap from segmentos where idsegmento = {} and idlotecampania = {}".format(
-                                    idsegmento, idlotecampania))
-                                    data = cursor.fetchall()
-                                    csv_writer.writerows([r for r in list(data)])
-
-                                except Exception as ex:
-                                    self.conn.rollback()
-                                    QgsMessageLog.logMessage("{}".format(ex), 'aGrae GIS', level=Qgis.Critical)
-
-                    self.utils.msgBar('Archivo Creado Correctamente <a href="{}">{}</a>'.format(reporte_path,reporte_path),3,10)
-            else:            
-                QMessageBox.about(self, 'aGrae GIS', 'La ruta ingresada no es valida')
-
-        else: 
-            # print('Debe Seleccionar al menos un segmento')
-            pass
+        sql = aGraeSQLTools().getSql('reporte_muestras_general.sql').format(idcampania)
+        print(sql)
 
     def exportarUFS(self,path,iddata:int,nameLote:str):
 
