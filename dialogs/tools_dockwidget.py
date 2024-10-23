@@ -1,9 +1,10 @@
 import os
-
+import processing
 import psycopg2
 
 
 from psycopg2 import extras
+
 
 
 from qgis.PyQt import QtWidgets, uic
@@ -155,6 +156,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.GenerarReporteFertilizacion.triggered.connect(self.generateComposerDialog)
         self.GenerarUnidadesFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('tractor'),'Exportar SHP de Preescripcion',self)
         self.GenerarUnidadesFertilizacion.triggered.connect(self.exportarUFS)
+        # self.GenerarUnidadesFertilizacion.triggered.connect(self.getMapaSig)
         self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Preescripcion',self)
         self.GenerarResumenFertilizacion.triggered.connect(self.exportarResumen)
         self.GenerarAmbientes = QtWidgets.QAction(agraeGUI().getIcon('satelite'),'Generar Mapas de Ambientes',self)
@@ -636,7 +638,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             layer = self.tools.getDataBaseLayer(sql,layername='{}-Lotes'.format(self.combo_campania.currentText()[2:]),styleName='lote',memory=False,idlayer='iddata')
             if layer.id() != self.layer.id():
                 QgsProject.instance().removeMapLayer(self.layer.id())
-
                 self.layer = layer
                 QgsProject.instance().addMapLayer(self.layer)
                 self.identifyTool = selectTool(self.layer)
@@ -1181,11 +1182,11 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         name_camp = self.combo_campania.currentText()[2:]
         name_exp = self.combo_explotacion.currentText()
         name_exp = name_exp.split('-')[1]
-        sql_intra = '''select row_number() over () as id, explotacion,cultivo,lote,uf,uf_etiqueta,f_fondo,d_fondo,f_cob1,d_cob1,f_cob2,d_cob2,f_cob3,d_cob3,area_ha,st_asText(geom) as geom from fert_intraparcelaria'''
-        # sql_intra = '''select * from mapa_sig'''
+        # sql_intra = '''select row_number() over () as id, explotacion,cultivo,lote,uf,uf_etiqueta,f_fondo,d_fondo,f_cob1,d_cob1,f_cob2,d_cob2,f_cob3,d_cob3,area_ha,st_asText(geom) as geom from fert_intraparcelaria'''
+        sql_intra = '''select * from mapa_sig'''
 
         queries = {
-            # 'Ambientes': aGraeSQLTools().getSql('ambientes_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
+            'Ambientes': aGraeSQLTools().getSql('ambientes_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Segmentos': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,segmento,ceap,st_asText(geom) as geom from segm_analitica;'''),
             'Nitrogeno': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,n as valor,lower(n_tipo) as tipo, n_inc as incremento, st_asText(geom) as geom from segm_analitica;'''),
             'Fosforo': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select distinct idlote,nombre as lote,codigo as codigo_muestra,p as valor,lower(p_tipo) as tipo, p_inc as incremento,st_asText(geom) as geom from segm_analitica;'''),
@@ -1222,6 +1223,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             'Ceap90 Textura': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap90 Infiltracion': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             # 'Rendimiento' : aGraeSQLTools().getSql('rindes_layer_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
+            'Mapa_SIG' : aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select * from mapa_sig')
         }
         
 
@@ -1243,11 +1245,15 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 self.atlasLayers[q] = layer
                 QgsProject.instance().addMapLayer(layer)
 
-        ambientes = self.tools.getDataBaseLayerUri(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'{}-{}'.format(name_camp,name_exp))
-        self.atlasLayers['Ambientes'] = ambientes
-        QgsProject.instance().addMapLayer(ambientes)
+        # ambientes = self.tools.getDataBaseLayerUri(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'{}-{}'.format(name_camp,name_exp))
+        # self.atlasLayers['Ambientes'] = ambientes
+        # QgsProject.instance().addMapLayer(ambientes)
 
-        
+    def getMapaSig(self):
+        query =  aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select * from mapa_sig')
+        layer = self.tools.getDataBaseLayer(query,'mapa_sig','Fert Variable Intraparcelaria',debug=True)
+        QgsProject.instance().addMapLayer(layer)
+
     def exportarUFS(self):
         idcampania = self.combo_campania.currentData()
         idexplotacion = self.combo_explotacion.currentData()
@@ -1266,10 +1272,15 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             lotes = [f for f in self.layer.selectedFeatures()]
         else:
             lotes = [f for f in self.layer.getFeatures()]
+        try:
+            for lote in lotes:
+                name = lote['lote']
+                self.tools.exportarUFS(path,lote['iddata'],lote['lote'])
+            self.tools.messages('aGrae GIS','Archivos Generados Correctamente',3,alert=True)
+        except Exception as ex:
+            print(ex)
+            self.tools.messages('aGrae GIS','Ocurrio un Error',1,alert=True)
         
-        for lote in lotes:
-            name = lote['lote']
-            self.tools.exportarUFS(path,lote['iddata'],lote['lote'])
 
 
     def exportarResumen(self):

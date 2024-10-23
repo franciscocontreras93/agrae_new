@@ -506,7 +506,7 @@ fert_report as (select
 	uf.cultivo,
 	uf.codigo,
 	uf.ambiente,
-	uf.ndvimax::numeric,
+	uf.ndvimax::double precision ,
 	uf.segmento,
 	uf.ceap,
 	uf.uf, 
@@ -521,7 +521,7 @@ fert_report as (select
 	uf.d_cob2,
 	uf.f_cob3,
 	uf.d_cob3,
-	round(uf.area_ha::numeric,2)::numeric area_ha,
+	round(uf.area_ha::numeric,2)::double precision area_ha,
 	s.suelo,
 	s.n,
 	s.n_tipo,
@@ -541,7 +541,7 @@ fert_report as (select
 	s.carb_tipo,
 	s.caliza,
 	s.caliza_tipo,
-	s.cic::numeric,
+	s.cic::double precision,
 	s.cic_tipo,
 	s.cic_caso,
 	s.na,
@@ -590,6 +590,6 @@ sum(area_ha) area_ha,
 st_asText(st_union(geom)) as geom
 from fert_intraparcelaria
 group by iddata,lote,f_fondo,f_cob1,f_cob2,f_cob3),
-mapa_sig as (select distinct row_number() over () as id,fp.*,fi.geom as geom from fert_intraparcelaria  fi join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf)
+mapa_sig as (select distinct fp.*,st_asText(fi.geom) as geom from fert_intraparcelaria  fi join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf)
 --select * from mapa_sig
 {}

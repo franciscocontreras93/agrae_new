@@ -13,10 +13,10 @@ class agraeDataBaseDriver():
 
         self.conn = None
         self.s = QSettings('agrae','dbConnection')
-        debug  = True
+        local  = True
         
 
-        if debug and os.environ['COMPUTERNAME'] == 'FJCS-LEGION':
+        if local and os.environ['COMPUTERNAME'] == 'FJCS-LEGION':
             from dotenv import load_dotenv
             load_dotenv(os.path.join(BASEDIR, '.env'))
             self.dsn = {

@@ -23,9 +23,9 @@ with data as (select distinct
                 c.extraccionresiduok, 
                 d.prod_esperada 
                 from campaign.data d 
-                join agrae.cultivo c on c.idcultivo = d.idcultivo
+                left join agrae.cultivo c on c.idcultivo = d.idcultivo
                 where d.idcampania = {} and d.idexplotacion = {} ),
-            lotes as (select l.*, 
+            lotes as (select l.idlote, l.nombre, st_transform(st_buffer(st_transform(l.geom,8857),-0.5),4326) as geom, 
                 d.iddata,
                 d.idcampania,
                 d.idexplotacion,
@@ -41,4 +41,4 @@ with data as (select distinct
                 d.extraccionresiduok, 
                 d.prod_esperada from data d join agrae.lotes l on d.idlote = l.idlote ),
             ambientes as (select distinct l.nombre as lote,a.idambiente,a.ambiente,a.ndvimax,st_asText(st_collectionextract(st_multi(st_intersection(l.geom,a.geometria)),3)) as geom, l.prod_esperada, l.idlote, l.iddata from agrae.ambiente a join lotes l on st_intersects(l.geom,a.geometria))
-            select row_number() over () as id , lote,ambiente,ndvimax::numeric,(geom) as geom from ambientes
+            select row_number() over () as id , lote,ambiente,ndvimax::double precision,st_asText(geom) as geom from ambientes

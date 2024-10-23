@@ -42,7 +42,6 @@ class aGraeTools():
             toolbutton (QToolButton): QToolButton Widget
             actions (QAction, optional): Actions added to toolbutton menu, the default action must be in index 0 of list.
             
-
         """        
         toolbutton.setMenu(QtWidgets.QMenu())
         toolbutton.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
@@ -678,7 +677,7 @@ class aGraeTools():
         layer = self.getDataBaseLayer(query,'UFS_{}'.format(nameLote),styleName='Fert Variable Intraparcelaria',memory=True)
         try:
             self.saveLayer(layer,fn,nameLote)
-            self.messages('aGrae GIS','Se ha generado el archivo UFS correctamente.',3,alert=True)
+            # self.messages('aGrae GIS','Se ha generado el archivo UFS correctamente.',3,alert=True)
         except Exception as ex:
 
             print(ex)
