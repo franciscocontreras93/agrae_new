@@ -499,7 +499,7 @@ uf.fertilizantecob3calculado as d_cob3,
 round((st_area(st_transform(uf.geom,8857)) / 10000)::numeric,2)::double precision area_ha,
 uf.geom
 from uf_final uf),
-fert_report as (select 
+fert_report as (select
 	uf.iddata,
 	uf.explotacion,
 	uf.lote,
@@ -508,7 +508,7 @@ fert_report as (select
 	uf.ambiente,
 	uf.ndvimax::double precision ,
 	uf.segmento,
-	uf.ceap,
+	uf.ceap::double precision,
 	uf.uf, 
 	uf.uf_etiqueta, 
 	uf.necesidades_iniciales,

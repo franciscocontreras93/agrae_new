@@ -11,8 +11,6 @@ from qgis.core import *
 
 from ..tools import aGraeTools
 
-
-
 #from qgis.PyQt.QtCore import QSettings
 
 class aGraeNDVI:

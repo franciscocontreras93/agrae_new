@@ -685,7 +685,7 @@ class aGraeTools():
     def exportarResumenFertilizacion(self,idcampania:int,idexplotacion:int,nameExp:str):
         s = QSettings('agrae','dbConnection')
         path = s.value('reporte_path')
-        q = '''select * from fert_report order by iddata,uf_etiqueta;'''
+        q = '''select distinct 0 as wkt_geom, row_number() over () as fid, row_number() over () as _uid_, fp.* from fert_intraparcelaria  fi join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf order by lote,uf_etiqueta;'''
         query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,q)
         try: 
             with self.conn.cursor() as cursor:  
