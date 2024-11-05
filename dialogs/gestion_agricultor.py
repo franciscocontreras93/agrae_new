@@ -61,7 +61,7 @@ class GestionAgricultorDialog(QDialog,agraeDistribuidorDialog_):
         self.tabWidget.setTabEnabled(2,False)
 
 
-        self.tableWidget.setColumnHidden(0, True)
+        # self.tableWidget.setColumnHidden(0, True)
         self.tableWidget.doubleClicked.connect(self.getAgricultorData)
 
 
@@ -138,7 +138,7 @@ class GestionAgricultorDialog(QDialog,agraeDistribuidorDialog_):
             left join agrae.explotacion e on a.idexplotacion = e.idexplotacion 
             left join agrae.persona p on p.idpersona = a.idpersona
             left join agrae.distribuidor d on d.iddistribuidor = a.iddistribuidor 
-            where a.nombre ilike '%{}%'  or e.nombre ilike '%{}%' or d.nombre ilike '%{}%'
+            where p.nombre ilike '%{}%'  or e.nombre ilike '%{}%' or d.nombre ilike '%{}%'
             order by a.idagricultor desc '''.format(param, param, param,param)
             try:
                 # print(sql)

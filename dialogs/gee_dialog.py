@@ -138,7 +138,7 @@ class aGraeGEEDialog(QDialog):
         self.buffer = QSpinBox()
         self.buffer.setMinimum(0)
         self.buffer.setMaximum(20)
-        self.buffer.setValue(5)
+        self.buffer.setValue(1)
 
         label_radius = QLabel('Radio del Kernel')
         self.kernel_radius = QSpinBox()

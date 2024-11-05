@@ -416,15 +416,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     def actualizarDatosCultivosCSV(self):
         file = self.tools.openFileDialog()
         aGraeCSVTools(file).updateCultivoDataFromCSV()
-        # with self.tools.conn.cursor() as cursor:
-        #     try:    
-        #         cursor.execute(sql)
-        #         self.tools.conn.commit()
-        #         self.tools.messages('aGrae Tools','Datos actualizados correctamente',3)
-        #     except Exception as ex:
-        #         self.tools.messages('aGrae Tools | error: ','Ocurrio un Error revisa el panel para mas informacion',2)
-        #         print(ex)
-        #         self.tools.conn.rollback()
+        
 
         
 

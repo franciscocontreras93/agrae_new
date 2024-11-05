@@ -136,7 +136,6 @@ class aGraeToolbox:
         self.add_action(agraeGUI().getIcon('lotes'),'Cargar Lotes',self.agraeGestionLotes,add_to_menu=False,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('main'),'aGrae GIS',self.agraeDock,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('laboratorio-icon'),'Gestion Laboratorio',self.GestionarLaboratorio,add_to_toolbar=True)
-        # self.add_action(agraeGUI().getIcon('main'),'aGrae GIS',self.testGee,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('settings'),'Ajustes aGrae GIS',self.agraeConfig,add_to_menu=True,add_to_toolbar=False)
 
 
@@ -190,10 +189,6 @@ class aGraeToolbox:
         dialog = agraeConfigDialog()
         dialog.exec()
 
-
-    def testGee(self):
-        dialog = aGraeGEEDialog()
-        dialog.exec()
 
     def GestionarLaboratorio(self):
         dialog = GestionLaboratorioDialog()

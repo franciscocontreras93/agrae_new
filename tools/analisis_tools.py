@@ -9,10 +9,6 @@ class aGraeResamplearMuestras():
        
         self.file_path = file_path
         self.df = self.readFile(self.file_path)
-        # try:
-        #     df = pd.read_csv(r'{}'.format(file_path),delimiter=';',encoding='utf-8')
-        # except UnicodeEncodeError:
-        #     df = pd.read_csv(r'{}'.format(file_path),delimiter=';',encoding='utf-8')
         self.df = self.df.replace(np.nan,0).replace('#¡VALOR!',0).replace('#N/D',0)
         
         pass
@@ -56,10 +52,9 @@ class aGraeResamplearMuestras():
             new_df = df[df['idlote'] == id]
             
             scope = list(new_df[new_df['COD'].str.contains(r'_D\d{1}',regex=True) == False]['ceap'])
-            scope = scope[-1]
+            scope = min(scope)
             derivates = list(new_df[new_df['COD'].str.contains(r'_D\d{1}',regex=True) == True]['ceap'])
-            # # new_df['COD'].str.contains(r'_D\d{1}',regex=True)
-            # print(scope[-1],derivates)
+
 
             if len(derivates) > 0:
                 adjust_coefficient = {row['COD'] : 
@@ -67,19 +62,20 @@ class aGraeResamplearMuestras():
                                      'min':  (((row['ceap']-scope) / scope + 1) * 100) * 0.75 if (((row['ceap']-scope) / scope + 1) * 100) != 100  else 100,
                                      'max': ((((row['ceap']-scope) / scope + 1) * 100) * 0.75) * 1.25 if (((row['ceap']-scope) / scope + 1) * 100) != 100  else 100 } 
                             for index,row in new_df.iterrows() }
-                # print(adjust_coefficient)
+
                 scope_row = None
                 for index,row in new_df.iterrows():
 
-                    min = adjust_coefficient[row['COD']]['min']
-                    max = adjust_coefficient[row['COD']]['max']
+                    min_v = adjust_coefficient[row['COD']]['min']
+                    max_v = adjust_coefficient[row['COD']]['max']
                     
-                    rand = random.uniform(min,max)
-
+                    rand = random.uniform(min_v,max_v)
                     
                     if rand == 100:
                         scope_row = row
-                    
+                        # END LOPP
+                
+                for index,row in new_df.iterrows():   
                     if '_D' in row['COD']:
                         try:
                             row['PH'] = rand / adjust_index['PH'] + scope_row['PH']
@@ -114,18 +110,14 @@ class aGraeResamplearMuestras():
                     
                     df_procesado.loc[index] = row
             
-
-        # df_procesado = df_procesado.drop(columns=['idlote'])
-        # print(df_procesado)
         file_name = '{}_procesado.csv'.format(os.path.splitext(os.path.basename(self.file_path))[0])
         out = os.path.join(os.path.dirname(self.file_path),file_name)
-        # print(out)
         df_procesado.to_csv(out,sep=';',index=False)
 
 
 #* REEPLAZAR EL PATH POR LA RUTA DND ESTA EL ARCHIVO
 
-# file_path = r"C:\Users\Francisco\Downloads\Telegram Desktop\CAMPAÑA_25_JONATHAN_GARCIA.csv" 
+# file_path = r"C:\Users\Francisco\OneDrive - AGRAE SOLUTIONS\General - AGRAE SOLUTIONS\10002_ARCHIVOS_DESARROLLO\1042_CAMPANIA_25\02_ANALITICA\CAMPAÑA_25_VICTOR_ADOBERAS.csv"
 
 # modulo = aGraeResamplearMuestras(file_path)
 # modulo.processing()

@@ -26,12 +26,11 @@ class aGraeCSVTools():
             idcultivo = self.replace_none_data(row['idcultivo'])
             idregimen = self.replace_none_data(row['idregimen'])
             prod_esperada = self.replace_none_data(row['prod_esperada'])
-
-            values = values + ''' select {},nullif({},0),nullif({},0),nullif({},0) \nunion'''.format(row['iddata'],idcultivo,idregimen,prod_esperada)
+            if row['iddata'] != None:
+                values = values + ''' select {},nullif({},0),nullif({},0),nullif({},0) \nunion'''.format(row['iddata'],idcultivo,idregimen,prod_esperada)
         
         values = self.remove_last_line_from_string(values)
         sql = aGraeSQLTools().getSql('update_data_from_csv_query.sql').format(values)
-        # print(sql)
         
         with self.tools.conn.cursor() as cursor:
             try:    
