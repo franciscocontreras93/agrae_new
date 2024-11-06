@@ -53,18 +53,18 @@ import threading
 
 class aGraeGEEDialog(QDialog):
     
-    def __init__(self,layer,idexplotacion):
+    def __init__(self):
         super().__init__()
         # self.core = aGraeGEE()
         # self.core.test()
         self.UIComponents()
-        self.idexplotacion = idexplotacion
+        # self.idexplotacion = idexplotacion
         self.resize(400,200)
 
         self.setWindowTitle('aGrae Google-Earth-Engine')
         # ee.Authenticate(auth_mode='localhost')
 
-        self.idexplotacion = idexplotacion
+        # self.idexplotacion = idexplotacion
         # self.layer = self.getLayer(layer)
 
         self.tools = aGraeTools()

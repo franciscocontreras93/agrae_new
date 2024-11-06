@@ -504,7 +504,7 @@ class aGraeTools():
         else: estilo = styleName
        
         styleUri = os.path.join(os.path.dirname(__file__), 'styles/{}.qml'.format(estilo))
-        cursor = agraeDataBaseDriver().cursor(self.conn,extras.RealDictCursor)
+        cursor = agraeDataBaseDriver().cursor(agraeDataBaseDriver().connection(),extras.RealDictCursor)
 
         # with self.conn.cursor(cursor_factory=extras.RealDictCursor) as cursor:
         with cursor:

@@ -13,7 +13,7 @@ class agraeDataBaseDriver():
 
         self.conn = None
         self.s = QSettings('agrae','dbConnection')
-        local  = False
+        local  = True
         
 
         if local and os.environ['COMPUTERNAME'] == 'FJCS-LEGION':
@@ -74,6 +74,7 @@ class agraeDataBaseDriver():
 
         
     def cursor(self,connection,factory=None):
+        print(connection.close)
        
         try:
             conn = connection

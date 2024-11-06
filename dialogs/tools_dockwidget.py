@@ -154,9 +154,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.CargarCapasExplotacion.triggered.connect(self.generarCapasExplotacion)
         self.GenerarReporteFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('printer'),'Generar Reporte de Preescripcion',self)
         self.GenerarReporteFertilizacion.triggered.connect(self.generateComposerDialog)
+        self.GenerarMapaSig = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar Mapa SIG',self)
+        self.GenerarMapaSig.triggered.connect(self.getMapaSig)
         self.GenerarUnidadesFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('tractor'),'Exportar SHP de Preescripcion',self)
         self.GenerarUnidadesFertilizacion.triggered.connect(self.exportarUFS)
-        # self.GenerarUnidadesFertilizacion.triggered.connect(self.getMapaSig)
         self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Preescripcion',self)
         self.GenerarResumenFertilizacion.triggered.connect(self.exportarResumen)
         self.GenerarAmbientes = QtWidgets.QAction(agraeGUI().getIcon('satelite'),'Generar Mapas de Ambientes',self)
@@ -168,6 +169,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             self.AsignarCultivosLotes,
             self.CargarCapasExplotacion,
             self.GenerarReporteFertilizacion,
+            self.GenerarMapaSig,
             self.GenerarUnidadesFertilizacion,
             self.GenerarResumenFertilizacion,
             self.GenerarAmbientes,
@@ -403,7 +405,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         dlg.exec()
 
     def geeDialog(self):
-        dlg = aGraeGEEDialog(self.layer,self.combo_explotacion.currentData())
+        dlg = aGraeGEEDialog()
         dlg.exec()
 
     def asignarCultivosLotes(self):
@@ -1243,7 +1245,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
     def getMapaSig(self):
         query =  aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select * from mapa_sig')
-        layer = self.tools.getDataBaseLayer(query,'mapa_sig','Fert Variable Intraparcelaria',debug=True)
+        name = '{}_{}_MAPA_SIG'.format(self.combo_campania.currentText(),self.combo_explotacion.currentText().split('-')[1])
+        layer = self.tools.getDataBaseLayer(query,name,styleName='Fert Variable Intraparcelaria',debug=True)
         QgsProject.instance().addMapLayer(layer)
 
     def exportarUFS(self):
