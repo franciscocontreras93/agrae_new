@@ -281,7 +281,8 @@ class aGraeNDVIMulti:
         
     def getSceneNDVI (self):
         
-        imageCollection = ee.ImageCollection('COPERNICUS/S2_SR').filterBounds(self.geometry).filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', self._max_clouds).filter(ee.Filter.calendarRange(self._years.get(0),self._years.get(-1),'year'))
+        imageCollection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(self.geometry).filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', self._max_clouds).filter(ee.Filter.calendarRange(self._years.get(0),self._years.get(-1),'year'))
+        # imageCollection = ee.ImageCollection('COPERNICUS/S2_SR').filterBounds(self.geometry).filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', self._max_clouds).filter(ee.Filter.calendarRange(self._years.get(0),self._years.get(-1),'year'))
         scene = imageCollection.map(self.addNDVI)
         scene = scene.select(['nd'])
         scene = scene.map(self.clipScene)
