@@ -59,10 +59,18 @@ class aGraeResamplearMuestras():
             if len(derivates) > 0:
                 adjust_coefficient = {row['COD'] : 
                                     {'ceap' : (((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200, 
-                                     'min':  (((row['ceap']-scope) / scope + 1) * 100) * 0.75 if (((row['ceap']-scope) / scope + 1) * 100) != 100  else 100,
-                                     'max': ((((row['ceap']-scope) / scope + 1) * 100) * 0.75) * 1.25 if (((row['ceap']-scope) / scope + 1) * 100) != 100  else 100 } 
-                            for index,row in new_df.iterrows() }
 
+                                     'min':  ((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) * 0.75 if ((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) != 100  else 100,
+                                     'max': (((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) * 0.75) * 1.25 if ((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) != 100  else 100 
+                                     } 
+                            for index,row in new_df.iterrows() }
+                
+                # for k in adjust_coefficient:
+                #     # print(k)
+                #     adjust_coefficient[k]['min'] = adjust_coefficient[k]['ceap'] * 0.75
+                #     adjust_coefficient[k]['max'] = adjust_coefficient[k]['min'] * 1.25
+                
+                print(adjust_coefficient)
                 scope_row = None
                 for index,row in new_df.iterrows():
 
@@ -110,14 +118,14 @@ class aGraeResamplearMuestras():
                     
                     df_procesado.loc[index] = row
             
-        file_name = '{}_procesado.csv'.format(os.path.splitext(os.path.basename(self.file_path))[0])
+        file_name = '{}_procesado_test.csv'.format(os.path.splitext(os.path.basename(self.file_path))[0])
         out = os.path.join(os.path.dirname(self.file_path),file_name)
         df_procesado.to_csv(out,sep=';',index=False)
 
 
 #* REEPLAZAR EL PATH POR LA RUTA DND ESTA EL ARCHIVO
 
-# file_path = r"C:\Users\Francisco\OneDrive - AGRAE SOLUTIONS\General - AGRAE SOLUTIONS\10002_ARCHIVOS_DESARROLLO\1042_CAMPANIA_25\02_ANALITICA\CAMPAÑA_25_VICTOR_ADOBERAS.csv"
+# file_path = r"C:\Users\Francisco\OneDrive - AGRAE SOLUTIONS\General - AGRAE SOLUTIONS\10002_ARCHIVOS_DESARROLLO\1042_CAMPANIA_25\02_ANALITICA\CAMPAÑA_25_JESUS_GARCIA_MARTIN.csv"
 
 # modulo = aGraeResamplearMuestras(file_path)
 # modulo.processing()
