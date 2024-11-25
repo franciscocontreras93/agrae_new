@@ -64,13 +64,6 @@ class aGraeResamplearMuestras():
                                      'max': (((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) * 0.75) * 1.25 if ((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) != 100  else 100 
                                      } 
                             for index,row in new_df.iterrows() }
-                
-                # for k in adjust_coefficient:
-                #     # print(k)
-                #     adjust_coefficient[k]['min'] = adjust_coefficient[k]['ceap'] * 0.75
-                #     adjust_coefficient[k]['max'] = adjust_coefficient[k]['min'] * 1.25
-                
-                print(adjust_coefficient)
                 scope_row = None
                 for index,row in new_df.iterrows():
 
@@ -84,7 +77,8 @@ class aGraeResamplearMuestras():
                         # END LOPP
                 
                 for index,row in new_df.iterrows():   
-                    if '_D' in row['COD']:
+                    if '_D' in row['COD'] and row['N'] == float(0):
+                        
                         try:
                             row['PH'] = rand / adjust_index['PH'] + scope_row['PH']
                             row['CE'] = rand / adjust_index['CE'] + scope_row['CE']
@@ -115,20 +109,20 @@ class aGraeResamplearMuestras():
                             row['METODO_P'] = scope_row['METODO_P']
                         except Exception as ex:
                             print(ex)
-                    
+                    rand = random.uniform(min_v,max_v)
                     df_procesado.loc[index] = row
             
-        file_name = '{}_procesado_test.csv'.format(os.path.splitext(os.path.basename(self.file_path))[0])
+        file_name = '{}_procesado.csv'.format(os.path.splitext(os.path.basename(self.file_path))[0])
         out = os.path.join(os.path.dirname(self.file_path),file_name)
         df_procesado.to_csv(out,sep=';',index=False)
 
 
 #* REEPLAZAR EL PATH POR LA RUTA DND ESTA EL ARCHIVO
 
-# file_path = r"C:\Users\Francisco\OneDrive - AGRAE SOLUTIONS\General - AGRAE SOLUTIONS\10002_ARCHIVOS_DESARROLLO\1042_CAMPANIA_25\02_ANALITICA\CAMPAÑA_25_JESUS_GARCIA_MARTIN.csv"
+file_path = r"C:\Users\Francisco\Downloads\Telegram Desktop\PRUEBA_2_procesado.csv"
 
-# modulo = aGraeResamplearMuestras(file_path)
-# modulo.processing()
+modulo = aGraeResamplearMuestras(file_path)
+modulo.processing()
 
         
 
