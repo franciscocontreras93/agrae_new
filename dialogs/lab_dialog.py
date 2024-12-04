@@ -29,6 +29,8 @@ from qgis.utils import iface
 from qgis.PyQt.QtXml import QDomDocument
 from qgis.PyQt import uic
 
+import psycopg2
+
 from ..gui import agraeGUI
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
@@ -95,6 +97,8 @@ class GestionLaboratorioDialog(QDialog):
         self.DerivarDatosAnalisis.triggered.connect(self.DerivarAnalitica)
         self.GenerarReporteAnalitica = QAction(agraeGUI().getIcon('chart-bar-2'),'Generar reporte de Laboratorio (Campaña)',self)
         self.GenerarReporteAnalitica.triggered.connect(self.generarReporteAnalitica)
+        self.DerivarMuestrasPendientes = QAction(agraeGUI().getIcon('pois'),'Derivar Parcelas cercanas',self)
+        self.DerivarMuestrasPendientes.triggered.connect(self.test)
 
         # self.tools.settingsToolsButtons(self.toolButton,[self.ExportarDataCSV,self.CargarCapaMuestras,self.GenerarArchivoLaboratorio,self.ImportarArchivoAnalisis,self.DerivarDatosAnalisis,self.GenerarReporteAnalitica],agraeGUI().getIcon('tools'),setMainIcon=True)
         # self.toolButton.menu().addAction(actions[i])
@@ -102,6 +106,7 @@ class GestionLaboratorioDialog(QDialog):
         self.toolMenu.addAction(self.GenerarArchivoLaboratorio)
         self.toolMenu.addAction(self.ImportarArchivoAnalisis)
         self.toolMenu.addAction(self.DerivarDatosAnalisis)
+        self.toolMenu.addAction(self.DerivarMuestrasPendientes)
 
         self.toolMenu.addSeparator().setText('Gestion de Laboratorio')
 
@@ -205,7 +210,7 @@ class GestionLaboratorioDialog(QDialog):
         file = self.tools.cargarReporteAnalitica(dataframe=False)
         if file:
             try:
-                print(file)
+                # print(file)
                 modulo = aGraeResamplearMuestras(file)
                 modulo.processing()
                 self.tools.messages('aGrae GIS','Archivo procesado Correctamente',3,True)
@@ -219,3 +224,31 @@ class GestionLaboratorioDialog(QDialog):
             with self.tools.conn.cursor() as cur:
                 cur.copy_expert(output_query,file)
                 self.tools.messages('aGrae Tools','Archivo exportado Correctamente',3)
+
+    def test(self):
+        numero_de_muestras = 2
+        query = '''with muestras as (select * from field.muestras where idcampania = {} and idexplotacion = {}),
+        muestreadas as (select * from muestras where status = 2),
+        derivadas as (select * from muestras where status = 3),
+        procesadas as (select a.*,m.geom from muestras m join analytic.analitica a on a.cod = m.codigo ),
+        pendientes as (select * from derivadas d  where d.codigo not in (select cod from procesadas)  and codigo ilike '%_D1%'),
+        segmentos as (select p.codigo,s.ceap from agrae.segmentos s join pendientes p on st_intersects(s.geometria, p.geom)),
+        cercanas as (select p.codigo ,c.cod,s.ceap, st_makeLine(st_centroid(p.geom),st_centroid(c.geom)) matriz_distancia, c.dist,p.geom from pendientes p
+        cross join lateral (select pr.codigo as cod,round(st_transform(pr.geom,3857) <-> st_transform(p.geom,3857)) as dist, pr.geom  from muestreadas pr order by dist limit {}) as c
+        join segmentos  s using(codigo)),
+        data_unida as (select c.codigo,c.ceap,avg(ph) ph,avg(ce) ce,avg(carbon) carbon,avg(caliza) caliza,avg(ca) ca,avg(mg) mg,avg(k) k,avg(na) na,avg(n) n,avg(p) p,avg(organi) organi,
+        avg(cox) cox,avg(al) al,avg(b) b,avg(fe) fe,avg(mn) mn,avg(cu) cu,avg(zn) zn,avg(s) s,avg(mo) mo,avg(ni) ni,avg(co) co,avg(ti) ti,avg("as") "as",avg(pb) pb,avg(cr) cr,avg(metodo) metodo
+        from cercanas c 
+        join analytic.analitica a on c.cod = a.cod
+        group by c.codigo,c.ceap)
+        insert into analytic.analitica (cod,ceap,ph,ce,carbon,caliza,ca,mg,k,na,n,p,organi,cox,al,b,fe,mn,cu,zn,s,mo,ni,co,ti,"as",pb,cr,metodo)
+        select * from cercanas '''.format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),numero_de_muestras)
+
+        with self.tools.conn.cursor(cursor_factory= psycopg2.extras.RealDictCursor) as cursor:
+            try:
+                cursor.execute(query)
+                self.tools.conn.commit()
+                print('Se actulizo')
+            except Exception as ex:
+                self.tools.conn.rollback()
+                print(ex)

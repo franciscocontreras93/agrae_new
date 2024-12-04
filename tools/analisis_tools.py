@@ -82,7 +82,11 @@ class aGraeResamplearMuestras():
                         try:
                             row['PH'] = rand / adjust_index['PH'] + scope_row['PH']
                             row['CE'] = rand / adjust_index['CE'] + scope_row['CE']
-                            row['N'] = rand / adjust_index['N'] + scope_row['N']
+                            nit = rand / adjust_index['N'] + scope_row['N']
+                            if nit > 2 * scope_row['N']:
+                                nit = rand / 100 * scope_row['N']
+                            row['N'] = nit
+                            
                             p = rand / adjust_index['P'] + scope_row['P']
                             if p < 0 :
                                 p = p * -1

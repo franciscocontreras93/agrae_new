@@ -28,8 +28,8 @@ class aGraeComposerTools():
 
         self.tools = aGraeTools()
         self.conn = agraeDataBaseDriver().connection()
-        self.nombre_explotacion = str
-        self.direccion_explotacion = str
+        self.nombre_explotacion = ''
+        self.direccion_explotacion = ''
         self.basemaps = {
           
             'Esri Satelite' : {
@@ -226,15 +226,17 @@ class aGraeComposerTools():
         doc.setContent(template_content)
         items, _ = layout.loadFromTemplate(doc, QgsReadWriteContext(), False)
 
-
-        logos = [i for i in items if isinstance(i,QgsLayoutItemPicture) and i.id() == 'exp_logo']
+        logos_agrae = [i for i in items if isinstance(i,QgsLayoutItemPicture) and i.id() == 'Logo Agrae']
+        logos_exp = [i for i in items if isinstance(i,QgsLayoutItemPicture) and i.id() == 'exp_logo']
         direcciones = [i for i in items if isinstance(i,QgsLayoutItemLabel) and i.id() == 'exp_dir']
         nombres_exp = [i for i in items if isinstance(i,QgsLayoutItemLabel) and i.id() == 'exp_name']
         nombres_lotes = [i for i in items if isinstance(i,QgsLayoutItemLabel) and i.id() == 'lote_nom']
         
         
-        for l in logos:
+        for l in logos_exp:
             l.setPicturePath(os.path.join(os.path.dirname(__file__),'img/dist_logo.png'))
+        for l in logos_agrae:
+            l.setPicturePath(os.path.join(os.path.dirname(__file__),'img/agrae_logo.png'))
 
 
         self.setTextOverElements(nombres_exp,self.nombre_explotacion.upper())

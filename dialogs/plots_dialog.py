@@ -611,10 +611,18 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         # self.label_16.setText(txt)
         self.btn_save_data.setEnabled(True)
         self.huellaCarbono()
+        # try:
+        #     self.huellaCarbono()
+        #     time.sleep(0.5)
+        # except: pass
+        # try:
+        #     self.panel()
+        # except: pass
     def execAutoFert(self):
         x = threading.Thread(target=self.autoFert)
         try: 
             x.start()
+            # x.join(0.5)
         except: 
             pass
         

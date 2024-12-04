@@ -35,7 +35,7 @@ class CustomTable(QTableWidget):
     def populate(self,data):
         
         try:
-            print(data)
+            # print(data)
             self.setRowCount(0)
             if len(data) > 0:
                 # print(data)
