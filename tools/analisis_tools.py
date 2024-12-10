@@ -48,73 +48,77 @@ class aGraeResamplearMuestras():
         }
 
 
-        for id in df['idlote'].unique(): 
-            new_df = df[df['idlote'] == id]
-            
-            scope = list(new_df[new_df['COD'].str.contains(r'_D\d{1}',regex=True) == False]['ceap'])
-            scope = min(scope)
-            derivates = list(new_df[new_df['COD'].str.contains(r'_D\d{1}',regex=True) == True]['ceap'])
-
-
-            if len(derivates) > 0:
-                adjust_coefficient = {row['COD'] : 
-                                    {'ceap' : (((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200, 
-
-                                     'min':  ((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) * 0.75 if ((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) != 100  else 100,
-                                     'max': (((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) * 0.75) * 1.25 if ((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) != 100  else 100 
-                                     } 
-                            for index,row in new_df.iterrows() }
-                scope_row = None
-                for index,row in new_df.iterrows():
-
-                    min_v = adjust_coefficient[row['COD']]['min']
-                    max_v = adjust_coefficient[row['COD']]['max']
-                    
-                    rand = random.uniform(min_v,max_v)
-                    
-                    if rand == 100:
-                        scope_row = row
-                        # END LOPP
+        for id in df['idlote'].unique():
+            try:
+                new_df = df[df['idlote'] == id]
                 
-                for index,row in new_df.iterrows():   
-                    if '_D' in row['COD'] and row['N'] == float(0):
-                        
-                        try:
-                            row['PH'] = rand / adjust_index['PH'] + scope_row['PH']
-                            row['CE'] = rand / adjust_index['CE'] + scope_row['CE']
-                            nit = rand / adjust_index['N'] + scope_row['N']
-                            if nit > 2 * scope_row['N']:
-                                nit = rand / 100 * scope_row['N']
-                            row['N'] = nit
-                            
-                            p = rand / adjust_index['P'] + scope_row['P']
-                            if p < 0 :
-                                p = p * -1
+                scope = list(new_df[new_df['COD'].str.contains(r'_D\d{1}',regex=True) == False]['ceap'])
+                scope = min(scope)
+                derivates = list(new_df[new_df['COD'].str.contains(r'_D\d{1}',regex=True) == True]['ceap'])
 
-                            row['P'] = p
-                            row['K'] = rand / adjust_index['K'] + scope_row['K']
-                            row['CARBON'] = scope_row['CARBON']
-                            row['CA'] = rand / adjust_index['CA'] + scope_row['CA']
-                            row['MG'] = rand / adjust_index['MG'] + scope_row['MG']
-                            row['NA'] = rand / adjust_index['NA'] + scope_row['NA']
-                            if row['S'] != 0 : 
-                                row['S'] = rand / adjust_index['S'] + scope_row['S'] 
-                            else: 
-                                row['S'] = 0 
-                            row['ZN'] = rand / adjust_index['ZN'] + scope_row['ZN']
-                            if row['B'] != 0 : 
-                                row['B'] = rand / adjust_index['B'] + scope_row['B']
-                            else:
-                                row['B'] = 0
-                            row['FE'] = rand / adjust_index['FE'] + scope_row['FE']
-                            row['MN'] = rand / adjust_index['MN'] + scope_row['MN']
-                            row['CU'] = rand / adjust_index['CU'] + scope_row['CU']
-                            row['AL'] = rand / adjust_index['AL'] + scope_row['AL']
-                            row['METODO_P'] = scope_row['METODO_P']
-                        except Exception as ex:
-                            print(ex)
-                    rand = random.uniform(min_v,max_v)
-                    df_procesado.loc[index] = row
+
+                if len(derivates) > 0:
+                    adjust_coefficient = {row['COD'] : 
+                                        {'ceap' : (((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200, 
+
+                                        'min':  ((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) * 0.75 if ((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) != 100  else 100,
+                                        'max': (((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) * 0.75) * 1.25 if ((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) != 100  else 100 
+                                        } 
+                                for index,row in new_df.iterrows() }
+                    scope_row = None
+                    for index,row in new_df.iterrows():
+
+                        min_v = adjust_coefficient[row['COD']]['min']
+                        max_v = adjust_coefficient[row['COD']]['max']
+                        
+                        rand = random.uniform(min_v,max_v)
+                        
+                        if rand == 100:
+                            scope_row = row
+                            # END LOPP
+                    
+                    for index,row in new_df.iterrows():   
+                        if '_D' in row['COD'] and row['N'] == float(0):
+                            
+                            try:
+                                row['PH'] = rand / adjust_index['PH'] + scope_row['PH']
+                                row['CE'] = rand / adjust_index['CE'] + scope_row['CE']
+                                nit = rand / adjust_index['N'] + scope_row['N']
+                                if nit > 2 * scope_row['N']:
+                                    nit = rand / 100 * scope_row['N']
+                                row['N'] = nit
+                                
+                                p = rand / adjust_index['P'] + scope_row['P']
+                                if p < 0 :
+                                    p = p * -1
+
+                                row['P'] = p
+                                row['K'] = rand / adjust_index['K'] + scope_row['K']
+                                row['CARBON'] = scope_row['CARBON']
+                                row['CA'] = rand / adjust_index['CA'] + scope_row['CA']
+                                row['MG'] = rand / adjust_index['MG'] + scope_row['MG']
+                                row['NA'] = rand / adjust_index['NA'] + scope_row['NA']
+                                if row['S'] != 0 : 
+                                    row['S'] = rand / adjust_index['S'] + scope_row['S'] 
+                                else: 
+                                    row['S'] = 0 
+                                row['ZN'] = rand / adjust_index['ZN'] + scope_row['ZN']
+                                if row['B'] != 0 : 
+                                    row['B'] = rand / adjust_index['B'] + scope_row['B']
+                                else:
+                                    row['B'] = 0
+                                row['FE'] = rand / adjust_index['FE'] + scope_row['FE']
+                                row['MN'] = rand / adjust_index['MN'] + scope_row['MN']
+                                row['CU'] = rand / adjust_index['CU'] + scope_row['CU']
+                                row['AL'] = rand / adjust_index['AL'] + scope_row['AL']
+                                row['METODO_P'] = scope_row['METODO_P']
+                            except Exception as ex:
+                                print(ex)
+                        rand = random.uniform(min_v,max_v)
+                        df_procesado.loc[index] = row
+            except Exception as ex:
+                print(id,ex)
+                pass 
             
         file_name = '{}_procesado.csv'.format(os.path.splitext(os.path.basename(self.file_path))[0])
         out = os.path.join(os.path.dirname(self.file_path),file_name)
@@ -123,10 +127,10 @@ class aGraeResamplearMuestras():
 
 #* REEPLAZAR EL PATH POR LA RUTA DND ESTA EL ARCHIVO
 
-file_path = r"C:\Users\Francisco\Downloads\Telegram Desktop\PRUEBA_2_procesado.csv"
+# file_path = r"C:\Users\Francisco\Downloads\Telegram Desktop\PRUEBA_2_procesado.csv"
 
-modulo = aGraeResamplearMuestras(file_path)
-modulo.processing()
+# modulo = aGraeResamplearMuestras(file_path)
+# modulo.processing()
 
         
 

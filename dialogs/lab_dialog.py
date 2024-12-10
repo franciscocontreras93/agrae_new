@@ -242,7 +242,7 @@ class GestionLaboratorioDialog(QDialog):
         join analytic.analitica a on c.cod = a.cod
         group by c.codigo,c.ceap)
         insert into analytic.analitica (cod,ceap,ph,ce,carbon,caliza,ca,mg,k,na,n,p,organi,cox,al,b,fe,mn,cu,zn,s,mo,ni,co,ti,"as",pb,cr,metodo)
-        select * from cercanas '''.format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),numero_de_muestras)
+        select * from data_unida '''.format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),numero_de_muestras)
 
         with self.tools.conn.cursor(cursor_factory= psycopg2.extras.RealDictCursor) as cursor:
             try:
