@@ -352,7 +352,7 @@ class aGraeNDVIMulti:
         request.urlretrieve(url,downloadPath)
         fileName = os.path.basename(downloadPath)
         r = QgsRasterLayer(downloadPath,'NDVI_GEE_Layer')
-#        QgsProject.instance().addMapLayer(r)
+        QgsProject.instance().addMapLayer(r)
         return r
         
     def downloadVector(self,vector,name='vector_temp'):
