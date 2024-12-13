@@ -688,7 +688,7 @@ class aGraeTools():
         q = '''select distinct 0 as wkt_geom, row_number() over () as fid, row_number() over () as _uid_, fp.* from fert_intraparcelaria  fi join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf order by lote,uf_etiqueta;'''
         query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,q)
         try: 
-            with self.conn.cursor() as cursor:  
+            with agraeDataBaseDriver().connection().cursor() as cursor:  
                 cursor.execute(query) 
                 data = [r for r in list(cursor.fetchall())]
                 # print(data)
@@ -698,7 +698,7 @@ class aGraeTools():
                     with open(os.path.join(os.path.dirname(__file__), 'extras/resumen.csv'),'r',newline='') as base:
                         csv_reader = csv.reader(base,delimiter=';')
                         header = next(csv_reader)
-                    with open(os.path.join(path, 'resumen_{}_{}.csv'.format(nameExp,QDateTime.currentDateTime().toString('yyyyMMddHH'))),'w',newline='') as file:
+                    with open(os.path.join(path, 'resumen_{}_{}.csv'.format(nameExp,QDateTime.currentDateTime().toString('yyyyMMdd'))),'w',newline='') as file:
                             csv_writer = csv.writer(file,delimiter=';')          
                             csv_writer.writerow(header)
                             csv_writer.writerows(data)
