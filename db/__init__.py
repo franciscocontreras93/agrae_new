@@ -13,10 +13,10 @@ class agraeDataBaseDriver():
 
         self.conn = None
         self.s = QSettings('agrae','dbConnection')
-        local  = False
+        local  = True
         
 
-        if local and os.environ['COMPUTERNAME'] == 'FJCS-LEGION':
+        if local and os.environ['COMPUTERNAME'] == 'FRANCISCO':
             from dotenv import load_dotenv
             load_dotenv(os.path.join(BASEDIR, '.env'))
             self.dsn = {
@@ -74,7 +74,7 @@ class agraeDataBaseDriver():
 
         
     def cursor(self,connection,factory=None):
-        print(connection.close)
+        # print(connection.close)
        
         try:
             conn = connection

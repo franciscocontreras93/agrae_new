@@ -323,7 +323,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         produccion = str(self.line_produccion.value())
 
         
-        with self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+        with agraeDataBaseDriver().connection().cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
             try:
                 sql_data_base = aGraeSQLTools().getSql('data_suelo_base.sql')
                 sql_data_base = sql_data_base.format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),self.idLote)
@@ -441,7 +441,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         iface.mapCanvas().setMapTool(self.identifyTool)
 
     def getData(self,query_name:str,check:bool=False) -> list:
-        with self.conn.cursor() as cursor:
+        with agraeDataBaseDriver().connection().cursor() as cursor:
             sql = aGraeSQLTools().getSql(query_name)
             sql = sql.format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),self.idLote)
             try:
@@ -872,7 +872,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     def fillDataLote(self,feat):
         self.combo_cultivo.setCurrentIndex(0)
         iface.addDockWidget(Qt.RightDockWidgetArea,self)
-
+        # print(feat)
+        # self.layer.select(feat.id)
         self.featureLote = feat
 
         self.date_siembra.setDate(self.FechaDesde)
@@ -1014,7 +1015,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         if querys[i]:
             sql = querys[i].format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),self.combo_cultivo_2.currentData())
 
-            with self.conn.cursor() as cursor: 
+            with agraeDataBaseDriver().connection().cursor() as cursor: 
                 try:
                     cursor.execute(sql)
                     data = cursor.fetchall()
@@ -1083,7 +1084,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 sql = q.format(fecha,formula,precio,ajuste,self.combo_campania.currentData(),self.combo_explotacion.currentData(),self.combo_cultivo_2.currentData())
                 
                 try:
-                  with self.conn.cursor() as cursor:
+                  with agraeDataBaseDriver().connection().cursor() as cursor:
                         cursor.execute(sql)
                         self.conn.commit()
                         self.tools.messages('aGrae Tools','Datos de fertilizacion guardados correctamente',3,alert=True)
@@ -1345,6 +1346,7 @@ class selectTool(QgsMapToolIdentify):
             # print(feature)
             self.featureSelected.emit(feature)
             # print(results[i].mFeature)
+            self.layer.select(feature.id())
         
         
     def deactivate(self):

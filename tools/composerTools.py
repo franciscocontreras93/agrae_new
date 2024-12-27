@@ -206,6 +206,7 @@ class aGraeComposerTools():
         self.atlas.updateFeatures()
         self.atlas.setEnabled(True)
         self.atlas.seekTo(0)
+        self.atlas.renderEnded.connect(self.clearFilter)
 
 
 
@@ -312,8 +313,8 @@ class aGraeComposerTools():
         # if preview:
         iface.openLayoutDesigner(layout)
         
-        # if printer:
-        #     self.exportAtlasReport()
+        if printer:
+            self.exportAtlasReport()
 
         
 
@@ -405,3 +406,10 @@ class aGraeComposerTools():
 
     def generateComposer(self,basemap):
         self.layoutGenerator(basemap=basemap)
+
+    def clearFilter(self):
+        for x in self.layers:
+            layer = self.layers[x]
+            print(layer)
+            layer.setSubsetString('')
+            

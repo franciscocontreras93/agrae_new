@@ -701,21 +701,25 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
 
         # print('huella de carbono')
         data = self.dataExtraccion
-        cursor = agraeDataBaseDriver().cursor(self.conn)
+        cursor = agraeDataBaseDriver().connection().cursor()
         with cursor: 
             try:
-                sql = '''select ca.unidadesnpktradicionales  from campaign."data" d 
-                join agrae.agricultor ag on ag.idexplotacion  = d.idexplotacion 
-                join agrae.cultivoagricultor ca on ca.idagricultor = ag.idagricultor 
-                where d.iddata  = {}'''.format(self.iddata)
-                cursor.execute(sql)
-                data = cursor.fetchall() 
-                # print('PRECALCULO HC',data)
-                npk = [str(e[0]) for e in data]
-                lista = [e.split('-') for e in npk]
-                n = int(lista[0][0])
-                p = int(lista[0][1])
-                k = int(lista[0][2])
+                #? DESCOMENTAR PARA UTILIZAR DATOS DE LA BASE DE DATOS
+                # sql = '''select ca.unidadesnpktradicionales  from campaign."data" d 
+                # join agrae.agricultor ag on ag.idexplotacion  = d.idexplotacion 
+                # join agrae.cultivoagricultor ca on ca.idagricultor = ag.idagricultor 
+                # where d.iddata  = {}'''.format(self.iddata)
+                # cursor.execute(sql)
+                # data = cursor.fetchall() 
+                # # print('PRECALCULO HC',data)
+                # npk = [str(e[0]) for e in data]
+                # lista = [e.split('-') for e in npk]
+                # n = int(lista[0][0])
+                # p = int(lista[0][1])
+                # k = int(lista[0][2])
+                n = int(8)
+                p = int(15)
+                k = int(15)
                 # print(n,p,k)
                 #! CALCULO HUELLA CARBONO FERTILIZACION TRADICIONAL
                 huella_carbono_fp = round((n * 4.9500) + (p * 0.7333) + (k * 0.5500))
