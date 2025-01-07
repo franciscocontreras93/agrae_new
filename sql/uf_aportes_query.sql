@@ -220,7 +220,12 @@ uf as (select
         END AS uf_etiqueta,
 	round(max((a.extraccioncosechan + a.extraccionresiduon) * (1 + s.n_inc)) / a.cef_n) necesidad_n,
 	round(max((a.extraccioncosechap + a.extraccionresiduop) * (1 + s.p_inc)) / a.cef_p) necesidad_p,
-	round(max((a.extraccioncosechak + a.extraccionresiduok) * (1 + s.k_inc)) / a.cef_k) necesidad_k,
+	(case 
+		when a.cef_k != 1 then round(round(max((a.extraccioncosechan + a.extraccionresiduon) * (1 + s.n_inc))) / a.cef_k)
+		else round(max((a.extraccioncosechak + a.extraccionresiduok) * (1 + s.k_inc)))
+	
+	end
+	) necesidad_k,
 	st_multi(st_union(st_multi(ST_CollectionExtract(st_intersection(a.geometria,s.geometria),3)))) as geom
 	from extracciones a 
 	join segm_analitica s on st_intersects(s.geometria , a.geometria)
