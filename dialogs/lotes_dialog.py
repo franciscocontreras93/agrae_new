@@ -243,6 +243,7 @@ class LoteWeatherDialog(QDialog):
         r = requests.get(url,params=params)
        
         response = json.loads(r.text)
+        # print(response)
         weather = response['weather'][0]
         main = response['main']
         clouds = response['clouds']

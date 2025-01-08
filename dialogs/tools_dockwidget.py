@@ -1084,16 +1084,18 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 sql = q.format(fecha,formula,precio,ajuste,self.combo_campania.currentData(),self.combo_explotacion.currentData(),self.combo_cultivo_2.currentData())
                 
                 try:
-                  with agraeDataBaseDriver().connection().cursor() as cursor:
+                  with agraeDataBaseDriver().connection() as conn:
+                        cursor = conn.cursor()
                         cursor.execute(sql)
-                        self.conn.commit()
+                       
+                        conn.commit()
                         self.tools.messages('aGrae Tools','Datos de fertilizacion guardados correctamente',3,alert=True)
 
                 except  Exception as ex:
-                    self.conn.rollback()
+                    conn.rollback()
                     QgsMessageLog.logMessage('{}'.format(ex), 'aGrae Tools', 2)
                     self.tools.messages('aGrae Tools','Ocurrio un error',2)
-                    # print(ex)
+                    print(ex)
         else:
             iface.messageBar().pushMessage('aGrae Toolbox','Debe seleccionar un ajuste',0,3)
 
