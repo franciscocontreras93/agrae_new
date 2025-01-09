@@ -375,7 +375,7 @@ class PanelRender():
                 t1),self.moneda, round(pesos[0])), font=font2, fill=color, align='center', spacing=8)
             total_unitario = total_unitario + round(
                 t1)
-            print(total_unitario)
+            # print(total_unitario)
             
 
         if len(pesos) >= 2:
@@ -388,7 +388,7 @@ class PanelRender():
                 t2), self.moneda, round(pesos[1])), font=font2, fill=color, align='center', spacing=8)
             total_unitario = total_unitario + round(
                 t2)
-            print(total_unitario)
+            # print(total_unitario)
             
            
 
@@ -402,7 +402,7 @@ class PanelRender():
                 t3), self.moneda, round(pesos[2])), font=font2, fill=color, align='center', spacing=8)
             total_unitario = total_unitario + round(
                 t3)
-            print(total_unitario)
+            # print(total_unitario)
             
 
         if len(pesos) > 3:
@@ -415,7 +415,7 @@ class PanelRender():
                 t4), self.moneda, round(pesos[3])), font=font2, fill=color, align='center', spacing=8)
             total_unitario = total_unitario + round(
                 t4)
-            print(total_unitario)
+            # print(total_unitario)
             
 
         draw.text((340, 295),

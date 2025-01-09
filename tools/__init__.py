@@ -594,7 +594,8 @@ class aGraeTools():
             with open(os.path.join(path,'{}.csv'.format(name)),'w',newline='') as file: 
                 csv_writer = csv.writer(file,delimiter=';')          
                 csv_writer.writerow(header)
-                with self.conn.cursor() as cursor:
+                with agraeDataBaseDriver().connection() as conn:
+                    cursor = conn.cursor()
                     cursor.execute(sql)
                     data = cursor.fetchall()
                     csv_writer.writerows([r for r in list(data)])

@@ -872,7 +872,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     def fillDataLote(self,feat):
         self.combo_cultivo.setCurrentIndex(0)
         iface.addDockWidget(Qt.RightDockWidgetArea,self)
-        # print(feat)
+        print(feat)
         # self.layer.select(feat.id)
         self.featureLote = feat
 
@@ -1094,7 +1094,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 except  Exception as ex:
                     conn.rollback()
                     QgsMessageLog.logMessage('{}'.format(ex), 'aGrae Tools', 2)
-                    self.tools.messages('aGrae Tools','Ocurrio un error',2)
+                    self.tools.messages('aGrae Tools','Ocurrio un error {}'.format(ex),2)
                     print(ex)
         else:
             iface.messageBar().pushMessage('aGrae Toolbox','Debe seleccionar un ajuste',0,3)
