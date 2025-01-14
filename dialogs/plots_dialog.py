@@ -197,7 +197,7 @@ class agraePlotsDialog(QtWidgets.QDialog, agraePlotsDialog_):
         os.chdir(os.path.join('../',os.path.dirname(__file__)))
         os.chdir('../')
         # print(os.getcwd())
-        self.tableView.grab().save(os.path.join(
+        self.tableView.grab().save(os.path.join( #* CAPTURAR TABLA EN IMAGEN
             os.getcwd(), r'tools\img\tabla.png'))
         self.sc.saveImage(os.path.join(
         os.getcwd(), r'tools\img\chart.png'))

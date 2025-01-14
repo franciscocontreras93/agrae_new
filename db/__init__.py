@@ -7,16 +7,18 @@ from qgis.PyQt.QtCore import QSettings
 class agraeDataBaseDriver():
     def __init__(self) -> None:
         BASEDIR = os.path.abspath(os.path.dirname(__file__))
+        os.environ['PGSERVICEFILE'] = os.path.join(BASEDIR,'pg_service.conf')
+        # print(os.environ['PGSERVICEFILE'] )
         
 
        
 
         self.conn = None
         self.s = QSettings('agrae','dbConnection')
-        local  = False
+        self.local  = False
         
 
-        if local and os.environ['COMPUTERNAME'] == 'FRANCISCO':
+        if self.local and os.environ['COMPUTERNAME'] == 'FRANCISCO':
             from dotenv import load_dotenv
             load_dotenv(os.path.join(BASEDIR, '.env'))
             self.dsn = {
@@ -38,26 +40,31 @@ class agraeDataBaseDriver():
         pass
 
     def connection(self):
-        try:
-            self.conn = psycopg2.connect(
-                database=self.dsn['dbname'], 
-                user = self.dsn['user'], 
-                password = self.dsn['password'], 
-                host = self.dsn['host'], 
-                port = self.dsn['port'])
-            if self.conn != None: 
-                return self.conn
-        except psycopg2.OperationalError:
-            raise Exception('Error de conexion a la Base de datos')
-        except psycopg2.InterfaceError : 
-            self.conn = psycopg2.connect(
-                database=self.dsn['dbname'], 
-                user = self.dsn['user'], 
-                password = self.dsn['password'], 
-                host = self.dsn['host'], 
-                port = self.dsn['port'])
-            if self.conn != None: 
-                return self.conn
+        # try:
+        #     self.conn = psycopg2.connect(
+        #         database=self.dsn['dbname'], 
+        #         user = self.dsn['user'], 
+        #         password = self.dsn['password'], 
+        #         host = self.dsn['host'], 
+        #         port = self.dsn['port'])
+        #     if self.conn != None: 
+        #         return self.conn
+        # except psycopg2.OperationalError:
+        #     raise Exception('Error de conexion a la Base de datos')
+        # except psycopg2.InterfaceError : 
+        #     self.conn = psycopg2.connect(
+        #         database=self.dsn['dbname'], 
+        #         user = self.dsn['user'], 
+        #         password = self.dsn['password'], 
+        #         host = self.dsn['host'], 
+        #         port = self.dsn['port'])
+        #     if self.conn != None: 
+        #         return self.conn
+
+        if self.local:
+            return psycopg2.connect(service='local' , user=self.dsn['user'] ,password=self.dsn['password'])
+        else :
+            return psycopg2.connect(service='production' , user=self.dsn['user'] ,password=self.dsn['password'])
 
         
     def getDSN(self):
