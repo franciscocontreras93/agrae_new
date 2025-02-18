@@ -4,6 +4,8 @@
         
         <file>gui\icons\icon.svg</file>
 
+        <file>gui\icons\BI.svg</file>
+        <file>gui\icons\GN.svg</file>
         <file>gui\icons\arrow.svg</file>
         <file>gui\icons\arrow-cultivo.svg</file>
         <file>gui\icons\pen-solid.svg</file>
@@ -23,7 +25,7 @@
         <file>gui\icons\search.svg</file>
         <file>gui\icons\search-lotes.svg</file>
         <file>gui\icons\file-excel-solid.svg</file>
-        <file>gui\icons\file-csv-solid.svg</file>
+        <file>gui\icons\file-csv-solid.svg</file>|
         <file>gui\icons\square-poll-horizontal-solid.svg</file>
         <file>gui\icons\file-import-solid.svg</file>
         <file>gui\icons\tools.svg</file>

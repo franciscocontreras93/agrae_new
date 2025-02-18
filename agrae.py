@@ -120,7 +120,10 @@ class aGraeToolbox:
 
         return action
 
-
+    def add_toolbutton(self,toolbutton,actions,icon):
+        self.tools.settingsToolsButtons(toolbutton,actions,icon,True)
+        # return toolbutton
+        self.toolbar.addWidget(toolbutton)
     def initGui(self):
         # self.action = QAction('Go!', self.iface.mainWindow())
         # self.action.triggered.connect(self.run)
@@ -137,6 +140,11 @@ class aGraeToolbox:
         self.add_action(agraeGUI().getIcon('main'),'aGrae GIS',self.agraeDock,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('laboratorio-icon'),'Gestion Laboratorio',self.GestionarLaboratorio,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('settings'),'Ajustes aGrae GIS',self.agraeConfig,add_to_menu=True,add_to_toolbar=False)
+
+        # self.business_inteligence_tool = QToolButton()
+        # self.manager_business_tool = QToolButton()
+        # self.add_toolbutton(self.business_inteligence_tool,[],agraeGUI().getIcon('BI'))
+        # self.add_toolbutton(self.manager_business_tool,[],agraeGUI().getIcon('GN'))
 
 
 

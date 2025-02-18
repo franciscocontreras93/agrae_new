@@ -12,6 +12,8 @@ class agraeGUI():
 
         self.icons = {
          'main' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\icon.svg')),
+         'BI' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\BI.svg')),
+         'GN' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\GN.svg')),
          'info' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\info.png')),
          'matraz' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\matraz.png')),
          'npk' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\npk.png')),
