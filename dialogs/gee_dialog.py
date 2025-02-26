@@ -192,7 +192,7 @@ class aGraeGEEDialog(QDialog):
 
 
     def execute(self):
-        from ..tools.geeCore import aGraeNDVIMulti
+        from ..tools.geeCore import aGraeNDVIMulti,aGraeNDRE
         
         layer = self.getLayer(self.layer.currentLayer())
 

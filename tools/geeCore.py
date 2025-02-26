@@ -4,6 +4,8 @@ import datetime
 import tempfile
 import processing
 
+from typing import Union, Annotated
+
 from urllib import request
 
 from qgis.utils import iface
@@ -12,6 +14,75 @@ from qgis.core import *
 from ..tools import aGraeTools
 
 #from qgis.PyQt.QtCore import QSettings
+
+class GEETools:
+    def __init__(self):
+        pass
+
+    def getGeometry(self,buffer:int,feature:QgsFeature,transformation_crs:QgsCoordinateTransform):
+
+        coords = []
+        geom = feature.geometry()
+        geom.transform(transformation_crs)
+        
+        poly = geom.asMultiPolygon()
+        features = [poly[f][0] for f in range(len(poly))]
+        for f in features:
+            for point in f:
+                coords.append([point.x(),point.y()])  
+
+        geometry = ee.Geometry.MultiPolygon(coords)
+        geometry = geometry.buffer(buffer)
+        
+        return geometry
+    
+    def addIndexComposite(self,image,bands:Annotated[list[str],2],name:str='nd'): return image.addBands(image.normalizedDifference(bands).rename(name))
+    
+    def clipScene(self,image,geometry): return image.clip(geometry)
+
+    def maskClouds(self,image,feature): 
+        scl = image.select('SCL')
+        clouds =  scl.eq(3).Or(scl.eq(8)).Or(scl.eq(9)).Not()
+
+        cloud_area = clouds.reduceRegion(reducer=ee.Reducer.sum(),geometry=feature, scale=10,maxPixels=1e8).get('SCL')
+
+        roiArea = feature.area().divide(10000)
+        cloudPercentage = ee.Number(cloud_area).divide(roiArea).multiply(100)
+
+        return image.set('cloud_percentage', cloudPercentage)
+    
+    def maskS2Clouds(self,image): 
+        qa = image.select('QA60')
+        cloudBitMask = 1 << 10;
+        cirrusBitMask = 1 << 11;
+        mask = qa.bitesiseAnd(cloudBitMask).eq(0).And(qa.bitesiseAnd(cirrusBitMask).eq(0))
+
+
+
+        return image.updateMask(mask).divide(10000)
+
+    def imageDownloadURL(self,image,feature):
+        return image.getDownloadURL({
+            'format':'GeoTIFF',
+            'crs': 'EPSG:3857',
+            'region': feature,
+            'scale':10
+            })
+    
+    def downloadImage(self,image,feature,name='temp'):
+        temp = tempfile.gettempdir()
+        url = image.getDownloadURL({
+            'format':'GeoTIFF',
+            'crs': 'EPSG:3857',
+            'region': feature,
+            'scale':10
+            })
+        downloadPath = os.path.join(tempfile.gettempdir(),f"{name}.tiff")
+        request.urlretrieve(url,downloadPath)
+        fileName = os.path.basename(downloadPath)
+        r = QgsRasterLayer(downloadPath,'NDVI_GEE_Layer')
+        QgsProject.instance().addMapLayer(r)
+        return r
 
 class aGraeNDVI:
     def __init__(
@@ -51,7 +122,7 @@ class aGraeNDVI:
         self._layer = layer
         self._crs = self._layer.crs()
         self._destCrs = QgsCoordinateReferenceSystem(4326)
-        self._tr = QgsCoordinateTransform(self._crs, self._destCrs, QgsProject.instance())
+        transformation_crs = QgsCoordinateTransform(self._crs, self._destCrs, QgsProject.instance())
         
         self._year = year
         self._initial_date = self._year  - period
@@ -234,7 +305,8 @@ class aGraeNDVIMulti:
         ): 
 #        print('**** Inicializando Google-Earth-Engine ****')
 #        ee.Authenticate(auth_mode='localhost')
-        
+
+        self.tools = GEETools()
        
         
         self._layer = layer
@@ -283,9 +355,9 @@ class aGraeNDVIMulti:
         
         imageCollection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(self.geometry).filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', self._max_clouds).filter(ee.Filter.calendarRange(self._years.get(0),self._years.get(-1),'year'))
         # imageCollection = ee.ImageCollection('COPERNICUS/S2_SR').filterBounds(self.geometry).filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', self._max_clouds).filter(ee.Filter.calendarRange(self._years.get(0),self._years.get(-1),'year'))
-        scene = imageCollection.map(self.addNDVI)
+        scene = imageCollection.map(lambda image: self.tools.addIndexComposite(image,['B8','B4'],'nd'))
         scene = scene.select(['nd'])
-        scene = scene.map(self.clipScene)
+        scene = scene.map(lambda image: self.tools.clipScene(image,self.geometry))
         return  scene
     
     def getProcessedScene(self):
@@ -317,9 +389,6 @@ class aGraeNDVIMulti:
         )
         
         percentile = self.getPercentiles(NDVIConvolve)
-        # print(ee.Number(percentile.get('nd_max_p25').getInfo()).format())
-        # print(ee.Number(percentile.get('nd_max_p50').getInfo()).format())
-        # print(ee.Number(percentile.get('nd_max_p75').getInfo()).format())
         expression = ee.String('(b(0) <= ').cat(ee.Number(percentile.get('nd_max_p25').getInfo()).format()).cat(') ? 20 : (b(0) < ').cat(ee.Number(percentile.get('nd_max_p50').getInfo()).format()).cat(') ? 40 : 60')
         reclass = NDVIConvolve.expression(expression)
         return reclass
@@ -387,7 +456,8 @@ class aGraeNDVIMulti:
             layer_clip.addFeature(lote_feat)
             layer_clip.commitChanges()
 
-            self.geometry = self.getGeometry(feature)
+            # self.geometry = self.getGeometry(feature)
+            self.geometry = self.tools.getGeometry(self._buffer_radius,feature,self._tr)
             self.sceneNDVI = self.getSceneNDVI()
             self.processed = ee.ImageCollection.fromImages(self.getProcessedScene())
             self.NDVImax = self.processed.median()
@@ -403,3 +473,93 @@ class aGraeNDVIMulti:
             self.execute(layer_clip)
         
 
+class aGraeNDRE:
+    def __init__(self,
+                layer :QgsVectorLayer = iface.activeLayer(),
+                max_clouds : int = 20,
+                buffer_radius : int = 5,
+                kernel_radius : int = 20,
+                kernel_units : int = 1,
+                kernel_magnitude : int = 1,
+                scale : int  = 1) -> None:
+        
+        self._layer = layer
+        self._crs = self._layer.crs()
+        self._destCrs = QgsCoordinateReferenceSystem(4326)
+        self._tr = QgsCoordinateTransform(self._crs, self._destCrs, QgsProject.instance())
+        self._buffer_radius = buffer_radius
+
+        self.tools = GEETools()
+        self.geometry = None
+
+        self.today = ee.Date(datetime.datetime.today())
+        self.startDate = ee.Date(datetime.datetime.now().date().replace(month=1, day=1).strftime('%Y-%m-%d'))
+        pass
+
+    def getGeometry(self,feature):
+        
+        coords = []
+        geom = feature.geometry()
+        geom.transform(self._tr)
+        
+        poly = geom.asMultiPolygon()
+        features = [poly[f][0] for f in range(len(poly))]
+        for f in features:
+            for point in f:
+                coords.append([point.x(),point.y()])  
+
+        geometry = ee.Geometry.MultiPolygon(coords)
+        geometry = geometry.buffer(self._buffer_radius)
+        
+        return geometry
+    
+
+    def getScene (self,):
+        
+        # imageCollection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(self.geometry).filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', self._max_clouds).filterDate(self.startDate,self.today)
+        imageCollection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(self.geometry).filterDate(self.startDate,self.today)
+        # scene = scene.select(['NDRE'])
+        # scene = imageCollection.map(lambda image: self.tools.clipScene(image,self.geometry))
+        # scene = scene.map(lambda image: self.tools.maskClouds(image,self.geometry))
+        # scene = scene.map(lambda image: self.tools.addIndexComposite(image,['B8','B5'],'NDRE'))
+        return  imageCollection
+
+    
+    
+    def run(self):
+        QgsMessageLog.logMessage('**** Ejecutando algoritmo de Pre-Procesamiento en GEE. ****\n**** Este proceso puede tardar algunos minutos. ****' , 'aGrae GEE', level=Qgis.Info) 
+        
+        # exp = QgsExpression('idexplotacion = {}'.format(self.idexplotacion))
+        for feature in [f for f in self._layer.getFeatures()]:
+
+            layer_clip = QgsVectorLayer('Multipolygon?crs=EPSG:4326','lote','memory')
+            lote_feat = QgsFeature()
+            lote_feat.setGeometry(feature.geometry())
+            layer_clip.startEditing()
+            layer_clip.addFeature(lote_feat)
+            layer_clip.commitChanges()
+
+            # self.geometry = self.getGeometry(feature)
+            self.geometry = self.tools.getGeometry(self._buffer_radius,feature,self._tr)
+            self.scene_with_cloud_percentage = self.getScene()
+            self.filteredCollection = self.scene_with_cloud_percentage.filter(ee.Filter.lte('cloud_percentage', 10))
+            self.hasValidImages = self.filteredCollection.size().gt(0)
+
+            self.latestImage =  ee.Image(ee.Algorithms.If(self.hasValidImages,self.filteredCollection.first(),ee.Image(0)))
+            imageDate = ee.Date(self.latestImage.get('system:time_start')).format('YYYY-MM-dd')
+            self.tools.downloadImage(self.latestImage,self.geometry)
+            # print('Fecha de la imagen más reciente:', imageDate)
+
+
+            # self.processed = ee.ImageCollection.fromImages(self.getProcessedScene())
+            # self.NDVImax = self.processed.median()
+            # self.reclassified = self.getReclassifiedImage(self.NDVImax)
+            # self.ambientes = self.getAmbientes(self.reclassified)
+            
+            # self.ndviLayer = self.downloadImage(self.NDVImax)
+            # self.ambientesLayer = self.downloadVector(self.ambientes)
+            # print('**** Pre-Procesamiento Exitoso ****')
+
+            # QgsMessageLog.logMessage('**** Pre-Procesamiento Exitoso ****' , 'aGrae GEE', level=Qgis.Info) 
+            
+            # self.execute(layer_clip)
