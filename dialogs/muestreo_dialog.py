@@ -28,7 +28,7 @@ class MuestreoDialog(QDialog):
 
     def UIComponents(self): 
         main_layout = QVBoxLayout()
-        group_layout = QVBoxLayout()
+        group_layout = QGridLayout ()
         groupBox = QGroupBox()
         groupBox.setTitle('Generar Puntos de Muestreo en Lotes')
 
@@ -36,6 +36,9 @@ class MuestreoDialog(QDialog):
         self.combo_layer = QgsMapLayerComboBox()
         self.check_seleccionados = QCheckBox('Lotes seleccionados')
         self.check_seleccionados.setChecked(True)
+
+        self.check_seguimiento = QCheckBox('Muestra de Seguimiento')
+        self.check_seguimiento.setChecked(False)
 
         
         
@@ -61,10 +64,11 @@ class MuestreoDialog(QDialog):
         self.btn_create.clicked.connect(self.createMuestreoPoints)
 
         group_layout.addWidget(QLabel('Selecciona la Capa con los Lotes'))
-        group_layout.addWidget(self.combo_layer)
-        group_layout.addWidget(self.check_seleccionados)
-        group_layout.addWidget(group_segmentos)
-        group_layout.addWidget(self.btn_create)
+        group_layout.addWidget(self.combo_layer,0,0,1,0)
+        group_layout.addWidget(self.check_seleccionados,1,0)
+        group_layout.addWidget(self.check_seguimiento,1,1)
+        group_layout.addWidget(group_segmentos,2,0,1,0)
+        group_layout.addWidget(self.btn_create,3,0,1,0)
         
         groupBox.setLayout(group_layout)
         main_layout.addWidget(groupBox)
@@ -103,12 +107,17 @@ class MuestreoDialog(QDialog):
         # segmentos_derivar = ','.join([str(x) for x in segmentos])
         # segmentos_remuestreo = ','.join([str(x) for x in selected])
         # print(segmentos_remuestreo,'---',segmentos_derivar)
+
+        if self.check_seguimiento.isChecked():
+            status = 4
+        else:
+            status = 1
         
         
         reply = QMessageBox.question(self,'aGrae Toolbox','Quieres generar los puntos de muestreo para:\n{} Lotes?'.format(len(ids)),QMessageBox.Yes, QMessageBox.No)
         if reply == QMessageBox.Yes:
 
-            self.tools.crearPuntosMuestreo(ids,segmento_remuestreo,segmento_derivar)
+            self.tools.crearPuntosMuestreo(ids,segmento_remuestreo,segmento_derivar,status)
             #! TRABAJAR EN MULTITHREADING NO ESTA FUNCIONANDO CORRECTAMENTE
             #! self.worker = WorkerGenerarPuntosMuestreo(ids,segmentos)
             #! self.worker.start()

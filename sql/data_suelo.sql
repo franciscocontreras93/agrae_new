@@ -25,7 +25,7 @@ segm_analitica as (
     carb.tipo AS carb_tipo
 	from segmentos s 
 	JOIN campaign.data d  on  s.iddata = d.iddata 
-	LEFT JOIN field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and st_intersects(s.geometria,m.geom) --join MUESTRAS
+	LEFT JOIN field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and st_intersects(s.geometria,m.geom) and m.status != 4 --join MUESTRAS
 	JOIN analytic.analitica a on m.codigo = a.cod
 	JOIN analytic.textura txt ON  a.ceap >= txt.ceap_i AND a.ceap < txt.ceap_s
 	JOIN analytic.carbonatos carb ON (a.carbon::double precision) >= carb.limite_inferior AND (a.carbon::double precision) < carb.limite_superior

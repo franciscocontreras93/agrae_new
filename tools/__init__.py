@@ -883,14 +883,14 @@ class aGraeTools():
                 self.messages('aGrae Tools','No se pudieron actualizar la informacion de los cultivos.\n {}'.format(ex),2,alert=True)
                 raise Exception(ex)
 
-    def crearPuntosMuestreo(self,ids:list,segmento_remuestreo:list,segmento_derivar:list):
+    def crearPuntosMuestreo(self,ids:list,segmento_remuestreo:list,segmento_derivar:list,status:int=1):
         # TODO
         from .gdriveCore import GDrive
         ids = ','.join([str(id) for id in ids])
         segmentos_remuestreo = ','.join([str(seg) for seg in segmento_remuestreo])
         segmentos_derivar = ','.join([str(seg) for seg in segmento_derivar])
         data = None
-        query = aGraeSQLTools().getSql('query_create_muestreo.sql').format(ids,segmentos_remuestreo,segmentos_derivar)
+        query = aGraeSQLTools().getSql('query_create_muestreo.sql').format(ids,status,segmentos_remuestreo,segmentos_derivar)
         core = aGraeLabelGenerator()
         drive = GDrive()
 

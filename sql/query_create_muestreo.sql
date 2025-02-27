@@ -19,7 +19,7 @@ segmentos as (
 		idcampania,
 		idexplotacion,
 		segmento,
-		1 as status,
+		{} as status,
 		(case 
 			when st_isEmpty(st_transform(st_buffer(st_transform(st_intersection(s.geometria,b.geom),8857),-10),4326))
 				then st_intersection(s.geometria,b.geom) 
