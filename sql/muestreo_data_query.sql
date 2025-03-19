@@ -10,17 +10,23 @@ muestras as (select
 	d.lote,
 	m.codigo,
 	cp.nombre as prioridad,
-	cs.status as status_mues,
+	cs.nombre as tipo_muestra,
 	(case
 		when a.idanalitica is not null
 		then 'PROCESADO'
 		else 'PENDIENTE'
 	end
 	) status_lab,
+	(case 
+		when m.muestreado = true then 'MUESTREADO'
+		else 'NO MUESTREADO'
+	end
+	) as status,
+	m.observaciones,
     st_asText(m.geom) as geom
     from field.muestras m
 join data d using (idcampania,idexplotacion,idlote)
-join correlations.status cs on cs.id = m.status
+join correlations.tipos_muestras cs on cs.id = m.tipo
 join correlations.prioridad cp on cp.id = m.prioridad
 left join analytic.analitica a on a.cod = m.codigo
 order by d.lote)

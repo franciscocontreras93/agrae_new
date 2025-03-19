@@ -111,7 +111,7 @@ segm_analitica as (select
 	s.geometria 
 	from segmentos s 
 	join campaign.data d  on  s.iddata = d.iddata 
-	join field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and st_intersects(m.geom,s.geometria) and m.status != 4--join MUESTRAS
+	join field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and st_intersects(m.geom,s.geometria) and m.tipo in (1,2)--join MUESTRAS
 	join analytic.analitica a on m.codigo = a.cod
 	LEFT JOIN analytic.ph ph ON a.ph > ph.limite_inferior AND a.ph <= ph.limite_superior
 	LEFT JOIN analytic.textura txt ON a.ceap >= txt.ceap_i AND a.ceap <= txt.ceap_s

@@ -63,9 +63,9 @@ class GestionLaboratorioDialog(QDialog):
         self.combo_explotacion.setEditable(True)
         self.combo_explotacion.setInsertPolicy(QComboBox.NoInsert)
         self.getCampaniasData()
-        data_muestreo = agraeDataBaseDriver().read(aGraeSQLTools().getSql('muestreo_data_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select iddata,campania,explotacion,lote,codigo,prioridad,status_mues,status_lab from muestras'))
+        data_muestreo = agraeDataBaseDriver().read(aGraeSQLTools().getSql('muestreo_data_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select iddata,campania,explotacion,lote,codigo,prioridad,tipo_muestra,status_lab, status,observaciones from muestras'))
         self.table = CustomTable(
-            columns=['iddata','Campaña','Explotacion','Lote','Codigo','Prioridad','Estado Muestreo','Estado Analitica'],
+            columns=['iddata','Campaña','Explotacion','Lote','Codigo','Prioridad','Tipo Muestra','Estado Analitica','Estado de Muestreo','Observaciones'],
             data = data_muestreo
         )
         self.combo_campania.currentIndexChanged.connect(self.updateTable)
@@ -172,7 +172,7 @@ class GestionLaboratorioDialog(QDialog):
                     print(ex,'Error getExpData')
 
     def updateTable(self):
-        data_muestreo = agraeDataBaseDriver().read(aGraeSQLTools().getSql('muestreo_data_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select iddata,campania,explotacion,lote,codigo,prioridad,status_mues,status_lab from muestras'))
+        data_muestreo = agraeDataBaseDriver().read(aGraeSQLTools().getSql('muestreo_data_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select iddata,campania,explotacion,lote,codigo,prioridad,tipo_muestra,status_lab, status,observaciones from muestras'))
         self.table.populate(data_muestreo)
 
     def exportarDataCSV(self):

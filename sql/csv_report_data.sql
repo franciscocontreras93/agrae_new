@@ -1,4 +1,4 @@
-with muestra as (select * from field.muestras where idcampania = {} and idexplotacion = {} and status != 4),
+with muestra as (select * from field.muestras where idcampania = {} and idexplotacion = {} and m.tipo in (1,2)),
 data as (select m.codigo,idregimen from campaign.data d join muestra m on d.idcampania = m.idcampania and d.idexplotacion = m.idexplotacion and d.idlote = m.idlote),
 segmento as (select m.idlote,m.codigo,s.segmento,s.ceap from agrae.segmentos s 
 			join muestra m on st_intersects(s.geometria,m.geom)),
