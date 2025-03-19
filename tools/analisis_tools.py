@@ -53,6 +53,7 @@ class aGraeResamplearMuestras():
                 new_df = df[df['idlote'] == id]
                 
                 scope = list(new_df[new_df['COD'].str.contains(r'_D\d{1}',regex=True) == False]['ceap'])
+                print(scope)
                 scope = min(scope)
                 derivates = list(new_df[new_df['COD'].str.contains(r'_D\d{1}',regex=True) == True]['ceap'])
 

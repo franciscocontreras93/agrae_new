@@ -122,10 +122,11 @@ class aGraeComposerTools():
                 join agrae.distribuidor d on d.iddistribuidor = ag.iddistribuidor
                 join agrae.explotacion ex on ex.idexplotacion = c.idexplotacion
                 )
-                select * from data'''.format(idcampania,idexplotacion)
+                select * from data limit 1'''.format(idcampania,idexplotacion)
                 
                 cursor.execute(sql)
                 data = cursor.fetchone()
+                print(data)
                 out = open(os.path.join(os.path.dirname(__file__),'img/dist_logo.png'),'wb')
                 out.write(data[2])
                 self.nombre_explotacion = data[0].upper()
@@ -140,7 +141,7 @@ class aGraeComposerTools():
             except Exception as ex:
                 QgsMessageLog.logMessage('{}'.format(ex), 'aGrae GIS', level=Qgis.Critical)
             finally:
-                out.close()
+                # out.close()
                 pass
     def setTextOverElements(self,elements,text):
         try:

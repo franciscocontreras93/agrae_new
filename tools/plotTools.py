@@ -106,14 +106,14 @@ class PanelRender():
         'MAIZ G': os.path.join(os.path.dirname(__file__), r'img\assets\maiz_esquema.png'),
                 }
 
-    def __init__(self, lote, cultivo, produccion, area, npk: list, i: int, pesos:list, precios:list,aplicados:list,formulas:list,dataHuellaCarbono,preciosTon:list,moneda):
+    def __init__(self, lote:str, cultivo, produccion, area, npk: list, i: int, pesos:list, precios:list,aplicados:list,formulas:list,dataHuellaCarbono,preciosTon:list,moneda):
         
         
         
         self.iface = iface
         self.now = datetime.now()
         self.date = self.now.strftime("%H%M%S%d%m%y")
-        self.lote = lote
+        self.lote = lote.replace(':','_')
         # self.parcela = parcela
         self.cultivo = cultivo
         self.prod_ponderado = produccion

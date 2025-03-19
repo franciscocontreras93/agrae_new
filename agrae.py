@@ -167,7 +167,6 @@ class aGraeToolbox:
         # self.mainWindowDialog.an_lbl_file.setText('')
 
     def agraeMainWindow(self):
-        # QMessageBox.information(None, 'Minimal plugin', 'ALGO ALGO')
         self.mainWindowDialog = agraeMainWidget() 
         self.mainWindowDialog.closingPlugin.connect(lambda: self.onClosePluginMain(self.mainWindowDialog))
         self.mainWindowDialog.show()

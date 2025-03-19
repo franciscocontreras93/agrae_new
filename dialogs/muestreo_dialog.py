@@ -104,20 +104,18 @@ class MuestreoDialog(QDialog):
         # # print(ids)
         segmento_derivar = segmentos
         segmento_remuestreo = selected
-        # segmentos_derivar = ','.join([str(x) for x in segmentos])
-        # segmentos_remuestreo = ','.join([str(x) for x in selected])
-        # print(segmentos_remuestreo,'---',segmentos_derivar)
+        
 
         if self.check_seguimiento.isChecked():
-            status = 4
+            tipo = 3
         else:
-            status = 1
+            tipo = 1
         
         
         reply = QMessageBox.question(self,'aGrae Toolbox','Quieres generar los puntos de muestreo para:\n{} Lotes?'.format(len(ids)),QMessageBox.Yes, QMessageBox.No)
         if reply == QMessageBox.Yes:
 
-            self.tools.crearPuntosMuestreo(ids,segmento_remuestreo,segmento_derivar,status)
+            self.tools.crearPuntosMuestreo(ids,segmento_remuestreo,segmento_derivar,tipo)
             #! TRABAJAR EN MULTITHREADING NO ESTA FUNCIONANDO CORRECTAMENTE
             #! self.worker = WorkerGenerarPuntosMuestreo(ids,segmentos)
             #! self.worker.start()
