@@ -130,10 +130,10 @@ class aGraeTools():
     def deleteAction(self,question:str,sql:str,widget=None,actions:list=None,):
         reply = QtWidgets.QMessageBox.question(None,'aGrae Toolbox',question,QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
         if reply == QtWidgets.QMessageBox.Yes:
-            with self.conn.cursor() as cursor:
+            with agraeDataBaseDriver().connection().cursor() as cursor:
                 try:
                     cursor.execute(sql)
-                    self.conn.commit()
+                    agraeDataBaseDriver().connection().commit()
                 except Exception as ex:
                     self.conn.rollback()
                     raise Exception(ex)
@@ -500,7 +500,7 @@ class aGraeTools():
             1043: QVariant.String,
             1082: QVariant.String,
         }
-        if styleName.lower() in ['fosforo','potasio','calcio','magnesio','sodio','azufre']: estilo = 'analisis_ppm' 
+        if styleName.lower() in ['fosforo','potasio']: estilo = 'analisis_ppm' 
         else: estilo = styleName
        
         styleUri = os.path.join(os.path.dirname(__file__), 'styles/{}.qml'.format(estilo))
@@ -894,7 +894,6 @@ class aGraeTools():
         core = aGraeLabelGenerator()
         drive = GDrive()
 
-        print(query)
 
         
         try:
@@ -932,9 +931,6 @@ class aGraeTools():
             except Exception as ex:
                 self.conn.rollback()
                 print(ex)
-
-
-
     
     def cargarLabelsDRIVE(self,file_path:str):
         from .gdriveCore import GDrive
@@ -946,8 +942,27 @@ class aGraeTools():
         drive = GDrive()
         url = drive.upload_file(label)
 
-    
+    def getBasemapsDict(self) -> dict:
+        return  {
+          
+            'Esri Satelite' : {
+                'url': 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%7Bz%7D/%7By%7D/%7Bx%7D',
+                'options': 'crs=EPSG:3857&format&type=xyz&url=https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%7Bz%7D/%7By%7D/%7Bx%7D&zmax=20&zmin=0'
+            },
+            'Google Satelite' : {
+                'url': 'https://mt1.google.com/vt/lyrs=s&x=%7Bx%7D&y=%7By%7D&z=%7Bz%7D',
+                'options': 'type=xyz&zmin=0&zmax=20&url=https://mt1.google.com/vt/lyrs%3Ds%26x%3D{x}%26y%3D{y}%26z%3D{z}'
+            },
+            'PNOA Ortofoto' : {
+                'url': 'contextualWMSLegend=0&crs=EPSG:4326&dpiMode=7&featureCount=10&format=image/png&layers=OI.OrthoimageCoverage&styles' ,
+                'options': 'url=https://www.ign.es/wms-inspire/pnoa-ma'
+            },
+            'Parcelas Catastro' : {
+                'url': 'contextualWMSLegend=1&crs=EPSG:4326&dpiMode=7&featureCount=10&format=image/png&layers=CP.CadastralParcel&styles' ,
+                'options': 'url=http://ovc.catastro.meh.es/cartografia/INSPIRE/spadgcwms.aspx'
+            }
 
+        }
 
 
 

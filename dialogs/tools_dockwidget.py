@@ -32,6 +32,7 @@ from .gestion_distribuidor import GestionDistribuidorDialog
 from .gestion_agricultor import GestionAgricultorDialog
 from .datos_base_dialog import GestionDatosBaseDialog, CrearLotesDialog
 from .composer_dialog import agraeComposer
+from .new_composer_dialog import new_Composer 
 from .cultivos_dialog import GestionarCultivosDialog
 from .parametros_dialog import GestionarParametrosDialog
 from .plots_dialog import agraePlotsDialog
@@ -401,7 +402,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
        
 
-        dlg = agraeComposer(self.atlasLayers,self.combo_campania.currentData(),self.combo_explotacion.currentData())
+        # dlg = agraeComposer(self.atlasLayers,self.combo_campania.currentData(),self.combo_explotacion.currentData())
+        # dlg.exec()
+
+        dlg = new_Composer(self.combo_campania.currentData(),self.combo_explotacion.currentData(),self.layer)
         dlg.exec()
 
     def geeDialog(self):
@@ -525,7 +529,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         sql_date_camp = 'select fecha_desde, fecha_hasta from campaign.campanias where id = {}'.format(self.combo_campania.currentData())
         # print(sql_date_camp)
         self.combo_explotacion.clear()
-        with self.conn.cursor() as cursor:
+        with agraeDataBaseDriver().connection().cursor() as cursor:
             try:
                 cursor.execute(sql)
                 data = cursor.fetchall()
@@ -533,7 +537,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                     for e in data:
                         self.combo_explotacion.addItem(e[0],e[1])
             except:
-                self.conn.rollback()
+                agraeDataBaseDriver().connection().rollback()
 
             try:
                 cursor.execute(sql_date_camp)
@@ -554,7 +558,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
 
             except Exception as ex:
-              self.conn.rollback()
+              agraeDataBaseDriver().connection().rollback()
               
             #   print(ex)
     
@@ -577,7 +581,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                     sql = sql + '({},{},{}),\n'.format(campania,explotacion,f['id'])
                 query = base  + sql 
                 # print(query[:-2])
-                with self.conn.cursor() as cursor:
+                with agraeDataBaseDriver().connection().cursor() as cursor:
                     cursor.execute(query[:-2])
                     self.conn.commit()
 
@@ -609,7 +613,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                     sql = sql + '({},{},{}),\n'.format(campania,explotacion,f['id'])
                 query = base  + sql 
                 # print(query[:-2])
-                with self.conn.cursor() as cursor:
+                with agraeDataBaseDriver().connection().cursor() as cursor:
                     cursor.execute(query[:-2])
                     self.conn.commit()
 
@@ -677,7 +681,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         join agrae.cultivo c on c.idcultivo = d.idcultivo 
         where d.idcampania = {} and d.idexplotacion = {}'''.format(self.combo_campania.currentData(),idexp)
         
-        with self.conn.cursor() as cursor: 
+        with agraeDataBaseDriver().connection().cursor() as cursor: 
             try:
                 cursor.execute(sql)
                 data = cursor.fetchall()
@@ -701,7 +705,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     
     def getCampaniasData(self):
         self.combo_campania.clear()
-        with self.conn.cursor() as cursor:
+        with agraeDataBaseDriver().connection().cursor() as cursor:
             # try:
                 cursor.execute('''SELECT DISTINCT concat(upper(prefix),'-',UPPER(nombre)) as nombre , id  FROM campaign.campanias ORDER BY id desc''')
                 data_camp = cursor.fetchall()
@@ -725,7 +729,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         order by e.nombre'''.format(idcampania)
         # print(idcampania)
         if idcampania != None:
-            with self.conn.cursor() as cursor:
+            with  agraeDataBaseDriver().connection().cursor() as cursor:
                 try:
                     cursor.execute(sql)
                     data = cursor.fetchall()
@@ -757,11 +761,11 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                         
                 
                 except Exception as ex:
-                    self.conn.rollback()
+                    agraeDataBaseDriver().connection().rollback()
                     print(ex,'Error getExpData')
             
     def getCultivosData(self):
-        with self.conn.cursor() as cursor:
+        with agraeDataBaseDriver().connection().cursor() as cursor:
             try:
                 cursor.execute('SELECT DISTINCT UPPER(nombre), idcultivo  FROM agrae.cultivo ORDER BY UPPER(nombre)')
                 data_exp = cursor.fetchall() 
@@ -773,7 +777,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
                 print(ex)
     
     def getRegimenData(self):
-        with self.conn.cursor() as cursor:
+        with agraeDataBaseDriver().connection().cursor() as cursor:
             try:
                 cursor.execute('SELECT DISTINCT UPPER(nombre), id  FROM analytic.regimen ORDER BY id')
                 data_reg = cursor.fetchall()
@@ -789,7 +793,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.combo_campania.clear()
         self.combo_explotacion.clear()
 
-        with self.conn.cursor(cursor_factory=extras.DictCursor) as cursor:
+        with agraeDataBaseDriver().connection().cursor(cursor_factory=extras.DictCursor) as cursor:
             
             try:
                 cursor.execute('SELECT DISTINCT UPPER(nombre), id  FROM campaign.campanias ORDER BY id desc')
@@ -945,22 +949,22 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
         sql_data = '''update campaign.data set idcultivo = {}, idregimen = {}, fechasiembra = nullif('{}','')::date, fechacosecha = nullif('{}','')::date, prod_esperada = {} where iddata = {} '''.format(cultivo,regimen,fechaSiembra,fechaCosecha,produccion,self.idData)
         # print(sql_data)
-        with self.conn.cursor() as cursor:
+        with agraeDataBaseDriver().connection().cursor() as cursor:
             try:
                 if self.nombreLote != self.line_nombre.text():
                     cursor.execute(sql_lote)
-                    self.conn.commit()
+                    agraeDataBaseDriver().connection().commit()
                 # if  self.idCultivo != cultivo or self.idRegimen != regimen or self.prodEsperada != produccion:
                 # if  self.idCultivo != cultivo or self.idRegimen != regimen or self.prodEsperada != produccion or self.fechaSiembra != '' or self.fechaCosecha != '':
                    
                 cursor.execute(sql_data)
-                self.conn.commit()
+                agraeDataBaseDriver().connection().commit()
                 self.tools.messages('aGrae Tools','Lote actualizado correctamente',3)
                 # self.updateLotesLayer()
                 self.reloadLayer()
             
             except Exception as ex:
-                self.conn.rollback()
+                agraeDataBaseDriver().connection().rollback()
                 QgsMessageLog.logMessage('{}'.format(ex), 'aGrae Tools', 2)
                 self.tools.messages('aGrae Tools','Ocurrio un error, verifica la información ingresada.',1)
             

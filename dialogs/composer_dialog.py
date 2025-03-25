@@ -26,33 +26,7 @@ class agraeComposer(QDialog,agraeComposerDialog):
         self.setModal(False)
         
 
-        # self.threadpool = QThreadPool()
-        # self.atlas = None
-        # self.settings = QSettings('agrae','dbConnection')
-        # self.panels_path = self.settings.value('paneles_path')
-        # self.reportes_path = self.settings.value('reporte_path')
-        # self.tools = aGraeTools()
-        # self.conn = self.tools.conn()
-        # # self.tools = AgraeToolset()
-        # self.excludedProviders = ['DB2', 'EE', 'OAPIF', 'WFS', 'arcgisfeatureserver', 'arcgismapserver', 'ept', 'gdal', 'grass', 'grassraster', 'hana', 'mdal', 'mesh_memory', 'mssql','oracle', 'postgresraster',  'virtualraster', 'wcs', 'wms']
-        # self.clasificationMethods = [
-        #     'Cuantil',
-        #     'Escala Logaritmica',
-        #     'Desviacion Standard',
-        #     'Intervalo Igual',
-        #     'Pretty Breaks',
-        #     'Jenks']
         self.plugin_dir = os.path.dirname(__file__)
-        # self.root = QgsProject.instance().layerTreeRoot()
-        # self.groups = [ g for g in self.root.children() if isinstance(g, QgsLayerTreeGroup) ] 
-
-        # # self.comboBox.addItems(lambda name: for x.name() in self.groups)
-
-        
-
-        # self.render = None
-       
-
         
         self.UIComponents()
         # print(self.excludedLayers)
@@ -80,6 +54,8 @@ class agraeComposer(QDialog,agraeComposerDialog):
         pass
 
     def generateLayers(self):
+
+        
         
         queries = {
             'Segmentos': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'''select idlote,nombre as lote,codigo as codigo_muestra,segmento,ceap,st_asText(geom) as geom from segm_analitica;'''),

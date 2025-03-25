@@ -19,6 +19,7 @@ from ..db import agraeDataBaseDriver
 
 
 class aGraeComposerTools():
+    
     def __init__(self,layers,idcampania,idexplotacion) -> None:
         self.layers = layers
         self.idcampania = idcampania
@@ -149,7 +150,7 @@ class aGraeComposerTools():
                 e.setText(text.upper())
         except:
             pass
-    def layoutGenerator(self,
+    def layoutGeneratorPreescripcion(self,
             basemap,
             preview=False,
             printer=False):
@@ -302,7 +303,6 @@ class aGraeComposerTools():
        
 
         self.atlas.featureChanged.connect(lambda: self.moveCanvas(
-            layout,
             layout.itemById('ceap36_inf'),
             self.atlas,
             nombres_lotes,
@@ -329,14 +329,152 @@ class aGraeComposerTools():
         
 
         # pass
+    def layoutGeneratorBasico(self, 
+            basemap,
+            preview=False,
+            printer=False) -> None:
+        
+        titleFont = QFont('Arial',12,1,False)
+        titleFont.setBold(True)
+        subGroupFont = QFont('Arial',10,1,False)
+        subGroupFont.setBold(True)
+        font = QFont('Arial',10,1,False)
+
+        
+
+        legend_style = QgsLegendStyle()
+        legend_style.setFont(font)
+        legend_style.setMargin(QgsLegendStyle.Left,3)
+        legend_style_title = QgsLegendStyle()
+        legend_style_title.setFont(titleFont)
+        legend_style.setMargin(QgsLegendStyle.Bottom,10)
+        legend_style_subGroup = QgsLegendStyle()
+        legend_style_subGroup.setFont(subGroupFont)
+
+
+
+
+        basemap = self.tools.getBaseMap(basemap,self.basemaps)
+        QgsProject.instance().addMapLayer(basemap,False)
+        self.getDistData(idcampania=self.idcampania,idexplotacion=self.idexplotacion)
+
+        
+        # print(self.layers)
+
+
+
+
+        project = QgsProject.instance()
+        manager = project.layoutManager()
+        layout = QgsPrintLayout(project)
+        layoutName = "Preescripcion"
+        layouts_list = manager.printLayouts()
+        for layout in layouts_list:
+            if layout.name() == layoutName:
+                manager.removeLayout(layout)
+        
+        layout = QgsPrintLayout(project)
+        layout.initializeDefaults()                 #create default map canvas
+        layout.setName(layoutName)
+        manager.addLayout(layout)
+
+        self.atlas = layout.atlas()
+        self.atlas.setCoverageLayer(self.layers['Atlas'])
+        self.atlas.setPageNameExpression('lote')
+        self.atlas.setFilenameExpression('lote')
+
+        self.atlas.refreshCurrentFeature()
+        self.atlas.updateFeatures()
+        self.atlas.setEnabled(True)
+        self.atlas.seekTo(0)
+        self.atlas.renderEnded.connect(self.clearFilter)
+
+        pc = layout.pageCollection()
+        # pc.page(0).setPageSize('A4', QgsLayoutItemPage.Orientation.Portrait)
+        for l in range(0,4):
+            pc.addPage(QgsLayoutItemPage(layout=layout))
+            pc.page(l).setPageSize('A4', QgsLayoutItemPage.Orientation.Portrait)
+
+
+        tmpfile = self.plugin_dir + '/templates/reporte_basico.qpt'
+        with open(tmpfile) as f:
+            template_content = f.read()
+            
+        doc = QDomDocument()
+        doc.setContent(template_content)
+        items, _ = layout.loadFromTemplate(doc, QgsReadWriteContext(), False)
+
+        logos_agrae = [i for i in items if isinstance(i,QgsLayoutItemPicture) and i.id() == 'Logo Agrae']
+        logos_exp = [i for i in items if isinstance(i,QgsLayoutItemPicture) and i.id() == 'exp_logo']
+        direcciones = [i for i in items if isinstance(i,QgsLayoutItemLabel) and i.id() == 'exp_dir']
+        nombres_exp = [i for i in items if isinstance(i,QgsLayoutItemLabel) and i.id() == 'exp_name']
+        nombres_lotes = [i for i in items if isinstance(i,QgsLayoutItemLabel) and i.id() == 'lote_nom']
+        
+        
+        for l in logos_exp:
+            l.setPicturePath(os.path.join(os.path.dirname(__file__),'img/dist_logo.png'))
+        for l in logos_agrae:
+            l.setPicturePath(os.path.join(os.path.dirname(__file__),'img/agrae_logo.png'))
+
+
+        self.setTextOverElements(nombres_exp,self.nombre_explotacion.upper())
+        self.setTextOverElements(direcciones,self.direccion_explotacion.upper())
+        
+
+
+        # # dist_logo_item.setPicturePath(os.path.join(os.path.dirname(__file__),'ui/img/dist_logo.png'))
+
+        # #* MAPAS
+       
+
+
+
+        lotes = self.layers['Atlas']
+
+        
+        self.setLayersToMap([layout.itemById('ceap36_txt'),layout.itemById('ceap90_txt')],[lotes,self.layers['Ceap36 Textura'],self.layers['Ceap90 Textura']],basemap) #*  PAG 01
+        self.setLayersToMap([layout.itemById('ceap36_inf'),layout.itemById('ceap90_inf')],[lotes,self.layers['Ceap36 Infiltracion'],self.layers['Ceap90 Infiltracion']],basemap) #* PAG 02
+        self.setLayersToMap([layout.itemById('map_segmentos'),layout.itemById('map_ambientes')],[lotes,self.layers['Segmentos'],self.layers['Ambientes']],basemap) #* PAG 04
+        self.setLayersToMap([layout.itemById('map_06'),layout.itemById('map_07')],[lotes,self.layers['Fert Variable Intraparcelaria'],self.layers['Fert Variable Parcelaria']],basemap) #* PAG 08
+        
+        
+        # # print(layers[_UNIDADES_I_])
+
+        
+        
+        # # #* LEYENDAS 
+        self.setLegendsToLayout(layout.itemById('legend_txt'),[self.layers['Ceap36 Textura']],['Texturas'])
+        self.setLegendsToLayout(layout.itemById('legend_inf'),[self.layers['Ceap36 Infiltracion']],['Infiltración [mm/h]'])
+        self.setLegendsToLayout(layout.itemById('legend_03'),[self.layers['Segmentos'],self.layers['Ambientes']],['Segmentos de Suelo','Ambientes Productivos'])
+        self.setLegendsToLayout(layout.itemById('legend_04'),[self.layers['Fert Variable Intraparcelaria'],self.layers['Fert Variable Parcelaria']],['Fertilización Intraparcelaria','Fertilización Parcelaria'])
+        
+    
+
+
+
+       
+
+        self.atlas.featureChanged.connect(lambda: self.moveCanvas(
+            layout.itemById('ceap36_inf'),
+            self.atlas,
+            nombres_lotes,
+            self.layers
+            ))
+
+        # if preview:
+        iface.openLayoutDesigner(layout)
+        
+        if printer:
+            self.exportAtlasReport()
+
     def moveCanvas(self,
-                   layout,
                    map:QgsLayoutItemMap,
                    atlas:QgsLayoutAtlas,
                    nombresLotes,
                    layers,
-                   panels,
-                   table
+                   panels=None,
+                   table=None,
+                   basic=False
                    ):
             
 
@@ -344,28 +482,30 @@ class aGraeComposerTools():
             nombre_lote = atlas.currentFilename()
             # print(atlas.currentFilename())
             # print(feature.attributes())
+            
+            self.setTextOverElements(nombresLotes,nombre_lote)
+            
             for l in layers:
                 if l != 'Atlas':
                     layers[l].setSubsetString('''  "lote"= '{}' '''.format(nombre_lote))
                     if l == 'CIC':
                         cic_layer = layers[l]
             
+            if not basic and panels != None and table != None:
+                table.setVectorLayer(cic_layer)
+                table.setDisplayedFields(['segmento'.upper(),'cic','ca','mg','k','na'])
+                c_0 = table.columns()[0]
+                c_0.setHeading('Segmento')
 
-            table.setVectorLayer(cic_layer)
-            table.setDisplayedFields(['segmento'.upper(),'cic','ca','mg','k','na'])
-            c_0 = table.columns()[0]
-            c_0.setHeading('Segmento')
-
-            table.refreshAttributes()
-
-         
-            self.setTextOverElements(nombresLotes,nombre_lote)
+                table.refreshAttributes()
 
             
-            panels[0].setPicturePath(self.panels_path+'/Panel00'+nombre_lote+'.png')
-            panels[1].setPicturePath(self.panels_path+'/Panel02'+nombre_lote+'.png')
-            panels[2].setPicturePath(self.panels_path+'/Panel01'+nombre_lote+'.png')
-            panels[3].setPicturePath(self.panels_path+'/Panel03'+nombre_lote+'.png')
+
+                
+                panels[0].setPicturePath(self.panels_path+'/Panel00'+nombre_lote+'.png')
+                panels[1].setPicturePath(self.panels_path+'/Panel02'+nombre_lote+'.png')
+                panels[2].setPicturePath(self.panels_path+'/Panel01'+nombre_lote+'.png')
+                panels[3].setPicturePath(self.panels_path+'/Panel03'+nombre_lote+'.png')
             
             extent = map.extent()
             atlas.coverageLayer().getFeature(atlas.currentFeatureNumber()+1)
@@ -374,7 +514,7 @@ class aGraeComposerTools():
     def ComposerPrintWorker(self):
         self.tools.UserMessages('Generando archivos de Preescripcion, este proceso puede tardar varios minutos.\nPorfavor espere un momento.')
         # print('worker')
-        worker = Worker(lambda: self.layoutGenerator(printer=True))
+        worker = Worker(lambda: self.layoutGeneratorPreescripcion(printer=True))
         # worker.signals.finished.connect(lambda: self.tools.UserMessages('Archivos generados correctamente',level=Qgis.Success))
         worker.signals.finished.connect(lambda: iface.messageBar().pushMessage("aGrae GIS", 'Archivos generados correctamente', level=Qgis.Success))
         self.threadpool.start(worker)
@@ -405,12 +545,40 @@ class aGraeComposerTools():
         except Exception as ex:
             print(ex)
 
-    def generateComposer(self,basemap):
-        self.layoutGenerator(basemap=basemap)
+    def generateComposer(self,basemap,basic=False):
+
+        if basic:
+            self.layoutGeneratorBasico(basemap=basemap)
+        else:
+            self.layoutGeneratorPreescripcion(basemap=basemap)
 
     def clearFilter(self):
         for x in self.layers:
             layer = self.layers[x]
             print(layer)
             layer.setSubsetString('')
-            
+
+    def layoutBasicogenerator(self,basemap,preview=False,printer=False):
+
+        basemap = self.tools.getBaseMap(basemap,self.basemaps)
+        QgsProject.instance().addMapLayer(basemap,False)
+        self.getDistData(idcampania=self.idcampania,idexplotacion=self.idexplotacion)
+        
+        titleFont = QFont('Arial',12,1,False)
+        titleFont.setBold(True)
+        subGroupFont = QFont('Arial',10,1,False)
+        subGroupFont.setBold(True)
+        font = QFont('Arial',10,1,False)
+
+        
+
+        legend_style = QgsLegendStyle()
+        legend_style.setFont(font)
+        legend_style.setMargin(QgsLegendStyle.Left,3)
+        legend_style_title = QgsLegendStyle()
+        legend_style_title.setFont(titleFont)
+        legend_style.setMargin(QgsLegendStyle.Bottom,10)
+        legend_style_subGroup = QgsLegendStyle()
+        legend_style_subGroup.setFont(subGroupFont)
+
+        pass

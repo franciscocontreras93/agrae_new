@@ -221,12 +221,6 @@ uf as (select
 	round(max((a.extraccioncosechan + a.extraccionresiduon) * (1 + s.n_inc)) / a.cef_n) necesidad_n,
 	round(max((a.extraccioncosechap + a.extraccionresiduop) * (1 + s.p_inc)) / a.cef_p) necesidad_p,
 	round(max((a.extraccioncosechak + a.extraccionresiduok) * (1 + s.k_inc)) / a.cef_k) necesidad_k,
-	-- (case 
-	-- 	when a.cef_k != 1 then round(round(max((a.extraccioncosechan + a.extraccionresiduon) * (1 + s.n_inc))) / a.cef_k)
-	-- 	else round(max((a.extraccioncosechak + a.extraccionresiduok) * (1 + s.k_inc)))
-	
-	-- end
-	-- ) necesidad_k,
 	st_multi(st_union(st_multi(ST_CollectionExtract(st_intersection(a.geometria,s.geometria),3)))) as geom
 	from extracciones a 
 	join segm_analitica s on st_intersects(s.geometria , a.geometria)
@@ -583,7 +577,7 @@ fert_report as (select
 	s.k_eq,
 	s.na_eq
 from fert_intraparcelaria uf
-join  segm_analitica s on uf.codigo = s.codigo),
+left join  segm_analitica s on uf.codigo = s.codigo),
 fert_parcelaria as (select 
 iddata,
 lote,
@@ -599,6 +593,8 @@ sum(area_ha) area_ha,
 st_asText(st_union(geom)) as geom
 from fert_intraparcelaria
 group by iddata,lote,f_fondo,f_cob1,f_cob2,f_cob3),
-mapa_sig as (select distinct fp.*,st_asText(fi.geom) as geom from fert_intraparcelaria  fi join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf)
---select * from mapa_sig
+mapa_sig as (select distinct fp.*,st_asText(fi.geom) as geom from fert_intraparcelaria  fi join fert_report fp on  fp.iddata = fi.iddata )
+-- select * from mapa_sig
 {}
+
+

@@ -9,13 +9,10 @@ class agraeDataBaseDriver():
         BASEDIR = os.path.abspath(os.path.dirname(__file__))
         os.environ['PGSERVICEFILE'] = os.path.join(BASEDIR,'pg_service.conf')
         # print(os.environ['PGSERVICEFILE'] )
-        
-
-       
-
+    
         self.conn = None
         self.s = QSettings('agrae','dbConnection')
-        self.local  = False
+        self.local  = True
         
 
         if self.local and os.environ['COMPUTERNAME'] == 'FRANCISCO':
