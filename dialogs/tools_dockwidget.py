@@ -876,8 +876,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
     def fillDataLote(self,feat):
         self.combo_cultivo.setCurrentIndex(0)
         iface.addDockWidget(Qt.RightDockWidgetArea,self)
-        print(feat)
-        # self.layer.select(feat.id)
         self.featureLote = feat
 
         self.date_siembra.setDate(self.FechaDesde)
@@ -945,29 +943,40 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         if self.check_cosecha.isChecked():
             fechaCosecha = self.date_cosecha.date().toString('yyyy-MM-dd')
         
-        sql_lote = '''update agrae.lotes set nombre = '{}' where idlote = {}'''.format(nombre,self.idLote)
-
-        sql_data = '''update campaign.data set idcultivo = {}, idregimen = {}, fechasiembra = nullif('{}','')::date, fechacosecha = nullif('{}','')::date, prod_esperada = {} where iddata = {} '''.format(cultivo,regimen,fechaSiembra,fechaCosecha,produccion,self.idData)
-        # print(sql_data)
-        with agraeDataBaseDriver().connection().cursor() as cursor:
-            try:
-                if self.nombreLote != self.line_nombre.text():
-                    cursor.execute(sql_lote)
-                    agraeDataBaseDriver().connection().commit()
-                # if  self.idCultivo != cultivo or self.idRegimen != regimen or self.prodEsperada != produccion:
-                # if  self.idCultivo != cultivo or self.idRegimen != regimen or self.prodEsperada != produccion or self.fechaSiembra != '' or self.fechaCosecha != '':
-                   
-                cursor.execute(sql_data)
-                agraeDataBaseDriver().connection().commit()
+        sql = f"""
+                    WITH updated_lote AS (
+                        UPDATE agrae.lotes
+                        SET nombre = '{nombre}'
+                        WHERE idlote = {self.idLote}
+                        RETURNING idlote
+                    )
+                    UPDATE campaign.data
+                    SET idcultivo = {cultivo},
+                        idregimen = {regimen},
+                        fechasiembra = nullif('{fechaSiembra}','')::date,
+                        fechacosecha = nullif('{fechaCosecha}','')::date,
+                        prod_esperada = {produccion}
+                    FROM updated_lote
+                    WHERE iddata = {self.idData};
+                """
+          
+        try:
+            conn = agraeDataBaseDriver().connection()
+            with conn.cursor() as cursor:
+                cursor.execute(sql)
+                conn.commit()
                 self.tools.messages('aGrae Tools','Lote actualizado correctamente',3)
-                # self.updateLotesLayer()
                 self.reloadLayer()
-            
-            except Exception as ex:
-                agraeDataBaseDriver().connection().rollback()
+        
+        except Exception as ex:
+            if conn:
+                conn.rollback()
                 QgsMessageLog.logMessage('{}'.format(ex), 'aGrae Tools', 2)
                 self.tools.messages('aGrae Tools','Ocurrio un error, verifica la información ingresada.',1)
-            
+        finally:
+            if conn:
+                conn.close()
+
         self.date_siembra.setDate(self.FechaDesde)
         self.date_cosecha.setDate(self.FechaDesde)
 

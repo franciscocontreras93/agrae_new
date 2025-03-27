@@ -26,6 +26,7 @@ with data as (select distinct
     c.cef_n,
 	c.cef_p,
 	c.cef_k,
+    c.indice_cosecha,
 	d.prod_esperada 
 	from campaign.data d 
 	left join agrae.cultivo c on c.idcultivo = d.idcultivo
@@ -180,13 +181,13 @@ extracciones as (select
 			d.ms_cosecha * a.prod_ponderada * d.extraccioncosechak
 		) as extraccioncosechak,-- EXTRACCION RESIDUO
 		round( -- EXTRACCION N
-			d.ms_residuo * a.prod_ponderada * d.extraccionresiduon
+			round(((a.prod_ponderada / d.indice_cosecha) - a.prod_ponderada) * d.ms_residuo) * d.extraccionresiduon
 		) as extraccionresiduon,
 		round( -- EXTRACCION P
-			d.ms_residuo * a.prod_ponderada * d.extraccionresiduop
+			round(((a.prod_ponderada / d.indice_cosecha) - a.prod_ponderada) * d.ms_residuo) * d.extraccionresiduop
 		) as extraccionresiduop,
 		round( -- EXTRACCION K
-			d.ms_residuo * a.prod_ponderada * d.extraccionresiduok
+			round(((a.prod_ponderada / d.indice_cosecha) - a.prod_ponderada) * d.ms_residuo) * d.extraccionresiduok
 		) as extraccionresiduok,
 		d.cef_n,
 		d.cef_p,
