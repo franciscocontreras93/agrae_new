@@ -105,6 +105,28 @@ class aGraeTools():
                 if len(data) >= 1:
                     for e in data:
                         combo.addItem(e[0],e[1])
+    def getExplotacionDataNoFilter(self,combo:QComboBox):
+
+        combo.clear()
+        sql = '''select distinct nombre,idexplotacion from agrae.explotacion order by idexplotacion desc'''
+        try:
+            conn = agraeDataBaseDriver().connection()
+            with conn.cursor() as cursor:
+                cursor.execute(sql)
+                data = cursor.fetchall()
+                if len(data) >= 1:
+                    for e in data:
+                        combo.addItem(e[0],e[1])
+        except:
+            if conn:
+                conn.rollback()
+
+        finally:
+            if conn:
+                conn.close()
+            
+
+    
     
 
     def messages(self,title:str,text:str,level:int=0,duration:int=2,alert=False):

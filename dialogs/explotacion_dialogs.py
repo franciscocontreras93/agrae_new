@@ -148,10 +148,21 @@ class CreateExplotacionDialog(QDialog):
                 sql = '''with new_lote as (insert into agrae.lotes(nombre,geom) values('{}', st_multi(st_geomfromtext('{}',4326))) returning idlote)
                 insert into campaign.data(idcampania,idexplotacion,idlote) values({},{},(select idlote from new_lote))'''.format(nombre,geom,self.idCampania,idExplotacion)
                 # print(sql)
-                with self.conn.cursor() as cursor:
-                    cursor.execute(sql)
+                try:
+                    conn = agraeDataBaseDriver().connection()
+                    with conn.cursor() as cursor:
+                        cursor.execute(sql)
+                        conn.commit()
+                        
+                except Exception as ex:
+                    print(ex)
+                    if conn:
+                        conn.rollback()
+                finally:
+                    if conn:
+                        conn.close()
 
-                    self.conn.commit()
+                
 
                     # print('lote {} creado y asociado con la campania'.format(nombre))
             self.loteCreated.emit(self.idExplotacion)

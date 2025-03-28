@@ -110,6 +110,7 @@ class CrearLotesDialog(QDialog):
         self.combo_layer.layerChanged.connect(self.updateCombo)
 
         self.select_seleccionados = QCheckBox('Lotes seleccionados')
+        self.select_seleccionados.setChecked(True)
         
         self.label_2 = QLabel('Seleccionar Campo Nombre del Lote')
         self.label_2.setMaximumSize(QSize(250,15))
@@ -129,7 +130,7 @@ class CrearLotesDialog(QDialog):
         self.combo_explotacion.setEnabled(False)
 
         self.tools.getCampaniasData(self.combo_campania)
-        self.tools.getExplotacionData(self.combo_explotacion,self.combo_campania.currentData())
+        self.tools.getExplotacionDataNoFilter(self.combo_explotacion)
         
 
         self.combo_explotacion.setEditable(True)
@@ -139,6 +140,7 @@ class CrearLotesDialog(QDialog):
 
         self.btn_cargar = QPushButton('Cargar Lotes')
         self.btn_cargar.clicked.connect(self.loadLotes)
+        
         
         
         self.groupBoxLayout.addWidget(QLabel('Selecciona la Capa con los Lotes'),0,0,1,0)
