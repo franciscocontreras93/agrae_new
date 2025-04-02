@@ -21,6 +21,7 @@ with data as (select distinct
 	c.extraccionresiduon,
 	c.extraccionresiduop,
 	c.extraccionresiduok,
+	c.indice_cosecha,
 	c.cef_n,
 	c.cef_p,
 	c.cef_k,

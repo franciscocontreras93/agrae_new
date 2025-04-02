@@ -180,15 +180,24 @@ extracciones as (select
 		round( -- EXTRACCION K
 			d.ms_cosecha * a.prod_ponderada * d.extraccioncosechak
 		) as extraccioncosechak,-- EXTRACCION RESIDUO
-		round( -- EXTRACCION N
+		case
+			when d.indice_cosecha = 0 then 0
+			else round( -- EXTRACCION N
 			round(((a.prod_ponderada / d.indice_cosecha) - a.prod_ponderada) * d.ms_residuo) * d.extraccionresiduon
-		) as extraccionresiduon,
-		round( -- EXTRACCION P
+		) 
+		end as extraccionresiduon,
+		case
+			when d.indice_cosecha = 0 then 0
+			else round( -- EXTRACCION P
 			round(((a.prod_ponderada / d.indice_cosecha) - a.prod_ponderada) * d.ms_residuo) * d.extraccionresiduop
-		) as extraccionresiduop,
-		round( -- EXTRACCION K
+		) 
+		end as extraccionresiduop,
+		case
+			when d.indice_cosecha = 0 then 0
+			else round( -- EXTRACCION K
 			round(((a.prod_ponderada / d.indice_cosecha) - a.prod_ponderada) * d.ms_residuo) * d.extraccionresiduok
-		) as extraccionresiduok,
+		)
+		end as extraccionresiduok,
 		d.cef_n,
 		d.cef_p,
 		d.cef_k
