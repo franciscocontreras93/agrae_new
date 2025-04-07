@@ -1,4 +1,6 @@
+from math import sin
 import os
+import signal
 import ee
 import datetime
 import tempfile
@@ -19,11 +21,10 @@ class GEETools:
     def __init__(self):
         pass
 
-    def getGeometry(self,buffer:int,feature:QgsFeature,transformation_crs:QgsCoordinateTransform):
+    def getGeometry(self,buffer:int,feature:QgsFeature):
 
         coords = []
         geom = feature.geometry()
-        geom.transform(transformation_crs)
         
         poly = geom.asMultiPolygon()
         features = [poly[f][0] for f in range(len(poly))]
@@ -39,6 +40,53 @@ class GEETools:
     def addIndexComposite(self,image,bands:Annotated[list[str],2],name:str='nd'): return image.addBands(image.normalizedDifference(bands).rename(name))
     
     def clipScene(self,image,geometry): return image.clip(geometry)
+
+    def getScene (self,geometry:ee.Geometry.MultiPolygon,since:ee.Date,until:ee.Date,bands:Annotated[list[str],2]=['B8','B4'],max_clouds:int=5):
+        
+        imageCollection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(geometry).filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', max_clouds).filter(ee.Filter.calendarRange(until,since,'year'))
+        # imageCollection = ee.ImageCollection('COPERNICUS/S2_SR').filterBounds(self.geometry).filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', self._max_clouds).filter(ee.Filter.calendarRange(self._years.get(0),self._years.get(-1),'year'))
+        scene = imageCollection.map(lambda image: self.addIndexComposite(image,bands,'nd'))
+        scene = scene.select(['nd'])
+        scene = scene.map(lambda image: self.clipScene(image,geometry))
+        return  scene
+    
+    def getProcessedScene(self,years:ee.List,scene:ee.ImageCollection):
+        processed = years.map(lambda y: self.processingScene(y,scene))
+        return processed
+    
+    def processingScene(self,y,scene: ee.ImageCollection):
+        return scene.filter(ee.Filter.calendarRange(y, y, 'year')).reduce(ee.Reducer.max()) 
+    
+    def getConvolve(self,image:ee.Image,units:int,magnitude:int,radius:int):
+        units = {
+            1 : 'pixels',
+            2 : 'meters'
+        }
+        filter = ee.Kernel.square(
+          radius= radius,
+          units= units[units],
+          magnitude = magnitude,
+          normalize = True
+        )
+        return image.convolve(filter)
+
+    def getReclassifiedImage(self,image,radius:int,magnitude:int,units:int,ndre:bool):
+        NDVIConvolve = self.getConvolve(
+            image = image,
+            radius= radius,
+            magnitude= magnitude,
+            units= units
+        )
+        
+        percentile = self.getPercentiles(NDVIConvolve)
+        if ndre:
+            expression = ee.String('(b(0) <= ').cat(ee.Number(percentile.get('nd_max_p14').getInfo()).format()).cat(') ? 14 : (b(0) <= ').cat(ee.Number(percentile.get('nd_max_p28').getInfo()).format()).cat(') ? 28 : (b(0) <= ').cat(ee.Number(percentile.get('nd_max_p42').getInfo()).format()).cat(') ? 42 : (b(0) <= ').cat(ee.Number(percentile.get('nd_max_p56').getInfo()).format()).cat(') ? 56 : (b(0) <= ').cat(ee.Number(percentile.get('nd_max_p70').getInfo()).format()).cat(') ? 70 : (b(0) <= ').cat(ee.Number(percentile.get('nd_max_p84').getInfo()).format()).cat(') ? 84 : 100');reclass = NDVIConvolve.expression(expression) 
+        else: 
+            expression = ee.String('(b(0) <= ').cat(ee.Number(percentile.get('nd_max_p25').getInfo()).format()).cat(') ? 20 : (b(0) < ').cat(ee.Number(percentile.get('nd_max_p50').getInfo()).format()).cat(') ? 40 : 60')
+
+        reclass = NDVIConvolve.expression(expression)
+        return reclass
+    
 
     def maskClouds(self,image,feature): 
         scl = image.select('SCL')
@@ -83,6 +131,28 @@ class GEETools:
         r = QgsRasterLayer(downloadPath,'NDVI_GEE_Layer')
         QgsProject.instance().addMapLayer(r)
         return r
+    
+    def getLayerClip(self,feature) -> QgsVectorLayer:
+
+        layer_clip = QgsVectorLayer('Multipolygon?crs=EPSG:4326','lote','memory')
+        lote_feat = QgsFeature()
+        lote_feat.setGeometry(feature.geometry())
+        layer_clip.startEditing()
+        layer_clip.addFeature(lote_feat)
+        layer_clip.commitChanges()
+
+        return layer_clip
+
+    def postProcessing(self,ambientes_gee,ndvi_gee,layer_clip:QgsVectorLayer):
+
+        QgsMessageLog.logMessage('**** Ejecutando algoritmo de Post-Procesamiento. ****' , 'aGrae GEE', level=Qgis.Info) 
+        processing.runAndLoadResults("model:1_Post-procesado", {
+        'capa_ambientes_gee':self.ambientesLayer,
+        'capa_ndvi_gee':self.ndviLayer,
+        # 'lote':QgsProcessingFeatureSourceDefinition(self._layer.source() , selectedFeaturesOnly=True, featureLimit=-1, geometryCheck=QgsFeatureRequest.GeometryAbortOnInvalid),
+        'lote': layer_clip,
+        'mapa_de_ambientes':'TEMPORARY_OUTPUT'})
+        QgsMessageLog.logMessage('**** Mapa de Ambientes generado Correctamente ****' , 'aGrae GEE', level=Qgis.Info) 
 
 class aGraeNDVI:
     def __init__(
@@ -293,7 +363,9 @@ class aGraeNDVI:
 class aGraeNDVIMulti:
     def __init__(
         self,
-        layer :QgsVectorLayer = iface.activeLayer(),
+        layer : QgsVectorLayer,
+        feature : QgsFeature,
+        crs = QgsCoordinateReferenceSystem,
         year : int =datetime.datetime.today().year ,
         period: int = 5, 
         max_clouds : int = 20,
@@ -308,11 +380,12 @@ class aGraeNDVIMulti:
 
         self.tools = GEETools()
        
-        
-        self._layer = layer
-        self._crs = self._layer.crs()
+        self._feature = feature
+        # self._layer = layer
+        # self._crs = self._layer.crs()
+        self._crs = QgsCoordinateReferenceSystem(4326)
         self._destCrs = QgsCoordinateReferenceSystem(4326)
-        self._tr = QgsCoordinateTransform(self._crs, self._destCrs, QgsProject.instance())
+        self._tr = QgsCoordinateTransform(QgsCoordinateReferenceSystem(4326), self._destCrs, QgsProject.instance())
         
         self._year = year
         self._initial_date = self._year  - period
@@ -328,6 +401,8 @@ class aGraeNDVIMulti:
 
         ee.Initialize(project='ee-agraeproyectos')
         QgsMessageLog.logMessage('*** Google Earth Engine Iniciado Correctamente ***' , 'aGrae GEE', level=Qgis.Info) 
+        QgsMessageLog.logMessage(f'*** {self._feature}***' , 'aGrae GEE', level=Qgis.Info) 
+        QgsMessageLog.logMessage(f'*** {self._crs}***' , 'aGrae GEE', level=Qgis.Info) 
                 
     def getGeometry(self,feature):
         
@@ -443,6 +518,8 @@ class aGraeNDVIMulti:
         'lote': layer_clip,
         'mapa_de_ambientes':'TEMPORARY_OUTPUT'})
         QgsMessageLog.logMessage('**** Mapa de Ambientes generado Correctamente ****' , 'aGrae GEE', level=Qgis.Info) 
+
+
     def run(self):
         QgsMessageLog.logMessage('**** Ejecutando algoritmo de Pre-Procesamiento en GEE. ****\n**** Este proceso puede tardar algunos minutos. ****' , 'aGrae GEE', level=Qgis.Info) 
         
@@ -522,9 +599,7 @@ class aGraeNDRE:
         # scene = imageCollection.map(lambda image: self.tools.clipScene(image,self.geometry))
         # scene = scene.map(lambda image: self.tools.maskClouds(image,self.geometry))
         # scene = scene.map(lambda image: self.tools.addIndexComposite(image,['B8','B5'],'NDRE'))
-        return  imageCollection
-
-    
+        return  imageCollection 
     
     def run(self):
         QgsMessageLog.logMessage('**** Ejecutando algoritmo de Pre-Procesamiento en GEE. ****\n**** Este proceso puede tardar algunos minutos. ****' , 'aGrae GEE', level=Qgis.Info) 
@@ -563,3 +638,44 @@ class aGraeNDRE:
             # QgsMessageLog.logMessage('**** Pre-Procesamiento Exitoso ****' , 'aGrae GEE', level=Qgis.Info) 
             
             # self.execute(layer_clip)
+
+
+
+class aGraeGEECore:
+    
+    def __init__(self):
+        ee.Initialize(project='ee-agraeproyectos')
+        self.tools = GEETools()
+
+        pass
+
+    def runAmbiente(self,feature: QgsFeature,bands:list, buffer: int,since:str,until:str,kernel_radius:int=5,kernel_magnitude:int=1,kernel_units:int=1,max_clouds:int=5):
+        layer_clip = self.tools.getLayerClip(feature)
+        since = ee.Date(since).get('year')
+        until = ee.Date(until).get('year')
+        self._years =  ee.List.sequence(until, since)
+        self.geometry = self.tools.getGeometry(buffer,feature)
+        self.scene = self.tools.getScene(
+            geometry=self.geometry,
+            since=since,
+            until=until,
+            bands=bands,
+            max_clouds=max_clouds
+        )
+        self.processed = self.tools.getProcessedScene(self._years,self.scene)
+        print(self.processed.getInfo())
+        # self.NDVImax = self.processed.median()
+
+        # self.reclassified = self.tools.getReclassifiedImage(self.NDVImax,kernel_radius,kernel_magnitude,kernel_units)
+        # self.ambientes = self.getAmbientes(self.reclassified)
+            
+        # self.ndviLayer = self.downloadImage(self.NDVImax)
+        # self.ambientesLayer = self.downloadVector(self.ambientes)
+        # # print('**** Pre-Procesamiento Exitoso ****')
+
+        # # QgsMessageLog.logMessage('**** Pre-Procesamiento Exitoso ****' , 'aGrae GEE', level=Qgis.Info) 
+        
+        # self.tools.postProcessing(self.ambientesLayer,self.ndviLayer,layer_clip)
+        # QgsProject.instance().addMapLayer(layer_clip)
+        
+
