@@ -12,28 +12,28 @@ from psycopg2 import InterfaceError, errors, extras
 
 from qgis.PyQt.QtWidgets import *
 from qgis.PyQt.QtWidgets import (
-    QDialog,
-    QSpinBox,
-    QGridLayout,
-    QVBoxLayout,
-    QHBoxLayout,
-    QPushButton,
-    QGroupBox,
-    QLabel,
-    QPlainTextEdit,
     QComboBox,
+    QDateEdit,
+    QDialog,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
     QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QSpinBox,
     QTabWidget,
-    QWidget
- 
-    
+    QVBoxLayout,
+    QWidget,
+    QProgressBar
     )
-from qgis.PyQt.QtCore import pyqtSignal, QSettings, QVariant, Qt, QSize,QThreadPool
+from qgis.PyQt.QtCore import pyqtSignal, QSettings, QVariant, Qt, QSize,QThreadPool,QDate
+
 from qgis.core import *
 from qgis.gui import * 
 from qgis.utils import iface
-from qgis.PyQt.QtXml import QDomDocument
-from qgis.PyQt import uic
+
 
 from ..gui import agraeGUI
 from ..tools import aGraeTools
@@ -45,11 +45,6 @@ from ..gui.CustomTable import CustomTable
 from ..gui.CustomPushButton import CustomPushButton
 
 import threading
-
-
-
-
-
 
 class aGraeGEEDialog(QDialog):
     
@@ -85,6 +80,16 @@ class aGraeGEEDialog(QDialog):
     def UIComponents(self):
         self.layout = QVBoxLayout()
 
+        self.tabWidget = QTabWidget()
+        self.tabWidget.setStyleSheet("QTabWidget::pane { padding: 10px; }")
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+
+        ambientesWidget = QWidget()
+        ambienteLayout = QVBoxLayout()
+
         layerGroupLayout = QVBoxLayout()
         self.layerGroup = QGroupBox()
         self.layerGroup.setTitle('Selecciona la Capa que contiene el Lote.')
@@ -92,9 +97,11 @@ class aGraeGEEDialog(QDialog):
         layerGroupLayout.addWidget(self.layer)
         self.layerGroup.setLayout(layerGroupLayout)
 
-        sceneGroupLayout = QGridLayout()
-        self.sceneParametersGroup = QGroupBox()
-        self.sceneParametersGroup.setTitle('Configurar Parametros de Escena')
+        #TAB AMBIENTES
+
+        sceneAmbientesGroupLayout = QGridLayout()
+        self.sceneAmbientesParametersGroup = QGroupBox()
+        self.sceneAmbientesParametersGroup.setTitle('Configurar Parametros de Escena')
 
         label_year = QLabel('Año')
         self.year = QSpinBox()
@@ -114,24 +121,67 @@ class aGraeGEEDialog(QDialog):
         self.cloud.setMaximum(40)
         self.cloud.setValue(5)
 
+
+        self.btn_generate_ambientes = QPushButton('Generar Ambientes')
+        self.btn_generate_ambientes.clicked.connect(self.generateAmbientes)
+
+        sceneAmbientesGroupLayout.addWidget(label_year,0,0)
+        sceneAmbientesGroupLayout.addWidget(self.year,1,0)
+        sceneAmbientesGroupLayout.addWidget(label_period,0,1)
+        sceneAmbientesGroupLayout.addWidget(self.period,1,1)
+        sceneAmbientesGroupLayout.addWidget(label_cloud,0,2)
+        sceneAmbientesGroupLayout.addWidget(self.cloud,1,2)
+        sceneAmbientesGroupLayout.addWidget(self.btn_generate_ambientes,2,0,1,3)
+        self.sceneAmbientesParametersGroup.setLayout(sceneAmbientesGroupLayout)
+
+        # TAB COBERTERAS
+
+        sceneCoberteraGroupLayout = QGridLayout()
+        self.sceneCoberteraParametersGroup = QGroupBox()
+        self.sceneCoberteraParametersGroup.setTitle('Configurar Parametros de Escena')
+
+
+        self.hasta = QDateEdit()
+        self.hasta.setCalendarPopup(True)
+        self.hasta.setDisplayFormat('dd/MM/yyyy')
+        self.hasta.setDate(QDate.currentDate())
+        self.hasta.setMaximumDate(QDate.currentDate())
         
 
-        
-        
-        sceneGroupLayout.addWidget(label_year,0,0)
-        sceneGroupLayout.addWidget(self.year,1,0)
-        
-        sceneGroupLayout.addWidget(label_period,0,1)
-        sceneGroupLayout.addWidget(self.period,1,1)
+        self.desde = QDateEdit()
+        self.desde.setCalendarPopup(True)
+        self.desde.setDisplayFormat('dd/MM/yyyy')
+        self.desde.setDate(self.hasta.date().addMonths(-1))
+        self.desde.setMaximumDate(QDate.currentDate())
 
-        sceneGroupLayout.addWidget(label_cloud,0,2)
-        sceneGroupLayout.addWidget(self.cloud,1,2)
+        self.nubes_cobertera = QSpinBox()
+        self.nubes_cobertera.setMinimum(0)
+        self.nubes_cobertera.setMaximum(40)
+        self.nubes_cobertera.setValue(5)
+
+        self.btn_generate_coberteras = QPushButton('Generar Coberteras')
+        self.btn_generate_coberteras.clicked.connect(self.generateCoberteras)
+
+        sceneCoberteraGroupLayout.addWidget(QLabel('Desde'),0,0)
+        sceneCoberteraGroupLayout.addWidget(self.desde,1,0)
+        sceneCoberteraGroupLayout.addWidget(QLabel('Hasta'),0,1)
+        sceneCoberteraGroupLayout.addWidget(self.hasta,1,1)
+        sceneCoberteraGroupLayout.addWidget(QLabel('Nubosidad'),0,2)
+        sceneCoberteraGroupLayout.addWidget(self.nubes_cobertera,1,2)
+        sceneCoberteraGroupLayout.addWidget(self.btn_generate_coberteras,2,0,1,3)
+        
+        self.sceneCoberteraParametersGroup.setLayout(sceneCoberteraGroupLayout)
 
 
-        self.sceneParametersGroup.setLayout(sceneGroupLayout)
+
+
+
+        self.tabWidget.addTab(self.sceneAmbientesParametersGroup,'1) Generar Mapas de Ambientes')
+        self.tabWidget.addTab(self.sceneCoberteraParametersGroup,'2) Generar Mapas de Coberteras')
 
         advanceGroupLayout = QGridLayout()
-        self.advanceParametersGroup = QGroupBox()
+        self.advanceParametersGroup = QgsCollapsibleGroupBox()
+        self.advanceParametersGroup.setCollapsed(True)
         self.advanceParametersGroup.setTitle('Configurar Parametros de Kernel')
         
         label_buffer = QLabel('Radio del Buffer')
@@ -174,8 +224,7 @@ class aGraeGEEDialog(QDialog):
 
 
         self.advanceParametersGroup.setLayout(advanceGroupLayout)
-        self.btn_run = QPushButton('Ejecutar')
-        self.btn_run.clicked.connect(self.run)
+        
         
 
 
@@ -183,9 +232,9 @@ class aGraeGEEDialog(QDialog):
 
 
         self.layout.addWidget(self.layerGroup)
-        self.layout.addWidget(self.sceneParametersGroup)
+        self.layout.addWidget(self.tabWidget)
         self.layout.addWidget(self.advanceParametersGroup)
-        self.layout.addWidget(self.btn_run)
+        self.layout.addWidget(self.progress_bar)
 
 
         self.setLayout(self.layout)
@@ -217,7 +266,7 @@ class aGraeGEEDialog(QDialog):
         
         core.run()
 
-    def run(self):
+    def generateAmbientes(self):
     
         self.tools.messages('aGrae GEE','Generando Mapas de Ambientes, este proceso puede tardar varios minutos.\nPorfavor espere un momento.',alert=True)
         # print('worker')
@@ -225,6 +274,10 @@ class aGraeGEEDialog(QDialog):
         # worker.signals.finished.connect(lambda: self.tools.UserMessages('Archivos generados correctamente',level=Qgis.Success))
         worker.signals.finished.connect(lambda: iface.messageBar().pushMessage("aGrae GIS", 'Archivos generados correctamente', level=Qgis.Success))
         self.threadpool.start(worker)
+
+    def generateCoberteras(self):
+        pass
+        
 
 
     
