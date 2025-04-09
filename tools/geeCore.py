@@ -54,23 +54,26 @@ class GEETools:
         processed = years.map(lambda y: self.processingScene(y,scene))
         return processed
     
-    def processingScene(self,y,scene: ee.ImageCollection):
+    def processingScene(self,y,scene):
         return scene.filter(ee.Filter.calendarRange(y, y, 'year')).reduce(ee.Reducer.max()) 
     
     def getConvolve(self,image:ee.Image,units:int,magnitude:int,radius:int):
-        units = {
+        units_mapping = {
             1 : 'pixels',
             2 : 'meters'
         }
         filter = ee.Kernel.square(
           radius= radius,
-          units= units[units],
+          units= units_mapping[units],
           magnitude = magnitude,
           normalize = True
         )
         return image.convolve(filter)
 
-    def getReclassifiedImage(self,image,radius:int,magnitude:int,units:int,ndre:bool):
+    def getPercentiles(self,image : ee.Image ,geometry, percentiles : list = [25,50,75]):
+        return image.reduceRegion(ee.Reducer.percentile(percentiles), geometry, 1)
+    
+    def getReclassifiedImage(self,image,geometry,radius:int,magnitude:int,units:int,ndre:bool=False):
         NDVIConvolve = self.getConvolve(
             image = image,
             radius= radius,
@@ -78,16 +81,29 @@ class GEETools:
             units= units
         )
         
-        percentile = self.getPercentiles(NDVIConvolve)
         if ndre:
+            percentile = self.getPercentiles(NDVIConvolve,geometry,[14,28,42,56,70,84])
+
+
             expression = ee.String('(b(0) <= ').cat(ee.Number(percentile.get('nd_max_p14').getInfo()).format()).cat(') ? 14 : (b(0) <= ').cat(ee.Number(percentile.get('nd_max_p28').getInfo()).format()).cat(') ? 28 : (b(0) <= ').cat(ee.Number(percentile.get('nd_max_p42').getInfo()).format()).cat(') ? 42 : (b(0) <= ').cat(ee.Number(percentile.get('nd_max_p56').getInfo()).format()).cat(') ? 56 : (b(0) <= ').cat(ee.Number(percentile.get('nd_max_p70').getInfo()).format()).cat(') ? 70 : (b(0) <= ').cat(ee.Number(percentile.get('nd_max_p84').getInfo()).format()).cat(') ? 84 : 100');reclass = NDVIConvolve.expression(expression) 
         else: 
+
+            percentile = self.getPercentiles(NDVIConvolve,geometry)
+
             expression = ee.String('(b(0) <= ').cat(ee.Number(percentile.get('nd_max_p25').getInfo()).format()).cat(') ? 20 : (b(0) < ').cat(ee.Number(percentile.get('nd_max_p50').getInfo()).format()).cat(') ? 40 : 60')
 
         reclass = NDVIConvolve.expression(expression)
         return reclass
     
-
+    def getAmbientes(self,image,geometry,scale=1):
+        ambientes = image.reduceToVectors(
+          scale = scale,
+          labelProperty = 'ambiente',
+          bestEffort = False,
+          geometry = geometry
+          )
+        
+        return ambientes
     def maskClouds(self,image,feature): 
         scl = image.select('SCL')
         clouds =  scl.eq(3).Or(scl.eq(8)).Or(scl.eq(9)).Not()
@@ -108,29 +124,29 @@ class GEETools:
 
 
         return image.updateMask(mask).divide(10000)
-
-    def imageDownloadURL(self,image,feature):
-        return image.getDownloadURL({
-            'format':'GeoTIFF',
-            'crs': 'EPSG:3857',
-            'region': feature,
-            'scale':10
-            })
     
-    def downloadImage(self,image,feature,name='temp'):
+    def downloadImage(self,image,geometry,name='temp'):
         temp = tempfile.gettempdir()
         url = image.getDownloadURL({
             'format':'GeoTIFF',
             'crs': 'EPSG:3857',
-            'region': feature,
+            'region': geometry,
             'scale':10
             })
         downloadPath = os.path.join(tempfile.gettempdir(),f"{name}.tiff")
         request.urlretrieve(url,downloadPath)
         fileName = os.path.basename(downloadPath)
         r = QgsRasterLayer(downloadPath,'NDVI_GEE_Layer')
-        QgsProject.instance().addMapLayer(r)
+        # QgsProject.instance().addMapLayer(r)
         return r
+    
+    def downloadVector(self,vectorial,name='vector_temp'):
+        downloadPath = os.path.join(tempfile.gettempdir(),f"{name}.geojson")
+        url= vectorial.getDownloadURL('geojson')
+        request.urlretrieve(url,downloadPath)
+        v = QgsVectorLayer(downloadPath,'Ambientes_GEE_Layer')
+#        QgsProject.instance().addMapLayer(v)
+        return v
     
     def getLayerClip(self,feature) -> QgsVectorLayer:
 
@@ -147,8 +163,8 @@ class GEETools:
 
         QgsMessageLog.logMessage('**** Ejecutando algoritmo de Post-Procesamiento. ****' , 'aGrae GEE', level=Qgis.Info) 
         processing.runAndLoadResults("model:1_Post-procesado", {
-        'capa_ambientes_gee':self.ambientesLayer,
-        'capa_ndvi_gee':self.ndviLayer,
+        'capa_ambientes_gee':ambientes_gee,
+        'capa_ndvi_gee':ndvi_gee,
         # 'lote':QgsProcessingFeatureSourceDefinition(self._layer.source() , selectedFeaturesOnly=True, featureLimit=-1, geometryCheck=QgsFeatureRequest.GeometryAbortOnInvalid),
         'lote': layer_clip,
         'mapa_de_ambientes':'TEMPORARY_OUTPUT'})
@@ -643,14 +659,16 @@ class aGraeNDRE:
 
 class aGraeGEECore:
     
+    
     def __init__(self):
         ee.Initialize(project='ee-agraeproyectos')
         self.tools = GEETools()
 
         pass
 
-    def runAmbiente(self,feature: QgsFeature,bands:list, buffer: int,since:str,until:str,kernel_radius:int=5,kernel_magnitude:int=1,kernel_units:int=1,max_clouds:int=5):
+    def runGEECore(self,feature: QgsFeature,bands:list, buffer: int,since:str,until:str,kernel_radius:int=5,kernel_magnitude:int=1,kernel_units:int=1,max_clouds:int=5):
         layer_clip = self.tools.getLayerClip(feature)
+        
         since = ee.Date(since).get('year')
         until = ee.Date(until).get('year')
         self._years =  ee.List.sequence(until, since)
@@ -662,20 +680,22 @@ class aGraeGEECore:
             bands=bands,
             max_clouds=max_clouds
         )
-        self.processed = self.tools.getProcessedScene(self._years,self.scene)
-        print(self.processed.getInfo())
-        # self.NDVImax = self.processed.median()
+        self.processed = ee.ImageCollection.fromImages(self.tools.getProcessedScene(self._years,self.scene))
+        # print(self.processed.getInfo())
+        self.NDVImax = self.processed.median()
 
-        # self.reclassified = self.tools.getReclassifiedImage(self.NDVImax,kernel_radius,kernel_magnitude,kernel_units)
-        # self.ambientes = self.getAmbientes(self.reclassified)
+        self.reclassified = self.tools.getReclassifiedImage(self.NDVImax, self.geometry,kernel_radius,kernel_magnitude,kernel_units)
+        self.ambientes = self.tools.getAmbientes(self.reclassified,self.geometry)
             
-        # self.ndviLayer = self.downloadImage(self.NDVImax)
-        # self.ambientesLayer = self.downloadVector(self.ambientes)
-        # # print('**** Pre-Procesamiento Exitoso ****')
+        self.ndviLayer = self.tools.downloadImage(self.NDVImax,self.geometry)
+        self.ambientesLayer = self.tools.downloadVector(self.ambientes)
+        # print('**** Pre-Procesamiento Exitoso ****')
 
-        # # QgsMessageLog.logMessage('**** Pre-Procesamiento Exitoso ****' , 'aGrae GEE', level=Qgis.Info) 
+        # QgsMessageLog.logMessage('**** Pre-Procesamiento Exitoso ****' , 'aGrae GEE', level=Qgis.Info) 
         
-        # self.tools.postProcessing(self.ambientesLayer,self.ndviLayer,layer_clip)
+        self.tools.postProcessing(self.ambientesLayer,self.ndviLayer,layer_clip)
         # QgsProject.instance().addMapLayer(layer_clip)
+
+    
         
 

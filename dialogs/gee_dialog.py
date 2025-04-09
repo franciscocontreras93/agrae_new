@@ -33,7 +33,7 @@ from qgis.PyQt.QtCore import pyqtSignal, QSettings, QVariant, Qt, QSize,QThreadP
 from qgis.core import *
 from qgis.gui import * 
 from qgis.utils import iface
-from ..tools.geeCore import aGraeNDVIMulti,aGraeGEECore
+
 
 
 from ..gui import agraeGUI
@@ -57,7 +57,9 @@ class WorkerSignals(QObject):
     current_lote = pyqtSignal(str)
 
 class GenerateAmbientesWorker(QRunnable):
+    
     def __init__(self, features,bands:list,since:str,until:str):
+        from ..tools.geeCore import aGraeGEECore
         super().__init__()
         self.core = aGraeGEECore()
         self.bands = bands
@@ -67,16 +69,18 @@ class GenerateAmbientesWorker(QRunnable):
         self.total_features = len(self.features)
         self.signals = WorkerSignals()
 
+        
+
     def run(self):
         current = 0
         try:
             for i, feature in enumerate(self.features):
                 current += 1
                 progress_percentage = int((i + 1) / self.total_features * 100) #Calculate percentage
-                self.signals.progress.emit(progress_percentage) # Emit percentage
                 self.signals.current_lote.emit('{} {}/{} '.format(feature['lote'], current,self.total_features))
-                self.core.runAmbiente(feature,bands=self.bands,since=self.since,until=self.until,buffer=10)
-                time.sleep(0.5)
+                self.core.runGEECore(feature,bands=self.bands,since=self.since,until=self.until,buffer=10)
+                self.signals.progress.emit(progress_percentage) # Emit percentage
+                # time.sleep(0.5)
         except Exception as e:
             self.signals.error.emit((type(e), e, traceback.format_exc()))
         finally:
@@ -94,6 +98,9 @@ class aGraeGEEDialog(QDialog):
         self.setWindowTitle('aGrae | Google-Earth-Engine API')
         self.tools = aGraeTools()
         self.threadpool = QThreadPool()
+
+        self.setWindowFlags(Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint) #Added Qt.WindowMinimizeButtonHint
+        self.setModal(False) #Crucial change: Set modal to False
 
     def getLayer(self, layer: QgsVectorLayer):
         if self.check_layer.isChecked():

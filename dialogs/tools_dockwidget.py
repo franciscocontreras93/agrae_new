@@ -410,7 +410,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
 
     def geeDialog(self):
         dlg = aGraeGEEDialog()
-        dlg.exec()
+        dlg.exec_()
 
     def asignarCultivosLotes(self):
         #* NUEVO 
