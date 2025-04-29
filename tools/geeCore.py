@@ -1,6 +1,8 @@
 from math import sin
 import os
 import signal
+
+from sympy import false
 import ee
 import datetime
 import tempfile
@@ -12,13 +14,17 @@ from urllib import request
 
 from qgis.utils import iface
 from qgis.core import *
+from qgis.utils import plugins
 
 from ..tools import aGraeTools
+from ..tools.gee_postprocesing import GEE_postprocesado
 
 #from qgis.PyQt.QtCore import QSettings
 
 class GEETools:
     def __init__(self):
+        
+        
         pass
 
     def getGeometry(self,buffer:int,feature:QgsFeature):
@@ -41,9 +47,9 @@ class GEETools:
     
     def clipScene(self,image,geometry): return image.clip(geometry)
 
-    def getScene (self,geometry:ee.Geometry.MultiPolygon,since:ee.Date,until:ee.Date,bands:Annotated[list[str],2]=['B8','B4'],max_clouds:int=5):
+    def getScene (self,geometry:ee.Geometry.MultiPolygon,filterDate:ee.Filter,bands:Annotated[list[str],2]=['B8','B4'],max_clouds:int=5):
         
-        imageCollection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(geometry).filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', max_clouds).filter(ee.Filter.calendarRange(until,since,'year'))
+        imageCollection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(geometry).filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', max_clouds).filter(filterDate)
         # imageCollection = ee.ImageCollection('COPERNICUS/S2_SR').filterBounds(self.geometry).filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', self._max_clouds).filter(ee.Filter.calendarRange(self._years.get(0),self._years.get(-1),'year'))
         scene = imageCollection.map(lambda image: self.addIndexComposite(image,bands,'nd'))
         scene = scene.select(['nd'])
@@ -95,7 +101,7 @@ class GEETools:
         reclass = NDVIConvolve.expression(expression)
         return reclass
     
-    def getAmbientes(self,image,geometry,scale=1):
+    def getReducedVectors(self,image,geometry,scale=1):
         ambientes = image.reduceToVectors(
           scale = scale,
           labelProperty = 'ambiente',
@@ -159,16 +165,81 @@ class GEETools:
 
         return layer_clip
 
-    def postProcessing(self,ambientes_gee,ndvi_gee,layer_clip:QgsVectorLayer):
+    def postProcessing(self, capaVectorial: QgsVectorLayer, capaRaster: QgsVectorLayer, capaClip: QgsVectorLayer,ndre:bool=False):
+        """
+        Ejecuta el algoritmo de post-procesamiento de QGIS y aplica un estilo.
 
-        QgsMessageLog.logMessage('**** Ejecutando algoritmo de Post-Procesamiento. ****' , 'aGrae GEE', level=Qgis.Info) 
-        processing.runAndLoadResults("model:1_Post-procesado", {
-        'capa_ambientes_gee':ambientes_gee,
-        'capa_ndvi_gee':ndvi_gee,
-        # 'lote':QgsProcessingFeatureSourceDefinition(self._layer.source() , selectedFeaturesOnly=True, featureLimit=-1, geometryCheck=QgsFeatureRequest.GeometryAbortOnInvalid),
-        'lote': layer_clip,
-        'mapa_de_ambientes':'TEMPORARY_OUTPUT'})
-        QgsMessageLog.logMessage('**** Mapa de Ambientes generado Correctamente ****' , 'aGrae GEE', level=Qgis.Info) 
+        Args:
+            capaVectorial: Capa vectorial de ambientes generada por GEE.
+            capaRaster: Capa raster NDVI generada por GEE.
+            capaClip: Capa vectorial del lote original usada para el clip.
+        """
+
+        # 1. Construir la ruta absoluta al archivo de estilo
+        #    Asume que este script (geeCore.py) está en la carpeta 'tools'
+        #    y la carpeta 'styles' está dentro de 'tools'.
+        try:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            # Si 'styles' está DENTRO de 'tools':
+            if ndre:
+                style_path = os.path.join(script_dir, 'styles', 'coberteras.qml')
+            else:
+                style_path = os.path.join(script_dir, 'styles', 'ambientes.qml')
+            # Si 'styles' está AL MISMO NIVEL que 'tools':
+            # style_path = os.path.join(os.path.dirname(script_dir), 'styles', 'ambientes.qml')
+
+            # 2. Verificar si el archivo de estilo existe
+            if not os.path.exists(style_path):
+                QgsMessageLog.logMessage(f'Archivo de estilo no encontrado en: {style_path}', 'aGrae GEE', level=Qgis.Critical)
+                # Puedes decidir qué hacer si no se encuentra:
+                # - Usar una ruta por defecto
+                # - No pasar el parámetro 'estilo'
+                # - Lanzar un error o retornar
+                style_path = None # Opcional: no pasar el estilo si no se encuentra
+                return
+
+        except NameError:
+            # __file__ no está definido si se ejecuta de forma interactiva (consola)
+            QgsMessageLog.logMessage('No se pudo determinar la ruta del script. Ejecutando sin estilo específico.', 'aGrae GEE', level=Qgis.Warning)
+            style_path = None # No usar estilo si no se puede determinar la ruta
+            return
+
+        QgsMessageLog.logMessage('**** Ejecutando algoritmo de Post-Procesamiento. ****', 'aGrae GEE', level=Qgis.Info)
+
+        # 3. Preparar los parámetros para el algoritmo de Processing
+        params = {
+            'capa_ambientes_gee': capaVectorial,
+            'capa_ndvi_gee': capaRaster,
+            'lote': capaClip,
+            'mapa_de_ambientes': 'TEMPORARY_OUTPUT' # O una ruta de archivo si quieres guardarlo permanentemente
+        }
+
+        # 4. Añadir el parámetro de estilo SOLO si se encontró el archivo
+        if style_path:
+            params['estilo'] = style_path
+            QgsMessageLog.logMessage(f'Usando archivo de estilo: {style_path}', 'aGrae GEE', level=Qgis.Info)
+        else:
+             QgsMessageLog.logMessage('No se aplicará estilo (archivo no encontrado o ruta no determinada).', 'aGrae GEE', level=Qgis.Warning)
+             # Nota: Asegúrate de que el algoritmo 'model:1_Post-procesado'
+             # maneje correctamente la ausencia del parámetro 'estilo' si es opcional,
+             # o elimínalo del diccionario 'params' si el algoritmo falla sin él.
+             # Si el parámetro 'estilo' es OBLIGATORIO en tu modelo, debes asegurarte
+             # de que style_path siempre tenga un valor válido o manejar el error aquí.
+
+
+        # 5. Ejecutar el algoritmo
+        try:
+            # Usamos runAndLoadResults para añadir la salida al proyecto
+            processing.runAndLoadResults("model:1_Post-procesado", params)
+            QgsMessageLog.logMessage('**** Mapa de Ambientes generado Correctamente ****', 'aGrae GEE', level=Qgis.Info)
+
+        except QgsProcessingException as e:
+            QgsMessageLog.logMessage(f'Error al ejecutar el algoritmo de post-procesamiento: {e}', 'aGrae GEE', level=Qgis.Critical)
+            # Podrías querer relanzar la excepción o manejarla de otra forma
+            # raise e
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Error inesperado durante el post-procesamiento: {e}', 'aGrae GEE', level=Qgis.Critical)
+            # raise e
 
 class aGraeNDVI:
     def __init__(
@@ -666,17 +737,18 @@ class aGraeGEECore:
 
         pass
 
-    def runGEECore(self,feature: QgsFeature,bands:list, buffer: int,since:str,until:str,kernel_radius:int=5,kernel_magnitude:int=1,kernel_units:int=1,max_clouds:int=5):
+    def runGEECore(self,feature: QgsFeature,bands:list, buffer: int,since:str,until:str,kernel_radius:int=5,kernel_magnitude:int=1,kernel_units:int=1,max_clouds:int=5,ndre:bool=False):
         layer_clip = self.tools.getLayerClip(feature)
-        
-        since = ee.Date(since).get('year')
-        until = ee.Date(until).get('year')
-        self._years =  ee.List.sequence(until, since)
+        if ndre:
+            filterDate = ee.Filter.date(ee.Date(until),ee.Date(since))
+        else:
+            filterDate = ee.Filter.calendarRange(ee.Date(until).get('year'),ee.Date(since).get('year'),'year')
+
+        self._years =  ee.List.sequence(ee.Date(until).get('year'), ee.Date(since).get('year'))
         self.geometry = self.tools.getGeometry(buffer,feature)
         self.scene = self.tools.getScene(
             geometry=self.geometry,
-            since=since,
-            until=until,
+            filterDate=filterDate,
             bands=bands,
             max_clouds=max_clouds
         )
@@ -684,16 +756,16 @@ class aGraeGEECore:
         # print(self.processed.getInfo())
         self.NDVImax = self.processed.median()
 
-        self.reclassified = self.tools.getReclassifiedImage(self.NDVImax, self.geometry,kernel_radius,kernel_magnitude,kernel_units)
-        self.ambientes = self.tools.getAmbientes(self.reclassified,self.geometry)
+        self.reclassified = self.tools.getReclassifiedImage(self.NDVImax, self.geometry,kernel_radius,kernel_magnitude,kernel_units,ndre=ndre)
+        self.reducedVectors = self.tools.getReducedVectors(self.reclassified,self.geometry) #self.ambientes
             
-        self.ndviLayer = self.tools.downloadImage(self.NDVImax,self.geometry)
-        self.ambientesLayer = self.tools.downloadVector(self.ambientes)
+        self.rasterLayer = self.tools.downloadImage(self.NDVImax,self.geometry) # self.ndviLayer
+        self.vectorialLayer = self.tools.downloadVector(self.reducedVectors) #self.ambientesLayer
         # print('**** Pre-Procesamiento Exitoso ****')
 
         # QgsMessageLog.logMessage('**** Pre-Procesamiento Exitoso ****' , 'aGrae GEE', level=Qgis.Info) 
         
-        self.tools.postProcessing(self.ambientesLayer,self.ndviLayer,layer_clip)
+        self.tools.postProcessing(self.vectorialLayer,self.rasterLayer,layer_clip,ndre=ndre)
         # QgsProject.instance().addMapLayer(layer_clip)
 
     

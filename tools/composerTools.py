@@ -293,7 +293,7 @@ class aGraeComposerTools():
         self.setLegendsToLayout(layout.itemById('legend_14'),[self.layers['Hierro'],self.layers['Manganeso']],['Hierro','Manganeso'])
         self.setLegendsToLayout(layout.itemById('legend_15'),[self.layers['Aluminio'],self.layers['Boro']],['Aluminio','Boro'])
         self.setLegendsToLayout(layout.itemById('legend_16'),[self.layers['Cinq'],self.layers['Cobre']],['Cinq','Cobre'])
-        # self.setLegendsToLayout(layout.itemById('legend_17'),[self.layers['Materia Organica'],self.layers['Relacion CN']],['Materia Organica','Relacion Carbono/Nitrogeno'])
+        self.setLegendsToLayout(layout.itemById('legend_17'),[self.layers['Materia Organica'],self.layers['Relacion CN']],['Materia Organica','Relacion Carbono/Nitrogeno'])
 
 
         cic_table = layout.itemById('cic_table')

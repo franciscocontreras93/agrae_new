@@ -58,13 +58,19 @@ class WorkerSignals(QObject):
 
 class GenerateAmbientesWorker(QRunnable):
     
-    def __init__(self, features,bands:list,since:str,until:str):
+    def __init__(self, features,bands:list,since:str,until:str,buffer:int=10,kernel_radius:int=5,kernel_units:int=1,kernel_magnitude:int=1,clouds:int=5,ndre:bool=False):
         from ..tools.geeCore import aGraeGEECore
         super().__init__()
         self.core = aGraeGEECore()
         self.bands = bands
         self.since = since
         self.until = until
+        self.buffer = buffer
+        self.kernel_radius= kernel_radius
+        self.kernel_units= kernel_units
+        self.kernel_magnitude= kernel_magnitude
+        self.clouds = clouds
+        self.ndre = ndre
         self.features = features
         self.total_features = len(self.features)
         self.signals = WorkerSignals()
@@ -78,7 +84,17 @@ class GenerateAmbientesWorker(QRunnable):
                 current += 1
                 progress_percentage = int((i + 1) / self.total_features * 100) #Calculate percentage
                 self.signals.current_lote.emit('{} {}/{} '.format(feature['lote'], current,self.total_features))
-                self.core.runGEECore(feature,bands=self.bands,since=self.since,until=self.until,buffer=10)
+                self.core.runGEECore(feature,
+                                     bands=self.bands,
+                                     since=self.since,
+                                     until=self.until,
+                                     buffer=self.buffer,
+                                     kernel_radius=self.kernel_radius,
+                                     kernel_units=self.kernel_units,
+                                     kernel_magnitude=self.kernel_magnitude,
+                                     max_clouds=self.clouds,
+                                     ndre=self.ndre
+                                     )
                 self.signals.progress.emit(progress_percentage) # Emit percentage
                 # time.sleep(0.5)
         except Exception as e:
@@ -328,18 +344,30 @@ class aGraeGEEDialog(QDialog):
         # core.run()
 
     def generateAmbientes(self):
-        # self.tools.messages('aGrae GEE', 'Generando Mapas de Ambientes, este proceso puede tardar varios minutos.\nPorfavor espere un momento.', alert=True)
 
         self.features = list(self.getLayer(self.layer.currentLayer()).getFeatures())
         self.progress_bar.setValue(0)
-
+        bands = ['B8','B4']
         since = QDate().currentDate().toString('yyyy-MM-dd')
-        until = QDate().currentDate().addYears(-5).toString('yyyy-MM-dd')
+        until = QDate().currentDate().addYears(self.period.value() * -1).toString('yyyy-MM-dd')
+        buffer = self.buffer.value()
+        radius = self.kernel_radius.value()
+        units = self.kernel_units.currentData()
+        magnitude = self.kernel_magnitude.value()
+        clouds = self.cloud.value()
+        worker = GenerateAmbientesWorker(self.features,
+                                         bands=bands,
+                                         since=since,
+                                         until=until,
+                                         buffer=buffer,
+                                         kernel_radius=radius,
+                                         kernel_units=units,
+                                         kernel_magnitude=magnitude,
+                                         clouds=clouds,
+                                         ndre=False
+                                         )
 
-        # print(since,until)
-
-        worker = GenerateAmbientesWorker(self.features,bands=['B8','B4'],since=since,until=until)
-        worker.signals.finished.connect(self.worker_finished)
+        worker.signals.finished.connect(lambda: self.progress_label.setText(f'Mapas de Ambientes Generados Correctamente'))
         worker.signals.error.connect(self.worker_error)
         worker.signals.progress.connect(self.update_progress) # Connect progress signal
         worker.signals.current_lote.connect(self.update_label)
@@ -347,15 +375,37 @@ class aGraeGEEDialog(QDialog):
 
 
 
-        # for feature in self.features:
-        #     worker = ProcessLoteWorker(self.core, feature, self.total_features)
-        #     worker.signals.finished.connect(self.worker_finished)
-        #     worker.signals.error.connect(self.worker_error)
-        #     worker.signals.progress.connect(self.update_progress) # Connect progress signal
-        #     self.threadpool.start(worker)
-            # print(feature.fields())
-
     def generateCoberteras(self):
+        self.features = list(self.getLayer(self.layer.currentLayer()).getFeatures())
+        self.progress_bar.setValue(0)
+        bands = ['B8','B5']
+        # since = self.desde.date().toString('yyyy-MM-dd')
+        # until = self.hasta.date().toString('yyyy-MM-dd')
+        since = QDate().currentDate().toString('yyyy-MM-dd')
+        until = QDate().currentDate().addYears(-1).toString('yyyy-MM-dd')
+
+        buffer = self.buffer.value()
+        radius = self.kernel_radius.value()
+        units = self.kernel_units.currentData()
+        magnitude = self.kernel_magnitude.value()
+        clouds = self.cloud.value()
+        worker = GenerateAmbientesWorker(self.features,
+                                         bands=bands,
+                                         since=since,
+                                         until=until,
+                                         buffer=buffer,
+                                         kernel_radius=radius,
+                                         kernel_units=units,
+                                         kernel_magnitude=magnitude,
+                                         clouds=clouds,
+                                         ndre=True
+                                         )
+
+        worker.signals.finished.connect(lambda: self.progress_label.setText(f'Mapas de Coberteras Generados Correctamente'))
+        worker.signals.error.connect(self.worker_error)
+        worker.signals.progress.connect(self.update_progress) # Connect progress signal
+        worker.signals.current_lote.connect(self.update_label)
+        self.threadpool.start(worker)
         pass
 
     def worker_finished(self):

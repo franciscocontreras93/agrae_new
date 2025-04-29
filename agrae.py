@@ -139,6 +139,7 @@ class aGraeToolbox:
         self.add_action(agraeGUI().getIcon('lotes'),'Cargar Lotes',self.agraeGestionLotes,add_to_menu=False,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('main'),'aGrae GIS',self.agraeDock,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('laboratorio-icon'),'Gestion Laboratorio',self.GestionarLaboratorio,add_to_toolbar=True)
+        self.add_action(agraeGUI().getIcon('laboratorio-icon'),'Mapas Solares',self.mapasSolares,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('settings'),'Ajustes aGrae GIS',self.agraeConfig,add_to_menu=True,add_to_toolbar=False)
 
         # self.business_inteligence_tool = QToolButton()
@@ -199,6 +200,10 @@ class aGraeToolbox:
 
     def GestionarLaboratorio(self):
         dialog = GestionLaboratorioDialog()
+        dialog.exec()
+
+    def mapasSolares(self):
+        dialog = aGraeGEEDialog()
         dialog.exec()
 
     
