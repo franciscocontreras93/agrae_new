@@ -59,8 +59,10 @@ target/
 *.bat
 *.zip
 
-tools/img/chart.png
-tools/img/tabla.png
-tools/img/tf1.png
-tools/img/tf2.png
-tools/img/tf3.png
+/tools/img/chart.png
+/tools/img/dist_logo.png
+/tools/img/tabla.png
+/tools/img/tf1.png
+/tools/img/tf2.png
+/tools/img/tf3.png
+
