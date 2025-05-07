@@ -98,7 +98,7 @@ class GestionLaboratorioDialog(QDialog):
         self.GenerarReporteAnalitica = QAction(agraeGUI().getIcon('chart-bar-2'),'Generar reporte de Laboratorio (Campaña)',self)
         self.GenerarReporteAnalitica.triggered.connect(self.generarReporteAnalitica)
         self.DerivarMuestrasPendientes = QAction(agraeGUI().getIcon('pois'),'Derivar Parcelas cercanas',self)
-        self.DerivarMuestrasPendientes.triggered.connect(self.test)
+        self.DerivarMuestrasPendientes.triggered.connect(self.derivar_muestras_cercanas)
 
         # self.tools.settingsToolsButtons(self.toolButton,[self.ExportarDataCSV,self.CargarCapaMuestras,self.GenerarArchivoLaboratorio,self.ImportarArchivoAnalisis,self.DerivarDatosAnalisis,self.GenerarReporteAnalitica],agraeGUI().getIcon('tools'),setMainIcon=True)
         # self.toolButton.menu().addAction(actions[i])
@@ -225,11 +225,11 @@ class GestionLaboratorioDialog(QDialog):
                 cur.copy_expert(output_query,file)
                 self.tools.messages('aGrae Tools','Archivo exportado Correctamente',3)
 
-    def test(self):
+    def derivar_muestras_cercanas(self):
         numero_de_muestras = 2
         query = '''with muestras as (select * from field.muestras where idcampania = {} and idexplotacion = {}),
-        muestreadas as (select * from muestras where status = 2),
-        derivadas as (select * from muestras where status = 3),
+        muestreadas as (select * from muestras where muestreado = true),
+        derivadas as (select * from muestras where tipo = 2),
         procesadas as (select a.*,m.geom from muestras m join analytic.analitica a on a.cod = m.codigo ),
         pendientes as (select * from derivadas d  where d.codigo not in (select cod from procesadas)  and codigo ilike '%_D1%'),
         segmentos as (select p.codigo,s.ceap from agrae.segmentos s join pendientes p on st_intersects(s.geometria, p.geom)),
