@@ -7,7 +7,7 @@ from psycopg2 import extras
 
 
 
-from qgis.PyQt import QtWidgets, uic
+from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtCore import pyqtSignal, Qt,QDate,QSize,QSettings
 from qgis.PyQt.QtGui import QIcon
 
@@ -41,19 +41,18 @@ from .gee_dialog import aGraeGEEDialog
 from .reportes_dialog import ReportesDialog
 from .asignar_cultivos_dialog import AsignarCultivosDialog
 
- 
 
-toolsDialog, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui/agrae_tools.ui'))
-
-
-
-class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
+class agraeToolsDockwidget(QtWidgets.QDockWidget):
     def __init__(self,
                  layer:QgsVectorLayer,
                  parent=None):
         super(agraeToolsDockwidget,self).__init__(parent)
         self.instance = QgsProject.instance()
-        self.setupUi(self)
+        
+        # UI elements will be created in UIComponents
+        self._create_ui_elements() # Helper to declare elements
+
+        # self.setupUi(self) # This will be replaced by programmatic UI creation
         self.setWindowTitle('aGrae Tools')
         self.layer = layer
         self.conn = agraeDataBaseDriver().connection()
@@ -89,43 +88,244 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         # iface.mapCanvas().contextMenuAboutToShow.connect(self.populateContextMenu)
         pass
 
+    def _create_ui_elements(self):
+        """Helper method to declare UI elements."""
+        self.toolBox = QtWidgets.QToolBox()
+
+        # Page 1: Información de Lote
+        self.page_info_lote = QtWidgets.QWidget()
+        self.combo_campania = QtWidgets.QComboBox()
+        self.tool_camp = QtWidgets.QToolButton()
+        self.combo_explotacion = QtWidgets.QComboBox()
+        self.combo_explotacion.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.combo_explotacion.setEditable(True)
+        self.tool_exp = QtWidgets.QToolButton()
+        self.label_info = QtWidgets.QLabel("")
+        self.label_info_muestreo = QtWidgets.QLabel("") 
+        self.label_num_lotes = QtWidgets.QLabel("-") # Nuevo QLabel para número de lotes
+        self.label_area_lotes = QtWidgets.QLabel("- ha") # Nuevo QLabel para área de lotes
+        self.line_nombre = QtWidgets.QLineEdit()
+        self.line_nombre.setEnabled(False)
+        self.label_2 = QtWidgets.QLabel("Cultivo:")
+        self.combo_cultivo = QtWidgets.QComboBox()
+        self.combo_cultivo.setEnabled(False)
+        self.label_4 = QtWidgets.QLabel("Régimen:")
+        self.combo_regimen = QtWidgets.QComboBox()
+        self.combo_regimen.setEnabled(False)
+        self.label_7 = QtWidgets.QLabel("Producción Esperada (Kg/Ha):")
+        self.line_produccion = QtWidgets.QDoubleSpinBox()
+        self.line_produccion.setEnabled(False)
+        self.check_siembra = QtWidgets.QCheckBox("Fecha Siembra")
+        self.check_siembra.setEnabled(False)
+        self.date_siembra = QtWidgets.QDateEdit()
+        self.date_siembra.setEnabled(False)
+        self.check_cosecha = QtWidgets.QCheckBox("Fecha Cosecha")
+        self.check_cosecha.setEnabled(False)
+        self.date_cosecha = QtWidgets.QDateEdit()
+        self.date_cosecha.setEnabled(False)
+        self.label_status = QtWidgets.QLabel("Estado: Desconocido")
+        self.tool_lote = QtWidgets.QToolButton()
+
+        # Page 2: Fertilización y Cultivos
+        self.page_fertilizacion_cultivos = QtWidgets.QWidget() # For the second tab
+        self.tab_widget_fertilizacion = QtWidgets.QTabWidget() # TabWidget for page 2
+        self.combo_aplicacion = QtWidgets.QComboBox()
+        self.combo_aplicacion.addItem("1ra Aplicación")
+        self.combo_aplicacion.addItem("2da Aplicación")
+        self.combo_aplicacion.addItem("3ra Aplicación")
+        self.combo_aplicacion.addItem("4ta Aplicación")
+        self.date_aplicacion = QtWidgets.QDateEdit()
+        self.date_aplicacion.setEnabled(False)
+        self.line_formula = QtWidgets.QLineEdit()
+        self.line_formula.setEnabled(False)
+        self.line_precio = QtWidgets.QDoubleSpinBox()
+        self.line_precio.setEnabled(False)
+        self.combo_ajuste = QtWidgets.QComboBox()
+        self.combo_ajuste.setEnabled(False)
+        self.combo_ajuste.addItem("Seleccionar...")
+        self.combo_ajuste.addItem("N")
+        self.combo_ajuste.addItem("P")
+        self.combo_ajuste.addItem("K")
+        self.combo_ajuste.addItem("PK")
+        self.label_status_fertilizacion = QtWidgets.QLabel("Estado Fertilización: -")
+        self.tool_fert = QtWidgets.QToolButton()
+
+        self.combo_cultivo_2 = QtWidgets.QComboBox()
+        self.combo_regimen_2 = QtWidgets.QComboBox()
+        self.line_produccion_2 = QtWidgets.QDoubleSpinBox()
+        self.btn_save_cultivo_exp = QtWidgets.QPushButton("Guardar")
+
+        # Herramientas Generales (fuera del ToolBox)
+        self.tool_agrae = QtWidgets.QToolButton()
+        self.tool_exp_2 = QtWidgets.QToolButton() # Este es el de herramientas de explotación, no el que está al lado del combo
+        self.tool_lab = QtWidgets.QToolButton()
+        self.tool_data = QtWidgets.QToolButton()
+
+
     def UIComponents(self):
         self.setWindowIcon(agraeGUI().getIcon('main'))
+
+        # Main widget for the DockWidget
+        main_widget = QtWidgets.QWidget()
+        self.setWidget(main_widget)
+        dock_layout = QtWidgets.QVBoxLayout(main_widget)
+
+        # Group: Selección de Campaña y Explotación (Fuera del ToolBox)
+        group_camp_exp = QtWidgets.QGroupBox("Selección de Campaña y Explotación")
+        layout_camp_exp = QtWidgets.QGridLayout(group_camp_exp)
+        layout_camp_exp.addWidget(QtWidgets.QLabel("Campaña:"), 0, 0)
+        layout_camp_exp.addWidget(self.combo_campania, 0, 1)
+        layout_camp_exp.addWidget(self.tool_camp, 0, 2)
+        layout_camp_exp.addWidget(QtWidgets.QLabel("Explotación:"), 1, 0)
+        layout_camp_exp.addWidget(self.combo_explotacion, 1, 1)
+        layout_camp_exp.addWidget(self.tool_exp, 1, 2)
+        layout_camp_exp.addWidget(self.label_info, 2, 0, 1, 3)
+        layout_camp_exp.addWidget(self.label_info_muestreo, 3, 0, 1, 3)
+        # Añadir nuevos labels para información de lotes
+        dock_layout.addWidget(group_camp_exp)
+
+        # Group: Herramientas Generales (Fuera del ToolBox)
+        tools_group_box = QtWidgets.QGroupBox("Herramientas")
+        layout_tools_group = QtWidgets.QGridLayout(tools_group_box) # Usar QHBoxLayout para que estén en línea
+
+        self.tool_agrae.setText("aGrae General")
+        self.tool_exp_2.setText("Explotación") 
+        self.tool_lab.setText("Laboratorio")
+        self.tool_data.setText("Gestión de Datos")
+
+        layout_tools_group.addWidget(QtWidgets.QLabel("aGrae"),0,0)
+        layout_tools_group.addWidget(QtWidgets.QLabel("Explotación"),0,1)
+        layout_tools_group.addWidget(QtWidgets.QLabel("Laboratorio"),0,2)
+        layout_tools_group.addWidget(QtWidgets.QLabel("Gestión de Datos"),0,3)
+        layout_tools_group.addWidget(self.tool_agrae,1,0)
+        layout_tools_group.addWidget(self.tool_exp_2,1,1) 
+        layout_tools_group.addWidget(self.tool_lab,1,2)
+        layout_tools_group.addWidget(self.tool_data,1,3)
+        dock_layout.addWidget(tools_group_box)
+
+
+        # Create ToolBox and add it to the main dock layout
+        self.toolBox = QtWidgets.QToolBox()
+        dock_layout.addWidget(self.toolBox)
+
+        # --- Page 1: Información de Lote ---
+        self.page_info_lote = QtWidgets.QWidget()
+        page_info_lote_layout = QtWidgets.QVBoxLayout(self.page_info_lote)
+
+        # Group: Información del Lote
+        group_info_lote_details = QtWidgets.QGroupBox("Información del Lote")
+        layout_info_lote_details = QtWidgets.QFormLayout(group_info_lote_details) 
+
+        # Nombre Lote and tool_lote side-by-side
+        h_layout_nombre_lote = QtWidgets.QHBoxLayout()
+        h_layout_nombre_lote.addWidget(self.line_nombre)
+        h_layout_nombre_lote.addWidget(self.tool_lote)
+        layout_info_lote_details.addRow(QtWidgets.QLabel("Nombre Lote:"), h_layout_nombre_lote)
+
+        layout_info_lote_details.addRow(self.label_2, self.combo_cultivo)
+        layout_info_lote_details.addRow(self.label_4, self.combo_regimen)
+        layout_info_lote_details.addRow(self.label_7, self.line_produccion)
+        
+        h_layout_siembra = QtWidgets.QHBoxLayout()
+        h_layout_siembra.addWidget(self.check_siembra)
+        h_layout_siembra.addWidget(self.date_siembra)
+        layout_info_lote_details.addRow(h_layout_siembra)
+
+        h_layout_cosecha = QtWidgets.QHBoxLayout()
+        h_layout_cosecha.addWidget(self.check_cosecha)
+        h_layout_cosecha.addWidget(self.date_cosecha)
+        layout_info_lote_details.addRow(h_layout_cosecha)
+
+        layout_info_lote_details.addRow(self.label_status)
+        page_info_lote_layout.addWidget(group_info_lote_details)
+
+        page_info_lote_layout.addStretch() 
+        self.toolBox.addItem(self.page_info_lote, "Información de Lote")
+
+        # --- Page 2: Fertilización y Cultivos Explotación ---
+        self.page_fertilizacion_cultivos = QtWidgets.QWidget()
+        page_fertilizacion_layout = QtWidgets.QVBoxLayout(self.page_fertilizacion_cultivos)
+         #Group: Control de Cultivo
+        group_control_cultivo = QtWidgets.QGroupBox("Cultivos asociados a la Exp. y Camp. Seleccionados.")
+        layout_control_cultivo = QtWidgets.QFormLayout(group_control_cultivo) # Layout for the tab content
+        layout_control_cultivo.addRow(QtWidgets.QLabel("Seleccionar cultivo: "),self.combo_cultivo_2)
+
+        page_fertilizacion_layout.addWidget(group_control_cultivo) # Add the groupbox to the tab's layout
+
+        # Create TabWidget for Fertilización and Actualizar Cultivos
+        self.tab_widget_fertilizacion = QtWidgets.QTabWidget()
+        page_fertilizacion_layout.addWidget(self.tab_widget_fertilizacion)
+
+       
+
+
+        # Group: Fertilización de Campaña
+        widget_fert_camp = QtWidgets.QWidget() # Widget to hold the groupbox for the tab
+        group_fert_camp = QtWidgets.QGroupBox("Fertilización de Campaña (Datos Generales)")
+        layout_fert_camp = QtWidgets.QFormLayout(widget_fert_camp) # Layout for the tab content
+        layout_fert_camp.addWidget(group_fert_camp) # Add the groupbox to the tab's layout
+        # Populate the groupbox (original QFormLayout for group_fert_camp)
+        form_layout_in_group_fert = QtWidgets.QFormLayout(group_fert_camp)
+
+        # Aplicación and tool_fert side-by-side
+        h_layout_aplicacion_fert = QtWidgets.QHBoxLayout()
+        h_layout_aplicacion_fert.addWidget(self.combo_aplicacion)
+        h_layout_aplicacion_fert.addWidget(self.tool_fert)
+        form_layout_in_group_fert.addRow(QtWidgets.QLabel("Aplicación:"), h_layout_aplicacion_fert)
+
+        form_layout_in_group_fert.addRow(QtWidgets.QLabel("Fecha Aplicación:"), self.date_aplicacion)
+        form_layout_in_group_fert.addRow(QtWidgets.QLabel("Fórmula (NPK):"), self.line_formula)
+        form_layout_in_group_fert.addRow(QtWidgets.QLabel("Precio (€/Tn):"), self.line_precio)
+        form_layout_in_group_fert.addRow(QtWidgets.QLabel("Ajuste:"), self.combo_ajuste)
+        form_layout_in_group_fert.addRow(self.label_status_fertilizacion)
+        self.tab_widget_fertilizacion.addTab(widget_fert_camp, "Fertilización Campaña")
+
+        # Group: Actualizar Cultivos de la Explotación
+        widget_act_cult_exp = QtWidgets.QWidget() # Widget to hold the groupbox for the tab
+        group_act_cult_exp = QtWidgets.QGroupBox("Actualizar Cultivos de la Explotación")
+        layout_act_cult_exp = QtWidgets.QFormLayout(widget_act_cult_exp) # Layout for the tab content
+        layout_act_cult_exp.addWidget(group_act_cult_exp) # Add the groupbox to the tab's layout
+        # Populate the groupbox (original QFormLayout for group_act_cult_exp)
+        form_layout_in_group_act_cult = QtWidgets.QFormLayout(group_act_cult_exp)
+        # form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Cultivo:"), self.combo_cultivo_2)
+        form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Régimen:"), self.combo_regimen_2)
+        form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Producción Esperada (Kg/Ha):"), self.line_produccion_2)
+        form_layout_in_group_act_cult.addRow(self.btn_save_cultivo_exp)
+        self.tab_widget_fertilizacion.addTab(widget_act_cult_exp, "Actualizar Cultivos")
+
+        page_fertilizacion_layout.addStretch() 
+        self.toolBox.addItem(self.page_fertilizacion_cultivos, "Datos de Fertilización y Cultivo")
+
+
+        # Set initial properties and connections
         self.date_siembra.dateChanged.connect(self.dateSiembraChanged)
         # self.date_cosecha.dateChanged.connect(self.dateCosechaChanged)
         self.toolBox.setCurrentIndex(0)
-        # self.toolBox.setItemIcon(0,agraeGUI().getIcon('main'))
         self.toolBox.setItemIcon(0,agraeGUI().getIcon('info'))
-        self.toolBox.setItemIcon(1,agraeGUI().getIcon('info'))
+        self.toolBox.setItemIcon(1,agraeGUI().getIcon('tractor')) # Icono para la segunda pestaña
         self.toolBox.currentChanged.connect(self.infoLote)
         
         for c in [self.combo_cultivo]:
             c.setEditable(True)
             c.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-            # change completion mode of the default completer from InlineCompletion to PopupCompletion
             c.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
 
         self.combo_campania.currentIndexChanged.connect(lambda: self.getExplotacionData(self.combo_campania.currentData()))
         self.combo_explotacion.currentIndexChanged.connect(self.getLotesExplotacionLayer)
         self.combo_cultivo_2.currentIndexChanged.connect(self.clearAplicacion)
-        # icon = agraeGUI().getIcon('edit')
         
         self.initTools()
         
-
         self.check_siembra.stateChanged.connect(lambda e: self.check_status(e,self.fechaSiembra,self.date_siembra))
         self.check_cosecha.stateChanged.connect(lambda e: self.check_status(e,self.fechaCosecha,self.date_cosecha))
 
-        # self.tool_fert_menu.addAction(self.EditarFertilizacionAction)
-
         self.combo_aplicacion.currentIndexChanged.connect(self.getCultivosCampaniaData)
-
         self.btn_save_cultivo_exp.clicked.connect(self.actualizarDataCultivo)
 
-
-        # self.btn_lote_analitic.setIcon(agraeGUI().getIcon('chart-bar'))
-        # self.btn_lote_analitic.setToolTip()
-        # self.btn_lote_analitic.clicked.connect(self.loteAnliticDialog)
+        # Set object names for stylesheets or direct access if needed (optional but good practice)
+        self.toolBox.setObjectName("toolBox")
+        self.combo_campania.setObjectName("combo_campania")
+        # ... and so on for other widgets if you need to style them via objectName
 
     def initTools(self):
 
@@ -278,7 +478,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         self.EditarFertilizacionAction.setToolTip('Editar Datos de Fertilizacion')
         self.ActualizarFertilizacionAction = QtWidgets.QAction(agraeGUI().getIcon('save'),'Guardar Datos',self)
         self.ActualizarFertilizacionAction.setEnabled(False)
-        self.ActualizarFertilizacionAction.setToolTip('Guardar Datos de Fertilizacion')
+        self.ActualizarFertilizacionAction.setToolTip('Guardar Datos de Fertilización')
         self.EditarFertilizacionAction.triggered.connect(lambda: self.tools.enableElements(self.EditarFertilizacionAction,[self.line_formula,self.line_precio,self.combo_ajuste,self.date_aplicacion,self.ActualizarFertilizacionAction]))
         self.ActualizarFertilizacionAction.triggered.connect(self.saveDataCampania)
         self.settingsToolsButtons(self.tool_fert,[self.EditarFertilizacionAction,self.ActualizarFertilizacionAction])
@@ -517,8 +717,13 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
             variable = ''
             
     def infoLote(self,i):
-        if i == 1:
-            iface.mapCanvas().setMapTool(self.identifyTool)
+        if i == 1: # This condition will likely not be met if there's only one active tab for "Fertilización"
+            if hasattr(self, 'identifyTool') and self.identifyTool: # Check if identifyTool exists
+                 iface.mapCanvas().setMapTool(self.identifyTool)
+            else: # If not, create it
+                self.identify() 
+                iface.mapCanvas().setMapTool(self.identifyTool)
+
 
     def updateComboExp(self):
         sql = '''select distinct e.nombre , d.idexplotacion from campaign.data d
@@ -624,13 +829,102 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget,toolsDialog):
         else: 
             print('Debe seleccionar uno o mas lotes')
 
+    
+    def getExpInfo(self):
+        # DATA GENERAL
+        sql_general = f'''with data as (select * from campaign."data" where idcampania  = {self.combo_campania.currentData()} and idexplotacion = {self.combo_explotacion.currentData()}),
+lotes as (select distinct l.*,st_transform(st_buffer(st_transform(l.geom,8857),-0.5),4326) buffer from data d join agrae.lotes l using(idlote)),
+segmentos as (select distinct l.idlote, st_union(st_intersection(l.buffer,s.geometria)) as geom
+	from lotes l join agrae.segmentos s on st_intersects(l.geom,s.geometria) 
+	where not st_isempty(st_intersection(l.buffer,s.geometria))
+	group by l.idlote)
+--select * from segmentos
+select 
+	count(*) as lotes_totales, 
+	round((st_area(st_transform(st_union(geom),25830))/10000)::numeric,2) area_ha_total, 
+	(select distinct count(idlote) from segmentos) as lotes_mapeados,
+	(select distinct round((st_area(st_transform(st_union(geom),25830))/10000)::numeric,2) from segmentos) as area_mapeada 
+	from lotes'''
+        
+        #DATA MUESTREO
+        sql_muestreo = f'''WITH data AS (
+    SELECT *
+    FROM campaign."data"
+    WHERE idcampania = {self.combo_campania.currentData()}  
+      AND idexplotacion = {self.combo_explotacion.currentData()}    
+),
+muestras AS (
+    SELECT DISTINCT m.codigo, m.muestreado
+    FROM data d
+    JOIN field.muestras m USING (idcampania, idexplotacion, idlote)
+    where m.tipo in (1,3)
+),
+muestras_procesado AS (
+    SELECT
+        m.codigo,
+        m.muestreado,
+        CASE
+            WHEN a.cod IS NOT NULL THEN TRUE
+            ELSE FALSE
+        END AS procesado
+    FROM
+        muestras m
+    LEFT JOIN
+        analytic.analitica a ON m.codigo = a.cod
+)
+select
+	COUNT(*) num_muestras,
+    COUNT(CASE WHEN muestreado IS TRUE THEN 1 END) AS total_muestreadas,
+    COUNT(CASE WHEN procesado IS TRUE THEN 1 END) AS total_procesadas
+FROM
+    muestras_procesado;'''
+        tolerancia = 0.95
+        
+        with agraeDataBaseDriver().connection().cursor() as cursor:
+            try:
+                cursor.execute(sql_general)
+                data_gen = cursor.fetchone()
+                if data_gen:
+                    num_lotes = data_gen[0]
+                    area_ha = data_gen[1]
+                    num_lotes_mapeados = data_gen[2]    
+                    area_mapeada = data_gen[3]
+
+                    color_mapeadas = "green" if num_lotes_mapeados >= num_lotes else "red"
+                    color_area = "green" if area_mapeada/area_ha >= tolerancia else "red"
+                    
+
+                    self.label_info.setText(f"Lotes: <font color='blue'><b>{num_lotes}</b></font> | Área Exp: <font color='blue'><b>{area_ha} ha</b></font> | Lotes Mapeados: <font color='{color_mapeadas}'><b>{num_lotes_mapeados}</b></font> | Área Mapeada: <font color='{color_area}'><b>{area_mapeada} ha</b></font>")
+                else:
+                    self.label_info.setText("Lotes: <b>-</b> | Área: <b>- ha</b>")
+
+                cursor.execute(sql_muestreo)
+                data = cursor.fetchone()
+                if data:
+                    num_muestras_totales = data[0]
+                    num_muestreadas = data[1]
+                    num_procesadas = data[2]
+
+                    color_muestreadas = "green" if num_muestreadas >= num_muestras_totales else "red"
+                    color_procesadas = "green" if num_procesadas >= num_muestreadas else "red"
+
+                    texto_muestreo = f"Muestras Totales: <b>{num_muestras_totales}</b> | <font color='{color_muestreadas}'>Muestreadas: <b>{num_muestreadas}</b></font> | <font color='{color_procesadas}'>Procesadas: <b>{num_procesadas}</b></font>"
+                    self.label_info_muestreo.setText(texto_muestreo)
+                else:
+                    self.label_info_muestreo.setText("Muestras Totales: <b>-</b> | Muestreadas: <b>-</b> | Procesadas: <b>-</b>")
+            except Exception as ex:
+                print(ex)
+                self.conn.rollback()
+
+
     def getLotesExplotacionLayer(self):
        
 
         sql = aGraeSQLTools().getSql('view_lotes.sql')
 
         try:
-            self.label_info.setText('Campaña: {} | Explotacion: {}'.format(self.combo_campania.currentData(),self.combo_explotacion.currentData()))
+            # self.label_info.setText('Campaña: {} | Explotacion: {}'.format(self.combo_campania.currentData(),self.combo_explotacion.currentData()))
+            self.getExpInfo()
             sql = sql.format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
             self.getCampaniaCultivoCombo(self.combo_explotacion.currentData())
             layer = self.tools.getDataBaseLayer(sql,layername='{}-Lotes'.format(self.combo_campania.currentText()[2:]),styleName='lote',memory=False,idlayer='iddata')
