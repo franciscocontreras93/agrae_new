@@ -58,11 +58,35 @@ class GestionLaboratorioDialog(QDialog):
     def UIComponents(self):
         self.setWindowTitle('aGrae Tools | Gestion de Muestras y Analiticas')
         self.resize(1200,600)
+
+        # Main layout for the dialog
+        main_dialog_layout = QVBoxLayout(self)
+
+        # Create TabWidget
+        self.tab_widget = QTabWidget()
+        main_dialog_layout.addWidget(self.tab_widget)
+
+        # --- Tab 1: Muestras Pendientes (Nueva) ---
+        self.tab_muestras_pendientes = QWidget()
+        layout_muestras_pendientes = QVBoxLayout(self.tab_muestras_pendientes)
+        
+        # Placeholder para la futura tabla de muestras pendientes
+        self.label_placeholder_pendientes = QLabel("Aquí se mostrarán las explotaciones con muestras pendientes.")
+        self.label_placeholder_pendientes.setAlignment(Qt.AlignCenter)
+        layout_muestras_pendientes.addWidget(self.label_placeholder_pendientes)
+        
+        self.tab_widget.addTab(self.tab_muestras_pendientes, "Muestras Pendientes")
+
+        # --- Tab 2: Gestión General de Muestras (Interfaz Actual) ---
+        self.tab_gestion_general = QWidget()
+        layout_gestion_general = QVBoxLayout(self.tab_gestion_general)
+
         self.combo_campania = QComboBox()
         self.combo_explotacion = QComboBox()
         self.combo_explotacion.setEditable(True)
         self.combo_explotacion.setInsertPolicy(QComboBox.NoInsert)
         self.getCampaniasData()
+        
         data_muestreo = agraeDataBaseDriver().read(aGraeSQLTools().getSql('muestreo_data_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select iddata,campania,explotacion,lote,codigo,prioridad,tipo_muestra,status_lab, status,observaciones from muestras'))
         self.table = CustomTable(
             columns=['iddata','Campaña','Explotacion','Lote','Codigo','Prioridad','Tipo Muestra','Estado Analitica','Estado de Muestreo','Observaciones'],
@@ -70,12 +94,6 @@ class GestionLaboratorioDialog(QDialog):
         )
         self.combo_campania.currentIndexChanged.connect(self.updateTable)
         self.combo_explotacion.currentIndexChanged.connect(self.updateTable)
-
-        # for c in [self.combo_explotacion]:
-        #     c.setEditable(True)
-        #     c.setInsertPolicy(QComboBox.NoInsert)
-            # change completion mode of the default completer from InlineCompletion to PopupCompletion
-            # c.completer().setCompletionMode(QCompleter.PopupCompletion)
         
         self.toolButton = QToolButton()
         self.toolButton.setMenu(QMenu())
@@ -83,7 +101,6 @@ class GestionLaboratorioDialog(QDialog):
         self.toolButton.setIconSize(QSize(15,15))
         self.toolMenu = self.toolButton.menu()
         self.toolMenu.addSeparator().setText('Gestion de Muestras')
-
 
         self.ExportarDataCSV = QAction(agraeGUI().getIcon('csv'),'Exportar informacion de Explotacion a CSV',self)
         self.ExportarDataCSV.triggered.connect(self.exportarDataCSV)
@@ -100,9 +117,6 @@ class GestionLaboratorioDialog(QDialog):
         self.DerivarMuestrasPendientes = QAction(agraeGUI().getIcon('pois'),'Derivar Parcelas cercanas',self)
         self.DerivarMuestrasPendientes.triggered.connect(self.derivar_muestras_cercanas)
 
-        # self.tools.settingsToolsButtons(self.toolButton,[self.ExportarDataCSV,self.CargarCapaMuestras,self.GenerarArchivoLaboratorio,self.ImportarArchivoAnalisis,self.DerivarDatosAnalisis,self.GenerarReporteAnalitica],agraeGUI().getIcon('tools'),setMainIcon=True)
-        # self.toolButton.menu().addAction(actions[i])
-
         self.toolMenu.addAction(self.GenerarArchivoLaboratorio)
         self.toolMenu.addAction(self.ImportarArchivoAnalisis)
         self.toolMenu.addAction(self.DerivarDatosAnalisis)
@@ -116,8 +130,7 @@ class GestionLaboratorioDialog(QDialog):
   
         self.toolButton.setIcon(agraeGUI().getIcon('tools'))
         
-
-        main_layout = QVBoxLayout()
+        # Layout para los combos y el toolbutton en la pestaña de gestión general
         group_combos = QGroupBox()
         layout_group_combos = QGridLayout()
         layout_group_combos.addWidget(QLabel('Seleccionar Campaña'),0,0)
@@ -127,11 +140,12 @@ class GestionLaboratorioDialog(QDialog):
         layout_group_combos.addWidget(self.toolButton,1,2)
         group_combos.setLayout(layout_group_combos)
 
-        main_layout.addWidget(group_combos)
-        main_layout.addWidget(self.table)
+        layout_gestion_general.addWidget(group_combos)
+        layout_gestion_general.addWidget(self.table)
+        self.tab_gestion_general.setLayout(layout_gestion_general)
+        self.tab_widget.addTab(self.tab_gestion_general, "Gestión General")
 
-
-        self.setLayout(main_layout)
+        self.tab_widget.setCurrentIndex(0) # Asegura que la nueva pestaña sea la primera
 
         self.toolMenu.setStyleSheet('''
         QMenu {
