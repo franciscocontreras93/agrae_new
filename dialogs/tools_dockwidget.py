@@ -832,13 +832,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
     
     def getExpInfo(self):
         # DATA GENERAL
-        sql_general = f'''with data as (select * from campaign."data" where idcampania  = {self.combo_campania.currentData()} and idexplotacion = {self.combo_explotacion.currentData()}),
+        sql_general = f'''with data as (select * from campaign."data" where idcampania  = {self.combo_campania.currentData()} and idexplotacion = {self.combo_explotacion.currentData()}),  
 lotes as (select distinct l.*,st_transform(st_buffer(st_transform(l.geom,8857),-0.5),4326) buffer from data d join agrae.lotes l using(idlote)),
-segmentos as (select distinct l.idlote, st_union(st_intersection(l.buffer,s.geometria)) as geom
-	from lotes l join agrae.segmentos s on st_intersects(l.geom,s.geometria) 
+segmentos as (select distinct l.idlote, st_union(s.geometria) as geom
+	from lotes l join agrae.segmentos s on st_intersects(l.buffer,s.geometria) 
 	where not st_isempty(st_intersection(l.buffer,s.geometria))
 	group by l.idlote)
---select * from segmentos
 select 
 	count(*) as lotes_totales, 
 	round((st_area(st_transform(st_union(geom),25830))/10000)::numeric,2) area_ha_total, 
