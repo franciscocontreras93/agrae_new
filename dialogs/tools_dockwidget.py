@@ -841,8 +841,8 @@ segmentos as (select distinct l.idlote, st_union(s.geometria) as geom
 select 
 	count(*) as lotes_totales, 
 	round((st_area(st_transform(st_union(geom),25830))/10000)::numeric,2) area_ha_total, 
-	(select distinct count(idlote) from segmentos) as lotes_mapeados,
-	(select distinct round((st_area(st_transform(st_union(geom),25830))/10000)::numeric,2) from segmentos) as area_mapeada 
+	coalesce((select distinct count(idlote) from segmentos),0) as lotes_mapeados,
+	coalesce((select distinct round((st_area(st_transform(st_union(geom),25830))/10000)::numeric,2) from segmentos),0.0) as area_mapeada 
 	from lotes'''
         
         #DATA MUESTREO
