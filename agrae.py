@@ -10,7 +10,7 @@ from .dialogs.tools_dockwidget import *
 from .dialogs.config_dialog import agraeConfigDialog
 from .dialogs.gee_dialog import aGraeGEEDialog
 from .dialogs.lab_dialog import GestionLaboratorioDialog
-from .dialogs.admin_dashboard import AgraeDashboardDialog
+from .dialogs.admin_dashboard import AgraeDashboardWindow
 
 
 from .db import agraeDataBaseDriver
@@ -27,6 +27,8 @@ class aGraeToolbox:
         self.toolbar = self.iface.addToolBar(u'aGrae GIS')
         self.toolbar.setObjectName(u'aGrae GIS')
         
+        # self.dashboard_window = False # Reemplazado por dashboard_dialog_ref
+        self.dashboard_dialog_ref = None # Para la instancia del dashboard
 
         self.actions = []
 
@@ -156,10 +158,15 @@ class aGraeToolbox:
                 self.tr(u'&aGrae GIS'),
                 action)
             self.iface.removeToolBarIcon(action)
-        # remove the toolbar
-        del self.toolbar
-        # print(self.actions)
-    def onClosePlugin(self,widget):
+        
+        if self.dashboard_dialog_ref:
+            self.dashboard_dialog_ref.setAttribute(Qt.WA_DeleteOnClose)
+            self.dashboard_dialog_ref.close()
+            self.dashboard_dialog_ref = None
+        
+        del self.toolbar # remove the toolbar
+
+    def onClosePlugin(self, widget):
 
         # disconnects
         widget.closingPlugin.disconnect(
@@ -204,6 +211,21 @@ class aGraeToolbox:
         dialog.exec()
 
     def aGraeDashboard(self):
-        dialog = AgraeDashboardDialog()
-        dialog.exec()
+        # Comprobar si la ventana ya existe y está visible (o minimizada)
+        if self.dashboard_dialog_ref is None:
+            # Si no existe (o es la primera vez), créala.
+            self.dashboard_dialog_ref = AgraeDashboardWindow(parent=None)
+            self.dashboard_dialog_ref.show() # Se muestra normalmente
+            # Conectar la señal closingPlugin.
+            # self.dashboard_dialog_ref.closingPlugin.connect(self.onDashboardClosed)
+        else:
+            # Si ya existe (puede estar oculta o minimizada)
+            if not self.dashboard_dialog_ref.isVisible():
+                self.dashboard_dialog_ref.show() # Muéstrala si estaba oculta
+            
+            # Traer al frente y activar
+            # Desminimizar si estaba minimizada y activar
+            self.dashboard_dialog_ref.setWindowState(self.dashboard_dialog_ref.windowState() & ~Qt.WindowMinimized | Qt.WindowActive)
+            self.dashboard_dialog_ref.raise_() # Elevarla por encima de otras ventanas
+            self.dashboard_dialog_ref.activateWindow() # Darle el foco
     
