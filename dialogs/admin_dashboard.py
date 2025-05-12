@@ -35,9 +35,9 @@ class ApiWorker(QThread):
         try:
             url = self.base_url + self.endpoint
             if self.method == 'GET':
-                response = requests.get(url, params=self.params, headers=self.headers, timeout=1000)
+                response = requests.get(url, params=self.params, headers=self.headers, timeout=10000) # Increased timeout
             elif self.method == 'POST':
-                response = requests.post(url, json=self.data, params=self.params, headers=self.headers, timeout=1000)
+                response = requests.post(url, json=self.data, params=self.params, headers=self.headers, timeout=10000) # Increased timeout
             # Añadir más métodos (PUT, DELETE) si es necesario
             else:
                 self.error.emit(f"Método HTTP no soportado: {self.method}", self.kpi_targets_config)
@@ -100,17 +100,47 @@ class MplCanvasDashboard(FigureCanvasQTAgg):
         self.axes.cla()
         self.draw()
 
-    def plot_example_bar_chart(self, labels, values, title="Ejemplo Gráfico de Barras"):
+    def plot_bar_chart(self, labels, values, title="Gráfico de Barras", xlabel="Categorías", ylabel="Valores"):
         self.axes.cla()
         if not labels or not values or len(labels) != len(values):
             self.axes.text(0.5, 0.5, 'Datos insuficientes para graficar',
                            ha='center', va='center', transform=self.axes.transAxes)
             self.draw()
             return
-        self.axes.bar(labels, values)
+        bars = self.axes.bar(labels, values)
         self.axes.set_title(title)
-        self.axes.set_ylabel("Valores")
-        self.axes.set_xlabel("Categorías")
+        self.axes.set_ylabel(ylabel)
+        self.axes.set_xlabel(xlabel)
+
+        # Rotar etiquetas del eje X si son muchas para evitar superposición
+        if len(labels) > 7: # Ajusta este número según sea necesario
+            self.axes.tick_params(axis='x', labelrotation=45, labelsize=8)
+        else:
+            self.axes.tick_params(axis='x', labelrotation=0, labelsize=10)
+
+        self.fig.tight_layout()
+        self.draw()
+    def plot_pie_chart(self, labels, sizes, title="Gráfico Circular"): # Renombrado para generalidad
+        self.axes.cla()
+        if not labels or not sizes or len(labels) != len(sizes) or sum(sizes) == 0:
+            self.axes.text(0.5, 0.5, 'No hay datos de cultivos para graficar',
+                           ha='center', va='center', transform=self.axes.transAxes)
+            self.draw()
+            return
+
+        # Filter out zero sizes to prevent pie chart errors/warnings
+        filtered_labels_sizes = [(label, size) for label, size in zip(labels, sizes) if size > 0]
+        if not filtered_labels_sizes:
+            self.axes.text(0.5, 0.5, 'Todas las áreas de cultivo son cero.',
+                           ha='center', va='center', transform=self.axes.transAxes)
+            self.draw()
+            return
+            
+        filtered_labels, filtered_sizes = zip(*filtered_labels_sizes)
+
+        self.axes.pie(filtered_sizes, labels=filtered_labels, autopct='%1.1f%%', startangle=90)
+        self.axes.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        self.axes.set_title(title)
         self.fig.tight_layout()
         self.draw()
 
@@ -184,6 +214,10 @@ class AgraeDashboardWindow(QMainWindow): # Cambiado de QDialog a QMainWindow
         self.combo_explotacion.completer().setFilterMode(Qt.MatchContains) # Hacer la búsqueda menos estricta
         self.combo_explotacion.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.combo_campania.currentIndexChanged.connect(self.on_campania_changed)
+        
+        self.combo_chart_type = QComboBox()
+        self.combo_chart_type.addItem("Áreas por Cultivo", "area_cultivos")
+        # self.combo_chart_type.addItem("Otro Tipo de Gráfico", "otro_tipo") # Ejemplo para futura expansión
         self.btn_actualizar_dashboard = QPushButton("Actualizar")
         self.btn_actualizar_dashboard.setIcon(agraeGUI().getIcon('reload'))
         self.lbl_total_hectareas = QLabel("N/A")
@@ -203,6 +237,9 @@ class AgraeDashboardWindow(QMainWindow): # Cambiado de QDialog a QMainWindow
         filter_layout.addSpacing(20)
         filter_layout.addWidget(QLabel("Explotación:"))
         filter_layout.addWidget(self.combo_explotacion)
+        filter_layout.addSpacing(20)
+        filter_layout.addWidget(QLabel("Tipo de Gráfico:"))
+        filter_layout.addWidget(self.combo_chart_type)
         filter_layout.addStretch(1)
 
         self.combo_campania.currentIndexChanged.connect(self.on_campania_changed_and_update_kpis)
@@ -218,6 +255,7 @@ class AgraeDashboardWindow(QMainWindow): # Cambiado de QDialog a QMainWindow
         charts_layout = QVBoxLayout(charts_group)
         self.chart_canvas1 = MplCanvasDashboard(self, width=7, height=3, dpi=100)
         charts_layout.addWidget(self.chart_canvas1)
+        self.combo_chart_type.currentIndexChanged.connect(self.update_all_kpis) # Actualizar al cambiar tipo de gráfico
         main_layout.addWidget(charts_group)
         main_layout.setStretchFactor(charts_group, 1)
 
@@ -272,25 +310,65 @@ class AgraeDashboardWindow(QMainWindow): # Cambiado de QDialog a QMainWindow
         self.on_campania_changed() # Carga/actualiza las explotaciones
         self.update_all_kpis()     # Actualiza todos los KPIs
 
-    def _start_kpi_fetch_worker(self, endpoint: str, params: dict, kpi_targets_config: list):
+    def _start_kpi_fetch_worker(self, endpoint: str, params: dict, kpi_targets_config: list): # type: ignore
         """
         Inicia un worker para obtener datos de un endpoint y actualizar los widgets configurados.
         kpi_targets_config: Lista de diccionarios, cada uno con:
             {'widget': QLabel, 'key': str, 'unit': str, 'default': str, 'is_float': bool}
+            o para gráficos:
+            {'target_type': 'chart_crop_area', 'canvas': MplCanvasDashboard, 'default_title': str}
         """
-        if not kpi_targets_config:
+        if not kpi_targets_config: # type: ignore
             QgsMessageLog.logMessage("Error: kpi_targets_config está vacío.", "Dashboard Worker", Qgis.Critical)
             return
 
         for config_item in kpi_targets_config:
-            config_item['widget'].setText("Cargando...")
-            config_item['widget'].setProperty("status", "loading")
+            if 'widget' in config_item: # Es un KPI para un QLabel
+                widget = config_item['widget']
+                widget.setText("Cargando...")
+                widget.setProperty("status", "loading")
+                self._apply_style_refresh(widget) # Asegurar que el estilo de "loading" se aplique
+            elif config_item.get('target_type') and config_item.get('target_type').startswith('chart_'): # Es para un gráfico
+                canvas = config_item.get('canvas')
+                if canvas:
+                    # Mostrar un estado de "Cargando..." en el gráfico
+                    base_title = config_item.get('default_title', "Gráfico")
+                    loading_title = self._get_dynamic_chart_title(f"{base_title} - Cargando...")
+                    # Usar plot_bar_chart para el estado de carga, ya que es el principal ahora
+                    if config_item.get('target_type') == 'chart_area_cultivos':
+                        canvas.plot_bar_chart([], [], title=loading_title, xlabel="Cultivo", ylabel="Área (ha)")
+                    # else: # Para otros tipos de gráficos futuros
+                        # canvas.plot_bar_chart([], [], title=loading_title) # O un método de ploteo genérico
+            # else: # Configuración no reconocida (opcional: loguear una advertencia)
+                # QgsMessageLog.logMessage(f"Configuración de KPI no reconocida: {config_item}", "Dashboard Worker", Qgis.Warning)
 
         worker = ApiWorker(self.endpoint_url, endpoint, kpi_targets_config, params=params)
         worker.finished.connect(self._handle_kpi_response)
         worker.error.connect(self._handle_kpi_error)
         self.active_workers.append(worker) # Guardar referencia
         worker.start()
+
+    def _process_and_plot_area_cultivos(self, api_response: object, canvas: MplCanvasDashboard, default_title: str):
+        labels = []
+        sizes = []
+        chart_title = default_title
+
+        if isinstance(api_response, list):
+            for item_dict in api_response:
+                if isinstance(item_dict, dict):
+                    for _id, details in item_dict.items(): # Assumes one key-value pair per item_dict
+                        if isinstance(details, dict) and 'nombre' in details and 'area' in details:
+                            labels.append(str(details['nombre'])) # Nombres de cultivo
+                            try:
+                                sizes.append(float(details['area'])) # Áreas
+                            except (ValueError, TypeError):
+                                QgsMessageLog.logMessage(f"Área inválida para cultivo {details['nombre']}: {details['area']}", "Dashboard", Qgis.Warning)
+                                # Optionally skip or add a placeholder if needed
+                        else:
+                             QgsMessageLog.logMessage(f"Estructura de item inesperada en datos de área de cultivo: {details}", "Dashboard", Qgis.Warning)
+        else:
+            QgsMessageLog.logMessage(f"Respuesta de API de área de cultivo no es una lista: {api_response}", "Dashboard", Qgis.Warning)
+        canvas.plot_bar_chart(labels, sizes, title=self._get_dynamic_chart_title(default_title), xlabel="Cultivo", ylabel="Área (ha)")
 
     def _apply_style_refresh(self, widget: QWidget):
         """Fuerza la reaplicación de estilos y el repintado del widget."""
@@ -300,6 +378,15 @@ class AgraeDashboardWindow(QMainWindow): # Cambiado de QDialog a QMainWindow
             widget.update()
 
     def _handle_kpi_response(self, api_response: object, kpi_targets_config: list):
+        # Check if this response is for the crop area chart
+        chart_config_item = next((item for item in kpi_targets_config if item.get('target_type') == 'chart_area_cultivos'), None)
+        if chart_config_item:
+            canvas = chart_config_item['canvas']
+            default_title = chart_config_item.get('default_title', "Distribución de Cultivos")
+            self._process_and_plot_area_cultivos(api_response, canvas, default_title)
+            self._remove_worker_reference(QThread.currentThread()) # Ensure worker is removed
+            return # Exit after handling chart
+
         if not isinstance(api_response, dict):
             error_msg = "Error Respuesta API"
             for config_item in kpi_targets_config:
@@ -344,11 +431,21 @@ class AgraeDashboardWindow(QMainWindow): # Cambiado de QDialog a QMainWindow
         self._remove_worker_reference(QThread.currentThread())
 
     def _handle_kpi_error(self, error_message: str, kpi_targets_config: list):
+        chart_config_item = next((item for item in kpi_targets_config if item.get('target_type') == 'chart_area_cultivos'), None)
+        if chart_config_item:
+            canvas = chart_config_item['canvas']
+            error_title = chart_config_item.get('default_title', "Error Cargando Datos de Cultivo")
+            # Usar plot_bar_chart para mostrar el error
+            canvas.plot_bar_chart([], [], title=f"{error_title}: {error_message.split(':')[0]}", xlabel="Cultivo", ylabel="Área (ha)")
+            self._remove_worker_reference(QThread.currentThread())
+            return
+
         for config_item in kpi_targets_config:
             widget = config_item['widget']
             widget.setText(error_message)
             widget.setProperty("status", "error")
             self._apply_style_refresh(widget)
+
         self._remove_worker_reference(QThread.currentThread())
 
     def update_all_kpis(self):
@@ -359,9 +456,6 @@ class AgraeDashboardWindow(QMainWindow): # Cambiado de QDialog a QMainWindow
             params['idcampania'] = idcampania
         if idexplotacion is not None:
             params['idexplotacion'] = idexplotacion
-
-        # Limpiar el gráfico antes de iniciar nuevas peticiones
-        # self.chart_canvas1.clear_plot() # Opcional: limpiar si la actualización es muy visual
 
         # Iniciar workers para cada KPI
         kpi_total_hectareas_config = [{
@@ -389,33 +483,32 @@ class AgraeDashboardWindow(QMainWindow): # Cambiado de QDialog a QMainWindow
         ]
         self._start_kpi_fetch_worker('/api/area_mapeada/', params.copy(), kpi_area_mapeada_multiple_config)
 
+        # Worker for the selected chart type
+        selected_chart_type = self.combo_chart_type.currentData()
+        if selected_chart_type == "area_cultivos":
+            kpi_chart_config = [{
+                'target_type': 'chart_area_cultivos', # Specific target type
+                'canvas': self.chart_canvas1,
+                'default_title': "Distribución de Cultivos por Área"
+            }]
+            self._start_kpi_fetch_worker('/api/area_cultivos/', params.copy(), kpi_chart_config)
+        # elif selected_chart_type == "otro_tipo":
+            # Lógica para otro tipo de gráfico y su API
 
-        # Si tuvieras KPIs que no vienen de la API y quieres ponerles un valor por defecto:
-        # for config_item in [
-        #     {'widget': self.some_other_label, 'default': "Info Manual", 'status': "idle"}
-        # ]:
-        #     config_item['widget'].setText(config_item['default'])
-        #     config_item['widget'].setProperty("status", config_item['status'])
-        #     self._apply_style_refresh(config_item['widget'])
-
-        # Actualizar gráfico (esto podría también moverse a un worker si la obtención de datos es lenta)
-        # Por ahora, si los datos del gráfico son estáticos o rápidos de generar, está bien aquí.
-        # Si los datos del gráfico vienen de otra API, necesitaría su propio worker.
-        labels_chart = ['Cultivo A', 'Cultivo B', 'Cultivo C'] # Datos de ejemplo
-        values_chart = [np.random.randint(50, 200) for _ in labels_chart] # Datos de ejemplo
-        
-        # Determinar el título del gráfico basado en la selección actual
+    def _get_dynamic_chart_title(self, base_title: str) -> str:
+        """Determina el título del gráfico basado en la selección actual de filtros."""
         campania_text = self.combo_campania.currentText()
         explotacion_text = self.combo_explotacion.currentText()
 
         if self.combo_explotacion.currentData() is not None: # Si hay una explotación específica
-            title_chart = f"Distribución para Explotación: {explotacion_text.split('-', 1)[-1]}" # Tomar nombre después del ID
+            # Tomar nombre después del ID si el formato es "ID-Nombre"
+            explotacion_nombre_display = explotacion_text.split('-', 1)[-1] if '-' in explotacion_text else explotacion_text
+            title_chart = f"{base_title} para Explotación: {explotacion_nombre_display}"
         elif self.combo_campania.currentData() is not None: # Si hay una campaña específica
-            title_chart = f"Distribución para Campaña: {campania_text}"
+            title_chart = f"{base_title} para Campaña: {campania_text}"
         else: # Todas las campañas y todas las explotaciones
-            title_chart = "Distribución General"
-            
-        self.chart_canvas1.plot_example_bar_chart(labels_chart, values_chart, title=title_chart)
+            title_chart = f"{base_title} (General)"
+        return title_chart
 
     def _remove_worker_reference(self, worker_thread):
         """Elimina la referencia al worker una vez que ha terminado."""
@@ -441,7 +534,7 @@ class AgraeDashboardWindow(QMainWindow): # Cambiado de QDialog a QMainWindow
         """
         try:
             url = self.endpoint_url + endpoint
-            response = requests.request(method.upper(), url, params=params, headers=headers, json=data, timeout=1000)
+            response = requests.request(method.upper(), url, params=params, headers=headers, json=data, timeout=10000) # Increased timeout
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
