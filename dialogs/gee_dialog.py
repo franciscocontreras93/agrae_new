@@ -1,6 +1,6 @@
 import os
 import csv
-# import ee
+import traceback
 
 import time
 
@@ -28,11 +28,12 @@ from qgis.PyQt.QtWidgets import (
     QWidget,
     QProgressBar
     )
-from qgis.PyQt.QtCore import pyqtSignal, QSettings, QVariant, Qt, QSize,QThreadPool,QDate
+from qgis.PyQt.QtCore import pyqtSignal, QSettings, QVariant, Qt, QSize,QThreadPool,QDate,QObject,QRunnable
 
 from qgis.core import *
 from qgis.gui import * 
 from qgis.utils import iface
+
 
 
 from ..gui import agraeGUI
@@ -46,34 +47,98 @@ from ..gui.CustomPushButton import CustomPushButton
 
 import threading
 
+
+
+class WorkerSignals(QObject):
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    result = pyqtSignal(object)
+    progress = pyqtSignal(int) # Signal with current and total
+    current_lote = pyqtSignal(str)
+
+class GenerateAmbientesWorker(QRunnable):
+    
+    def __init__(self, features,bands:list,since:str,until:str,buffer:int=10,kernel_radius:int=5,kernel_units:int=1,kernel_magnitude:int=1,clouds:int=5,ndre:bool=False):
+        from ..tools.geeCore import aGraeGEECore
+        super().__init__()
+        self.core = aGraeGEECore()
+        self.bands = bands
+        self.since = since
+        self.until = until
+        self.buffer = buffer
+        self.kernel_radius= kernel_radius
+        self.kernel_units= kernel_units
+        self.kernel_magnitude= kernel_magnitude
+        self.clouds = clouds
+        self.ndre = ndre
+        self.features = features
+        self.total_features = len(self.features)
+        self.signals = WorkerSignals()
+
+        
+
+    def run(self):
+        current = 0
+        try:
+            for i, feature in enumerate(self.features):
+                current += 1
+                progress_percentage = int((i + 1) / self.total_features * 100) #Calculate percentage
+                self.signals.current_lote.emit('{} {}/{} '.format(feature['lote'], current,self.total_features))
+                self.core.runGEECore(feature,
+                                     bands=self.bands,
+                                     since=self.since,
+                                     until=self.until,
+                                     buffer=self.buffer,
+                                     kernel_radius=self.kernel_radius,
+                                     kernel_units=self.kernel_units,
+                                     kernel_magnitude=self.kernel_magnitude,
+                                     max_clouds=self.clouds,
+                                     ndre=self.ndre
+                                     )
+                self.signals.progress.emit(progress_percentage) # Emit percentage
+                # time.sleep(0.5)
+        except Exception as e:
+            self.signals.error.emit((type(e), e, traceback.format_exc()))
+        finally:
+            self.signals.finished.emit()
+
+    
+
 class aGraeGEEDialog(QDialog):
     
     def __init__(self):
         super().__init__()
-        # self.core = aGraeGEE()
-        # self.core.test()
         self.UIComponents()
-        # self.idexplotacion = idexplotacion
         self.resize(400,200)
 
-        self.setWindowTitle('aGrae Google-Earth-Engine')
-        # ee.Authenticate(auth_mode='localhost')
-
-        # self.idexplotacion = idexplotacion
-        # self.layer = self.getLayer(layer)
-
+        self.setWindowTitle('aGrae | Google-Earth-Engine API')
         self.tools = aGraeTools()
         self.threadpool = QThreadPool()
 
-    def getLayer(self,layer:QgsVectorLayer):
-        # if len(list(layer.getSelectedFeatures())) > 0:
+        self.setWindowFlags(Qt.Window | Qt.WindowMinimizeButtonHint | Qt.WindowCloseButtonHint) #Added Qt.WindowMinimizeButtonHint
+        self.setModal(False) #Crucial change: Set modal to False
 
-        #     features = list(layer.getSelectedFeatures())
-        # else:
-        features = list(layer.getFeatures())
-            
-        new_layer  = QgsVectorLayer('MULTIPOLYGON?crs=EPSG:4326','new_layer','memory')
-        new_layer.dataProvider().addFeatures(features)
+    def getLayer(self, layer: QgsVectorLayer):
+        if self.check_layer.isChecked():
+            features = list(layer.getSelectedFeatures())
+        else:
+            features = list(layer.getFeatures())
+
+        new_layer = QgsVectorLayer('MULTIPOLYGON?crs=EPSG:4326', 'new_layer', 'memory')
+        provider = new_layer.dataProvider()
+        provider.addAttributes(layer.fields())  # Add attributes
+        new_layer.updateFields()
+
+        new_features = []
+        for feature in features:
+            new_feature = QgsFeature()
+            new_feature.setGeometry(feature.geometry())
+            new_feature.setAttributes(feature.attributes())  
+            new_features.append(new_feature)
+
+        provider.addFeatures(new_features)  
+        new_layer.updateExtents()  
+
         return new_layer
 
     
@@ -84,8 +149,11 @@ class aGraeGEEDialog(QDialog):
         self.tabWidget.setStyleSheet("QTabWidget::pane { padding: 10px; }")
 
         self.progress_bar = QProgressBar()
-        self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
+        self.progress_bar.setRange(0, 100)
+        self.progress_label = QLabel()
+
+
 
         ambientesWidget = QWidget()
         ambienteLayout = QVBoxLayout()
@@ -94,7 +162,10 @@ class aGraeGEEDialog(QDialog):
         self.layerGroup = QGroupBox()
         self.layerGroup.setTitle('Selecciona la Capa que contiene el Lote.')
         self.layer = QgsMapLayerComboBox()
+        self.check_layer = QCheckBox('Solo los Lotes Seleccionados.')
+        self.check_layer.setChecked(True)
         layerGroupLayout.addWidget(self.layer)
+        layerGroupLayout.addWidget(self.check_layer)
         self.layerGroup.setLayout(layerGroupLayout)
 
         #TAB AMBIENTES
@@ -182,7 +253,8 @@ class aGraeGEEDialog(QDialog):
         advanceGroupLayout = QGridLayout()
         self.advanceParametersGroup = QgsCollapsibleGroupBox()
         self.advanceParametersGroup.setCollapsed(True)
-        self.advanceParametersGroup.setTitle('Configurar Parametros de Kernel')
+        self.advanceParametersGroup.setTitle('Configurar Parametros de Avanzados')
+        self.advanceParametersGroup.collapsedStateChanged.connect(self.showWarning)
         
         label_buffer = QLabel('Radio del Buffer')
         self.buffer = QSpinBox()
@@ -219,7 +291,7 @@ class aGraeGEEDialog(QDialog):
         advanceGroupLayout.addWidget(self.kernel_units,1,2)
         advanceGroupLayout.addWidget(label_magnitude,0,3)
         advanceGroupLayout.addWidget(self.kernel_magnitude,1,3)
-
+        
 
 
 
@@ -235,48 +307,135 @@ class aGraeGEEDialog(QDialog):
         self.layout.addWidget(self.tabWidget)
         self.layout.addWidget(self.advanceParametersGroup)
         self.layout.addWidget(self.progress_bar)
+        self.layout.addWidget(self.progress_label)
 
 
         self.setLayout(self.layout)
 
 
-    def execute(self):
-        from ..tools.geeCore import aGraeNDVIMulti,aGraeNDRE
+    def execute(self,feature):
         
-        layer = self.getLayer(self.layer.currentLayer())
+        
+        # layer = self.getLayer(self.layer.currentLayer())
 
-        year = self.year.value()
-        period = self.period.value()
-        clouds = self.cloud.value()
+        # year = self.year.value()
+        # period = self.period.value()
+        # clouds = self.cloud.value()
 
+        # radius = self.kernel_radius.value()
+        # units = self.kernel_units.currentData()
+        # magnitude = self.kernel_magnitude.value()
+
+        self.core.run(feature)
+
+        # core = aGraeNDVIMulti(
+        #     layer=layer,
+        #     feature=feature,
+        #     crs=layer.crs(),
+        #     year = year,
+        #     period = period,
+        #     max_clouds= clouds,
+        #     buffer_radius=self.buffer.value(),
+        #     kernel_radius= radius,
+        #     kernel_units= units,
+        #     kernel_magnitude=magnitude
+        #     )
+        
+        # core.run()
+
+    def generateAmbientes(self):
+
+        self.features = list(self.getLayer(self.layer.currentLayer()).getFeatures())
+        self.progress_bar.setValue(0)
+        bands = ['B8','B4']
+        since = QDate().currentDate().toString('yyyy-MM-dd')
+        until = QDate().currentDate().addYears(self.period.value() * -1).toString('yyyy-MM-dd')
+        buffer = self.buffer.value()
         radius = self.kernel_radius.value()
         units = self.kernel_units.currentData()
         magnitude = self.kernel_magnitude.value()
+        clouds = self.cloud.value()
+        worker = GenerateAmbientesWorker(self.features,
+                                         bands=bands,
+                                         since=since,
+                                         until=until,
+                                         buffer=buffer,
+                                         kernel_radius=radius,
+                                         kernel_units=units,
+                                         kernel_magnitude=magnitude,
+                                         clouds=clouds,
+                                         ndre=False
+                                         )
 
-        core = aGraeNDVIMulti(
-            layer=layer,
-            year = year,
-            period = period,
-            max_clouds= clouds,
-            buffer_radius=self.buffer.value(),
-            kernel_radius= radius,
-            kernel_units= units,
-            kernel_magnitude=magnitude
-            )
-        
-        core.run()
-
-    def generateAmbientes(self):
-    
-        self.tools.messages('aGrae GEE','Generando Mapas de Ambientes, este proceso puede tardar varios minutos.\nPorfavor espere un momento.',alert=True)
-        # print('worker')
-        worker = Worker(lambda: self.execute())
-        # worker.signals.finished.connect(lambda: self.tools.UserMessages('Archivos generados correctamente',level=Qgis.Success))
-        worker.signals.finished.connect(lambda: iface.messageBar().pushMessage("aGrae GIS", 'Archivos generados correctamente', level=Qgis.Success))
+        worker.signals.finished.connect(lambda: self.progress_label.setText(f'Mapas de Ambientes Generados Correctamente'))
+        worker.signals.error.connect(self.worker_error)
+        worker.signals.progress.connect(self.update_progress) # Connect progress signal
+        worker.signals.current_lote.connect(self.update_label)
         self.threadpool.start(worker)
 
+
+
     def generateCoberteras(self):
+        self.features = list(self.getLayer(self.layer.currentLayer()).getFeatures())
+        self.progress_bar.setValue(0)
+        bands = ['B8','B5']
+        # since = self.desde.date().toString('yyyy-MM-dd')
+        # until = self.hasta.date().toString('yyyy-MM-dd')
+        since = QDate().currentDate().toString('yyyy-MM-dd')
+        until = QDate().currentDate().addYears(-1).toString('yyyy-MM-dd')
+
+        buffer = self.buffer.value()
+        radius = self.kernel_radius.value()
+        units = self.kernel_units.currentData()
+        magnitude = self.kernel_magnitude.value()
+        clouds = self.cloud.value()
+        worker = GenerateAmbientesWorker(self.features,
+                                         bands=bands,
+                                         since=since,
+                                         until=until,
+                                         buffer=buffer,
+                                         kernel_radius=radius,
+                                         kernel_units=units,
+                                         kernel_magnitude=magnitude,
+                                         clouds=clouds,
+                                         ndre=True
+                                         )
+
+        worker.signals.finished.connect(lambda: self.progress_label.setText(f'Mapas de Coberteras Generados Correctamente'))
+        worker.signals.error.connect(self.worker_error)
+        worker.signals.progress.connect(self.update_progress) # Connect progress signal
+        worker.signals.current_lote.connect(self.update_label)
+        self.threadpool.start(worker)
         pass
+
+    def worker_finished(self):
+        self.progress_label.setText(f'Mapas de Ambientes Generados Correctamente')
+
+    def worker_error(self, error):
+        self.tools.messages('aGrae GEE', f'Error al procesar lote: {error}', 2, alert=True)
+
+    def update_progress(self, current):
+        self.progress_bar.setValue(current) # Update with the emitted value
+
+    def update_label(self, text:str):
+        self.progress_label.setText(f'Procesando Lote: {text.upper()}')
+
+
+    def showWarning(self, collapsed):
+        if not collapsed:  # Only show warning when expanding
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Warning)
+            msgBox.setWindowTitle("Advertencia")
+            msgBox.setText("Los parámetros están ajustados de forma predeterminada.")
+            msgBox.setInformativeText(
+                "Cualquier cambio puede alterar la calidad de los resultados. ¿Desea continuar?"
+            )
+            msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            msgBox.setDefaultButton(QMessageBox.Ok)
+            ret = msgBox.exec_()
+
+            if ret == QMessageBox.Cancel:
+                self.advanceParametersGroup.setCollapsed(True) # Collapse if cancelled
         
 
 
@@ -285,3 +444,11 @@ class aGraeGEEDialog(QDialog):
         
 
 
+class TotalFeatures(QObject):
+    def __init__(self, total):
+        super().__init__()
+        self.total = total
+        self.value = 0
+
+    def increment(self):
+        self.value += 1
