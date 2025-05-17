@@ -52,6 +52,7 @@
         <file>gui\icons\tools.svg</file>
         <file>gui\icons\map-regular.svg</file>
         <file>gui\icons\flask-solid.svg</file>
+        <file>gui\icons\dashboard.svg</file>
 
         <!-- PLOT GRAPHS -->
         <file>gui\base\lgnd1.svg</file>

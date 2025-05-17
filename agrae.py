@@ -139,10 +139,10 @@ class aGraeToolbox:
         # self.tools_agrae = self.tools.getToolButton(tools_agrae_actions,agraeGUI().getIcon('tools'),setMainIcon=True)
         # self.toolbar.addWidget(self.tools_agrae)
 
+        self.add_action(agraeGUI().getIcon('dashboard'),'Dashboard',self.aGraeDashboard,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('lotes'),'Cargar Lotes',self.agraeGestionLotes,add_to_menu=False,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('main'),'aGrae GIS',self.agraeDock,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('laboratorio-icon'),'Gestion Laboratorio',self.GestionarLaboratorio,add_to_toolbar=True)
-        self.add_action(agraeGUI().getIcon('laboratorio-icon'),'Gestion Laboratorio',self.aGraeDashboard,add_to_toolbar=True)
         self.add_action(agraeGUI().getIcon('settings'),'Ajustes aGrae GIS',self.agraeConfig,add_to_menu=True,add_to_toolbar=False)
 
         # self.business_inteligence_tool = QToolButton()
