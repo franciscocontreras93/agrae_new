@@ -117,7 +117,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.line_produccion.setEnabled(False)
         self.line_produccion.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
         self.line_produccion.setSuffix(" Kg/Ha")
-        self.line_produccion.setMaximum(200000) # Max 200 Ton/Ha
+        self.line_produccion.setMaximum(500000) # Max 200 Ton/Ha
         self.check_siembra = QtWidgets.QCheckBox("Fecha Siembra")
         self.check_siembra.setEnabled(False)
         self.date_siembra = QtWidgets.QDateEdit()
@@ -145,7 +145,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.line_precio.setEnabled(False)
         self.line_precio.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
         self.line_precio.setSuffix(" €")
-        # self.line_precio.setMaximum(10000) # Max 10000 €
+        self.line_precio.setMaximum(1000) # Max 10000 €
         self.combo_ajuste = QtWidgets.QComboBox()
         self.combo_ajuste.setEnabled(False)
         self.combo_ajuste.addItem("Seleccionar...")
@@ -161,7 +161,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.line_produccion_2 = QtWidgets.QSpinBox()
         self.line_produccion_2.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
         self.line_produccion_2.setSuffix(" Kg/Ha")
-        self.line_produccion_2.setMaximum(200000) # Max 200 Ton/Ha
+        self.line_produccion_2.setMaximum(500000) # Max 200 Ton/Ha
         self.btn_save_cultivo_exp = QtWidgets.QPushButton("Guardar")
 
         # Herramientas Generales (fuera del ToolBox)
