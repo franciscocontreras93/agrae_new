@@ -13,6 +13,7 @@ class SelectClientDialog(QDialog):
     def __init__(self, endpoint_url: str, parent=None): # Recibir la URL base de la API
         super().__init__(parent)
         self.setWindowTitle("Seleccionar o Crear Cliente")
+        self.setAttribute(Qt.WA_DeleteOnClose) # Asegurar la eliminación del diálogo al cerrarse
         self.setMinimumSize(800, 600)
         self.selected_client_data = None
         self.endpoint_url = endpoint_url # Guardar la URL base

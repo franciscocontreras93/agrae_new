@@ -1,5 +1,6 @@
 import requests
 import json
+import matplotlib.pyplot as plt # <--- AÑADIDO para cerrar figuras de Matplotlib
 
 
 from qgis.PyQt.QtWidgets import (QMainWindow, QDialog, QVBoxLayout, QHBoxLayout, QGridLayout, QGroupBox, QToolTip, QFileDialog, QAction, # type: ignore
@@ -14,6 +15,7 @@ from ..tools.api_worker import ApiWorker
 from ..gui.KpiCardWidget import KpiCard
 from ..gui.CustomTreeWidget import CustomTreeWidget 
 from .billing_dialog import CreateInvoiceDialog # <--- NUEVA IMPORTACIÓN
+from ..gui.CampaniasComboBox import CampaniasComboBox # <--- NUEVA IMPORTACIÓN DEL COMPONENTE
 from .billing_kit_digital_dialog import CreateKitDigitalInvoiceDialog
 
 class AgraeDashboardWindow(QMainWindow):
@@ -43,8 +45,7 @@ class AgraeDashboardWindow(QMainWindow):
 
         self._create_menu_bar() # Crear la barra de menús
         self.UIComponents()
-        # self.setStyleSheet(KPI_CARD_STYLE) # <--- Eliminado, el estilo lo maneja KpiCardWidget
-        self.load_campanias_data()
+        # self.load_campanias_data() # Ya no es necesario, CampaniasComboBox lo hace al instanciarse
         self.on_campania_changed_and_update_kpis()
 
     def _create_menu_bar(self):
@@ -165,7 +166,8 @@ class AgraeDashboardWindow(QMainWindow):
         main_layout.setSpacing(15)
         filter_group = QGroupBox("Filtros")
         filter_layout = QHBoxLayout(filter_group)
-        self.combo_campania = QComboBox()
+        
+        self.combo_campania = CampaniasComboBox(self.endpoint_url, parent=self)
         self.combo_campania.setMinimumWidth(180)
         self.combo_campania.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.combo_explotacion = QComboBox()
@@ -191,7 +193,7 @@ class AgraeDashboardWindow(QMainWindow):
         filter_layout.addSpacing(20)
         filter_layout.addStretch(1)
 
-        self.combo_campania.currentIndexChanged.connect(self.on_campania_changed_and_update_kpis)
+        self.combo_campania.current_campaign_changed.connect(self.on_campania_changed_and_update_kpis)
         self.combo_explotacion.currentIndexChanged.connect(self.update_all_kpis)
         filter_layout.addWidget(self.btn_actualizar_dashboard)
         # Las conexiones de las tarjetas KPI se movieron a _create_kpi_section
@@ -241,21 +243,11 @@ class AgraeDashboardWindow(QMainWindow):
         main_splitter.setSizes([int(self.height() * 0.5), int(self.height() * 0.5)]) 
         main_layout.setStretchFactor(main_splitter, 1) 
 
-    def load_campanias_data(self):
-        self.combo_campania.clear()
-        self.combo_campania.addItem("Todas las Campañas", None)
-
-        campanias_data = self.fetch_data_synchronous('/api/campanias/')
-
-        if campanias_data:
-            if isinstance(campanias_data, list):
-                for campania in campanias_data:
-                    if isinstance(campania, dict) and 'id' in campania and 'nombre' in campania:
-                        self.combo_campania.addItem(str(campania['nombre']), campania['id'])
-                    else:
-                        QgsMessageLog.logMessage(f"Formato de campaña inesperado: {campania}", "Dashboard API", Qgis.Warning)
-            else:
-                QgsMessageLog.logMessage(f"Respuesta de API para campañas no es una lista: {campanias_data}", "Dashboard API", Qgis.Warning)
+    # def load_campanias_data(self):
+    #     """
+    #     Este método ya no es necesario aquí. CampaniasComboBox maneja su propia carga.
+    #     """
+    #     pass
 
     def load_explotaciones_data(self, idcampania=None):
         self.combo_explotacion.clear()
@@ -277,12 +269,16 @@ class AgraeDashboardWindow(QMainWindow):
             else:
                 QgsMessageLog.logMessage(f"Respuesta de API para explotaciones no es una lista: {explotaciones_data}", "Dashboard API", Qgis.Warning)
 
-    def on_campania_changed(self):
-        id_campania_seleccionada = self.combo_campania.currentData()
+    def on_campania_changed(self, id_campania_seleccionada: int | None):
+        """Este método ahora es llamado por on_campania_changed_and_update_kpis."""
         self.load_explotaciones_data(id_campania_seleccionada)
 
-    def on_campania_changed_and_update_kpis(self):
-        self.on_campania_changed()
+    def on_campania_changed_and_update_kpis(self, id_campania_seleccionada: int | None = None):
+        """Maneja el cambio de campaña y actualiza los KPIs y otros datos dependientes."""
+        # Si id_campania_seleccionada no se proporciona (ej. llamada inicial), obtenerlo del combo.
+        # La señal current_campaign_changed ya nos da el ID correcto.
+        current_id_from_combo = id_campania_seleccionada if id_campania_seleccionada is not None else self.combo_campania.get_current_campaign_id()
+        self.on_campania_changed(current_id_from_combo)
         self.update_all_kpis()
 
     def _start_kpi_fetch_worker(self, endpoint: str, params: dict, kpi_targets_config: list, update_id: int):
@@ -495,7 +491,7 @@ class AgraeDashboardWindow(QMainWindow):
     def update_all_kpis(self):
         self.current_kpi_update_id += 1 
 
-        idcampania = self.combo_campania.currentData()
+        idcampania = self.combo_campania.get_current_campaign_id()
         idexplotacion = self.combo_explotacion.currentData()
         params = {}
         if idcampania is not None:
@@ -638,7 +634,7 @@ class AgraeDashboardWindow(QMainWindow):
                 QMessageBox.critical(self, "Error al Guardar", f"No se pudo guardar el gráfico:\n{e}")
 
     def _get_dynamic_chart_title(self, base_title: str) -> str:
-        campania_text = self.combo_campania.currentText()
+        campania_text = self.combo_campania.currentText() # currentText() sigue siendo válido
         explotacion_text = self.combo_explotacion.currentText()
 
         if self.combo_explotacion.currentData() is not None:
@@ -653,6 +649,7 @@ class AgraeDashboardWindow(QMainWindow):
     def _remove_worker_reference(self, worker_thread):
         if isinstance(worker_thread, QThread) and worker_thread in self.active_workers:
             self.active_workers.remove(worker_thread) 
+            worker_thread.deleteLater() # <--- AÑADIDO: Programar el worker para eliminación
 
     def fetch_data_synchronous(self, endpoint, params=None, headers=None, method='GET', data=None) -> dict | list | None:
         try:
@@ -671,12 +668,26 @@ class AgraeDashboardWindow(QMainWindow):
             return None
 
     def closeEvent(self, event):
+        QgsMessageLog.logMessage("AgraeDashboardWindow closeEvent triggered.", "Dashboard Memory", Qgis.Info)
+        # Limpiar workers activos
         for worker in list(self.active_workers):
             if worker.isRunning():
+                QgsMessageLog.logMessage(f"Stopping worker: {worker}", "Dashboard Memory", Qgis.Info)
                 worker.quit()
                 worker.wait()
+            worker.deleteLater() # <--- AÑADIDO: Asegurar la eliminación de todos los workers referenciados
         self.active_workers.clear()
+
+        # Cerrar figuras de Matplotlib para liberar memoria
+        QgsMessageLog.logMessage("Closing Matplotlib figures.", "Dashboard Memory", Qgis.Info)
+        if hasattr(self, 'comparison_chart_canvas') and self.comparison_chart_canvas and hasattr(self.comparison_chart_canvas, 'fig'):
+            plt.close(self.comparison_chart_canvas.fig)
+            QgsMessageLog.logMessage("Closed comparison_chart_canvas figure.", "Dashboard Memory", Qgis.Info)
+        if hasattr(self, 'chart_canvas1') and self.chart_canvas1 and hasattr(self.chart_canvas1, 'fig'):
+            plt.close(self.chart_canvas1.fig)
+            QgsMessageLog.logMessage("Closed chart_canvas1 figure.", "Dashboard Memory", Qgis.Info)
 
         self.closingPlugin.emit()
         self.hide()
         event.ignore()
+        QgsMessageLog.logMessage("AgraeDashboardWindow hidden and event ignored.", "Dashboard Memory", Qgis.Info)

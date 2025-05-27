@@ -52,64 +52,77 @@ class ApiWorker(QThread):
             self.error.emit(f"Error inesperado: {e}", self.kpi_targets_config, self.update_id)
 
 # --- GenericApiWorker ---
-class GenericApiWorker(QObject): # Hereda de QObject para usar con moveToThread
-    """
-    Worker genérico para realizar peticiones API sin bloquear la GUI.
-    Diseñado para ser movido a un QThread.
-    """
-    success = pyqtSignal(object, object) # respuesta_api (dict/list), contexto_peticion (any)
-    error = pyqtSignal(str, object)      # mensaje_error (str), contexto_peticion (any)
-    finished_signal = pyqtSignal()       # Para la limpieza del thread
+class GenericApiWorker(QObject):
+    success = pyqtSignal(object, object) # response_data, request_context
+    error = pyqtSignal(str, object)      # error_message, request_context
+    finished_signal = pyqtSignal()       # Señal propia para indicar finalización
 
-    def __init__(self, api_config: dict, request_context: object = None):
-        super().__init__()
-        self.api_config = api_config 
+    def __init__(self, api_config: dict, request_context: object = None, parent=None):
+        super().__init__(parent)
+        self.config = api_config
         self.request_context = request_context
-        self._is_running = True
-        
+        self._stop_flag = False
+        self.session = requests.Session() # Es buena práctica usar una sesión
+
     def run(self):
-        if not self._is_running:
-            self.finished_signal.emit()
-            return
-
-        url = self.api_config.get("url")
-        method = self.api_config.get("method", "GET").upper()
-        params = self.api_config.get("params")
-        data = self.api_config.get("data") 
-        headers = self.api_config.get("headers")
-        timeout = self.api_config.get("timeout", 10) 
-
-        if not url:
-            if self._is_running: self.error.emit("Configuración de API inválida: URL no especificada.", self.request_context)
-            if self._is_running: self.finished_signal.emit()
-            return
-
-        print(f"[GenericApiWorker] Solicitando: {method} {url} con params: {params}, data: {data}, context: {self.request_context}")
         try:
-            response = requests.request(method, url, params=params, json=data, headers=headers, timeout=timeout)
+            if self._stop_flag:
+                self.error.emit("Operación cancelada por el usuario.", self.request_context)
+                return # No olvides el finally
+
+            url = self.config.get("url")
+            params = self.config.get("params")
+            headers = self.config.get("headers")
+            method = self.config.get("method", "GET").upper()
+            data_payload = self.config.get("data") # Para cuerpos de solicitud
+            timeout = self.config.get("timeout", 30) # Timeout por defecto de 30 segundos
+
+            if self._stop_flag: # Comprobar de nuevo antes de la llamada de red
+                self.error.emit("Operación cancelada antes de la petición de red.", self.request_context)
+                return
+
+            response = self.session.request(
+                method,
+                url,
+                params=params,
+                headers=headers,
+                json=data_payload if method in ["POST", "PUT", "PATCH"] and isinstance(data_payload, (dict, list)) else None,
+                data=data_payload if method in ["POST", "PUT", "PATCH"] and not isinstance(data_payload, (dict, list)) else None,
+                timeout=timeout
+            )
             response.raise_for_status()
-            
-            api_response_data = None
-            if response.content: # Solo intentar parsear JSON si hay contenido
-                api_response_data = response.json()
-            
-            if self._is_running: self.success.emit(api_response_data, self.request_context)
+
+            if self._stop_flag: # Comprobar después de la llamada, antes de procesar
+                self.error.emit("Operación cancelada después de la petición, antes de procesar.", self.request_context)
+                return
+
+            content_type = response.headers.get('Content-Type', '').lower()
+            if 'application/json' in content_type:
+                response_data = response.json()
+            else:
+                response_data = response.text # O response.content si esperas binarios
+
+            self.success.emit(response_data, self.request_context)
 
         except requests.exceptions.Timeout:
-            if self._is_running: self.error.emit(f"Error de red: Timeout al conectar con {url}", self.request_context)
-        except requests.exceptions.ConnectionError:
-            if self._is_running: self.error.emit(f"Error de red: No se pudo conectar con {url}", self.request_context)
+            self.error.emit(f"Error: Timeout ({timeout}s) durante la petición API a {url}.", self.request_context)
+        except requests.exceptions.HTTPError as e:
+            err_msg = f"Error HTTP {e.response.status_code} ({e.response.reason}) para {url}."
+            try:
+                error_details = e.response.json()
+                err_msg += f" Detalles: {error_details}"
+            except requests.exceptions.JSONDecodeError:
+                err_msg += f" Cuerpo: {e.response.text[:200]}"
+            self.error.emit(err_msg, self.request_context)
         except requests.exceptions.RequestException as e:
-            if self._is_running: self.error.emit(f"Error de red: {e}", self.request_context)
-        except json.JSONDecodeError as e:
-            error_text = response.text[:200] if hasattr(response, 'text') else "No response text"
-            if self._is_running: self.error.emit(f"Error al decodificar JSON: {e}. Respuesta: {error_text}", self.request_context)
+            self.error.emit(f"Error de red o conexión para {url}: {str(e)}", self.request_context)
         except Exception as e:
-            if self._is_running: self.error.emit(f"Error inesperado: {e}", self.request_context)
+            self.error.emit(f"Error inesperado en worker API ({url}): {str(e)}", self.request_context)
         finally:
-            if self._is_running: self.finished_signal.emit()
+            # Aquí es donde cerraremos la sesión
+            self.finished_signal.emit()
 
     def stop(self):
-        self._is_running = False
-        print(f"[GenericApiWorker] Solicitud de parada recibida para context: {self.request_context}")
-
+        self._stop_flag = True
+        # Si la sesión de requests tuviera un método .cancel() o similar, se podría llamar aquí.
+        # Por ahora, _stop_flag se revisa antes y después de la llamada bloqueante.
