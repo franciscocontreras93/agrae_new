@@ -127,7 +127,7 @@ class aGraeComposerTools():
                 
                 cursor.execute(sql)
                 data = cursor.fetchone()
-                print(data)
+                # print(data)
                 out = open(os.path.join(os.path.dirname(__file__),'img/dist_logo.png'),'wb')
                 out.write(data[2])
                 self.nombre_explotacion = data[0].upper()
@@ -300,14 +300,15 @@ class aGraeComposerTools():
         
 
        
-
-        self.atlas.featureChanged.connect(lambda: self.moveCanvas(
+        # self.atlas.featureChanged.connect(lambda e: print(e['iddata']))
+        self.atlas.featureChanged.connect(lambda e: self.moveCanvas(
             layout.itemById('ceap36_inf'),
             self.atlas,
             nombres_lotes,
             self.layers,
             [layout.itemById('panel_00'),layout.itemById('panel_02'),layout.itemById('panel_01'),layout.itemById('panel_03')],
-            table_item
+            table_item,
+            e['iddata']
             ))
 
         # if preview:
@@ -473,11 +474,11 @@ class aGraeComposerTools():
                    layers,
                    panels=None,
                    table=None,
-                   basic=False
+                   basic=False,
+                   iddata=None
                    ):
             
 
-            feature = atlas.coverageLayer().getFeature(atlas.currentFeatureNumber()+1)
             nombre_lote = atlas.currentFilename()
             # print(atlas.currentFilename())
             # print(feature.attributes())

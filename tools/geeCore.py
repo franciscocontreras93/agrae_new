@@ -1,8 +1,5 @@
 from math import sin
 import os
-import signal
-
-from sympy import false
 import ee
 import datetime
 import tempfile
