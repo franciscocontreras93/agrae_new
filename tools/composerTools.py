@@ -308,7 +308,7 @@ class aGraeComposerTools():
             self.layers,
             [layout.itemById('panel_00'),layout.itemById('panel_02'),layout.itemById('panel_01'),layout.itemById('panel_03')],
             table_item,
-            e['iddata']
+            # e['iddata']
             ))
 
         # if preview:
@@ -475,7 +475,7 @@ class aGraeComposerTools():
                    panels=None,
                    table=None,
                    basic=False,
-                   iddata=None
+                #    iddata=None
                    ):
             
 
