@@ -25,7 +25,7 @@ class AgraeDashboardWindow(QMainWindow):
         super().__init__(parent)
         self.setWindowTitle("aGrae Dashboard General")
         self.resize(1024, 768)
-        self.endpoint_url = 'http://localhost:8000'
+        self.endpoint_url = 'http://142.93.41.109:8000'
         self.active_workers = []
         self.current_kpi_update_id = 0 
 
