@@ -306,7 +306,7 @@ class aGraeComposerTools():
             self.atlas,
             nombres_lotes,
             self.layers,
-            [layout.itemById('panel_00'),layout.itemById('panel_02'),layout.itemById('panel_01'),layout.itemById('panel_03')],
+            # [layout.itemById('panel_00'),layout.itemById('panel_02'),layout.itemById('panel_01'),layout.itemById('panel_03')],
             table_item,
             # e['iddata']
             ))
@@ -472,7 +472,7 @@ class aGraeComposerTools():
                    atlas:QgsLayoutAtlas,
                    nombresLotes,
                    layers,
-                   panels=None,
+                #    panels=None,
                    table=None,
                    basic=False,
                 #    iddata=None
@@ -491,7 +491,7 @@ class aGraeComposerTools():
                     if l == 'CIC':
                         cic_layer = layers[l]
             
-            if not basic and panels != None and table != None:
+            if not basic and table != None:
                 table.setVectorLayer(cic_layer)
                 table.setDisplayedFields(['segmento'.upper(),'cic','ca','mg','k','na'])
                 c_0 = table.columns()[0]
@@ -502,10 +502,10 @@ class aGraeComposerTools():
             
 
                 
-                panels[0].setPicturePath(self.panels_path+'/Panel00'+nombre_lote+'.png')
-                panels[1].setPicturePath(self.panels_path+'/Panel02'+nombre_lote+'.png')
-                panels[2].setPicturePath(self.panels_path+'/Panel01'+nombre_lote+'.png')
-                panels[3].setPicturePath(self.panels_path+'/Panel03'+nombre_lote+'.png')
+                # panels[0].setPicturePath(self.panels_path+'/Panel00'+nombre_lote+'.png')
+                # panels[1].setPicturePath(self.panels_path+'/Panel02'+nombre_lote+'.png')
+                # panels[2].setPicturePath(self.panels_path+'/Panel01'+nombre_lote+'.png')
+                # panels[3].setPicturePath(self.panels_path+'/Panel03'+nombre_lote+'.png')
             
             extent = map.extent()
             atlas.coverageLayer().getFeature(atlas.currentFeatureNumber()+1)
