@@ -122,12 +122,20 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.check_siembra.setEnabled(False)
         self.date_siembra = QtWidgets.QDateEdit()
         self.date_siembra.setEnabled(False)
+        self.date_siembra.setCalendarPopup(True)
         self.check_cosecha = QtWidgets.QCheckBox("Fecha Cosecha")
         self.check_cosecha.setEnabled(False)
         self.date_cosecha = QtWidgets.QDateEdit()
         self.date_cosecha.setEnabled(False)
+        self.date_cosecha.setCalendarPopup(True)
         self.label_status = QtWidgets.QLabel("Estado: Desconocido")
         self.tool_lote = QtWidgets.QToolButton()
+
+        self.line_price_lote = QtWidgets.QSpinBox()
+        self.line_price_lote.setEnabled(False)
+        self.line_price_lote.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
+        self.line_price_lote.setSuffix(" €")
+        self.line_price_lote.setMaximum(100000) # Max 100000 €
 
         # Page 2: Fertilización y Cultivos
         self.page_fertilizacion_cultivos = QtWidgets.QWidget() # For the second tab
@@ -162,6 +170,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.line_produccion_2.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
         self.line_produccion_2.setSuffix(" Kg/Ha")
         self.line_produccion_2.setMaximum(500000) # Max 200 Ton/Ha
+        self.date_siembra_2 = QtWidgets.QDateEdit()
+        self.date_siembra_2.setCalendarPopup(True)
+        self.date_siembra_2.setEnabled(False) # TODO ACTIVAR CUANDO SE INTEGRE LA DATA COMPLETA A LA API DE AGRAE.
         self.btn_save_cultivo_exp = QtWidgets.QPushButton("Guardar")
 
         # Herramientas Generales (fuera del ToolBox)
@@ -248,6 +259,15 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         layout_info_lote_details.addRow(self.label_status)
         page_info_lote_layout.addWidget(group_info_lote_details)
 
+        group_info_lote_billing = QtWidgets.QGroupBox("Información de Facturación y Económicos del Lote")
+        layout_info_lote_billing = QtWidgets.QFormLayout(group_info_lote_billing)
+
+        layout_info_lote_billing.addRow(QtWidgets.QLabel("Precio de Facturación:"), self.line_price_lote)
+        page_info_lote_layout.addWidget(group_info_lote_billing)
+
+
+
+
         page_info_lote_layout.addStretch() 
         self.toolBox.addItem(self.page_info_lote, "Información de Lote")
 
@@ -299,11 +319,17 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         # form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Cultivo:"), self.combo_cultivo_2)
         form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Régimen:"), self.combo_regimen_2)
         form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Producción Esperada (Kg/Ha):"), self.line_produccion_2)
+        form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Fecha Siembra:"), self.date_siembra_2)
         form_layout_in_group_act_cult.addRow(self.btn_save_cultivo_exp)
         self.tab_widget_fertilizacion.addTab(widget_act_cult_exp, "Actualizar Cultivos")
 
         page_fertilizacion_layout.addStretch() 
         self.toolBox.addItem(self.page_fertilizacion_cultivos, "Datos de Fertilización y Cultivo")
+
+        self.page_facturacion = QtWidgets.QWidget()
+        page_facturacion_layout = QtWidgets.QVBoxLayout()
+        self.page_facturacion.setLayout(page_facturacion_layout)
+        self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
 
 
         # Set initial properties and connections
@@ -312,6 +338,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.toolBox.setCurrentIndex(0)
         self.toolBox.setItemIcon(0,agraeGUI().getIcon('info'))
         self.toolBox.setItemIcon(1,agraeGUI().getIcon('tractor')) # Icono para la segunda pestaña
+        self.toolBox.setItemIcon(2,agraeGUI().getIcon('explotacion')) # Icono para la segunda pestaña
         self.toolBox.currentChanged.connect(self.infoLote)
         
         for c in [self.combo_cultivo]:
@@ -1534,7 +1561,7 @@ FROM
             'Ceap36 Infiltracion': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap90 Textura': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
             'Ceap90 Infiltracion': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData()),
-            # 'Rendimiento' : aGraeSQLTools().getSql('rindes_layer_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
+            'Rendimiento' : aGraeSQLTools().getSql('rindes_layer_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
             # 'Mapa_SIG' : aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select * from mapa_sig')
         }
         

@@ -276,22 +276,32 @@ class MonitorRendimientosDialog(QDialog):
 
     def saveProductionByCultivo(self):
 
-        rows = self.tableAjusteCultivos.rowCount()
-        with self.conn.cursor() as cursor:
+        rows = self.tableAjusteCultivos.rowCount()  # Get total number of rows in the table
+        updates = []  # Initialize an empty list to store updates
+
+        for r in range(rows):  # Loop through each row in the table
+            idcultivo = self.tableAjusteCultivos.item(r, 0).text()  # Extract the 'idcultivo' from the current row
+            value = self.tableAjusteCultivos.item(r, 2).text()  # Extract the 'value' (production) from the current row
+            if int(value) > 0:  # Check if the production value is greater than 0
+                updates.append((value, idcultivo))  # Append the value and idcultivo as a tuple to the updates list
+
+        if updates:  # If there are updates to process (list is not empty)
             try:
-                for r in range(rows):
-                    idcultivo = self.tableAjusteCultivos.item(r,0).text()
-                    value = self.tableAjusteCultivos.item(r,2).text()
-                    if int(value) > 0:
-                        sql_cultivos = aGraeSQLTools().getSql('rindes_save_prod_cultivo.sql').format(self.idcampania,self.idexplotacion,idcultivo,value)
-                        cursor.execute(sql_cultivos)
-                self.conn.commit()
-                # print(sql_cultivos)
-                aGraeTools().messages('Monitor de Rendimientos','Se han guardado los datos de Produccion',3)
-            except Exception as ex:
-                # print(ex)
-                self.conn.rollback()
-                aGraeTools().messages('Monitor de Rendimientos',ex,2,alert=True)
+                with self.conn.cursor() as cursor:  # Open a database cursor
+                    for value, idcultivo in updates:  # Iterate through the updates list
+                        # Execute SQL command to update production for a specific crop
+                        sql_cultivos = aGraeSQLTools().getSql('rindes_save_prod_cultivo.sql').format(self.idcampania, self.idexplotacion, idcultivo, value)
+                        cursor.execute(sql_cultivos)  
+                        # Execute a function to adjust yields based on updated production values
+                        query_fn = "SELECT agrae.sp_ajustar_rindes({}, {}, {});".format(self.idcampania, self.idexplotacion, idcultivo)
+                        cursor.execute(query_fn)  
+                    self.conn.commit()  # Commit the changes to the database
+                    aGraeTools().messages('Monitor de Rendimientos', 'Se han guardado los datos de Produccion', 3)  # Display a success message
+            except Exception as ex:  # Catch any exceptions during the process
+                self.conn.rollback()  # Roll back changes to maintain database consistency
+                aGraeTools().messages('Monitor de Rendimientos', ex, 2, alert=True)  # Display an error message
+        else:
+            aGraeTools().messages('Monitor de Rendimientos', 'No hay datos de producción para actualizar.', 2)  # Message if no updates
 
     def groupped(self,data):
         groupped = {}
@@ -329,4 +339,3 @@ class MonitorRendimientosDialog(QDialog):
                 idcampania=self.idcampania,
                 idexplotacion=self.idexplotacion
                 )
-

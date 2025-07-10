@@ -25,5 +25,5 @@ d.prod_final
 -- l.geom 
 from data d join agrae.lotes l using(idlote))
 select idcultivo,cultivo,round(sum(prod_final))::integer as prod_final from lotes
-where status ='Pendiente' 
+where status ='Pendiente' or status is null
 group by idcultivo,cultivo
