@@ -19,10 +19,19 @@ d.fechasiembra ,
 d.fechacosecha ,
 d.prod_final,
 round((st_area(st_transform(l.geom,8857)) / 10000)::numeric,2) as area_ha,
+-- round(ddc.dias_cobertura::numeric) ddc_mediana,
+-- round(ddc.dias_cobertura::numeric *  round((st_area(st_transform(l.geom,8857)) / 10000)::numeric,2)) as ddc_mediana_x_area_ha,
 l.geom from agrae.lotes l 
 join campaign.data d on d.idlote = l.idlote
 join campaign.campanias c on d.idcampania = c.id
 join agrae.explotacion exp on exp.idexplotacion = d.idexplotacion
 left join agrae.cultivo cult on d.idcultivo = cult.idcultivo
 left join analytic.regimen reg on reg.id  = d.idregimen
+-- LEFT JOIN (
+--   SELECT 
+--     da.idlote,
+--     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY da.dias_cobertura) AS dias_cobertura
+--   FROM agrae.ddc_anual da
+--   GROUP BY da.idlote
+-- ) ddc ON ddc.idlote = d.idlote
 WHERE d.idcampania = {} and d.idexplotacion = {}

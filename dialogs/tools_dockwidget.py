@@ -393,6 +393,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.GenerarReporteFertilizacion.triggered.connect(self.generateComposerDialog)
         self.GenerarMapaSig = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar Mapa SIG',self)
         self.GenerarMapaSig.triggered.connect(self.getMapaSig)
+        self.GenerarMapaRindes = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar Mapa de Rendimiento',self)
+        self.GenerarMapaRindes.triggered.connect(self.getMapaRindes)
         self.GenerarUnidadesFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('tractor'),'Exportar SHP de Preescripcion',self)
         self.GenerarUnidadesFertilizacion.triggered.connect(self.exportarUFS)
         self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Preescripcion',self)
@@ -811,24 +813,28 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         except:
             print('Debe cargar la capa lotes')
             return False
+        
         campania = self.combo_campania.currentData()
         explotacion = self.combo_explotacion.currentData()
         features = list(layer.getSelectedFeatures())
         base = '''insert into campaign.data (idcampania,idexplotacion,idlote) values\n'''
         sql = ''
         if len(features) > 0:
-            try:
-                for f in features:
-                    sql = sql + '({},{},{}),\n'.format(campania,explotacion,f['id'])
-                query = base  + sql 
-                # print(query[:-2])
-                with agraeDataBaseDriver().connection().cursor() as cursor:
-                    cursor.execute(query[:-2])
-                    self.conn.commit()
+            with agraeDataBaseDriver().connection() as conn:
+                try:
+                    cursor = conn.cursor()
+                    for f in features:
+                        sql = sql + '({},{},{}),\n'.format(campania,explotacion,f['id'])
+                    query = base  + sql 
+                    # print(query[:-2])
 
-            except Exception as ex:
-                print(ex)
-                self.conn.rollback()
+                    
+                    cursor.execute(query[:-2])
+                    conn.commit()
+
+                except Exception as ex:
+                    print(ex)
+                    conn.rollback()
 
         else: 
             print('Debe seleccionar uno o mas lotes')
@@ -1592,6 +1598,12 @@ FROM
         query =  aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select * from mapa_sig')
         name = '{}_{}_MAPA_SIG'.format(self.combo_campania.currentText(),self.combo_explotacion.currentText().split('-')[1])
         layer = self.tools.getDataBaseLayer(query,name,styleName='Fert Variable Intraparcelaria',debug=True)
+        QgsProject.instance().addMapLayer(layer)
+
+    def getMapaRindes(self):
+        query = aGraeSQLTools().getSql('rindes_layer_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
+        name = '{}_{}_Rindes'.format(self.combo_campania.currentText(),self.combo_explotacion.currentText().split('-')[1])
+        layer = self.tools.getDataBaseLayer(query,name,styleName='Rendimiento',debug=True)
         QgsProject.instance().addMapLayer(layer)
 
     def exportarUFS(self):
