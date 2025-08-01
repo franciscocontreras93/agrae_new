@@ -1,4 +1,6 @@
 import os
+
+from sympy import false
 import processing
 import psycopg2
 
@@ -17,6 +19,8 @@ from qgis.gui import QgsMapToolIdentify,QgsMapMouseEvent
 from ..tools import aGraeTools
 from ..tools.analisis_tools import aGraeResamplearMuestras
 from ..tools.agrae_csv_tools import aGraeCSVTools
+from ..tools.gee import NDVIProcessor
+
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..gui import agraeGUI
@@ -165,6 +169,17 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.label_status_fertilizacion = QtWidgets.QLabel("Estado Fertilización: -")
         self.tool_fert = QtWidgets.QToolButton()
 
+        
+
+
+       
+
+
+
+
+
+
+
         self.combo_cultivo_2 = QtWidgets.QComboBox()
         self.combo_regimen_2 = QtWidgets.QComboBox()
         self.line_produccion_2 = QtWidgets.QSpinBox()
@@ -175,6 +190,82 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.date_siembra_2.setCalendarPopup(True)
         self.date_siembra_2.setEnabled(False) # TODO ACTIVAR CUANDO SE INTEGRE LA DATA COMPLETA A LA API DE AGRAE.
         self.btn_save_cultivo_exp = QtWidgets.QPushButton("Guardar")
+
+
+
+        self.page_gee_module = QtWidgets.QWidget() # For the third tab
+        self.page_gee_layout = QtWidgets.QVBoxLayout(self.page_gee_module)
+
+        self.filtrar_cultivo_group = QtWidgets.QGroupBox("Filtrar por cultivo:")
+        self.filtrar_cultivo_group.setCheckable(True)
+        self.filtrar_cultivo_group.setChecked(False)
+
+        self.filtrar_cultivo_layout = QtWidgets.QHBoxLayout(self.filtrar_cultivo_group)
+
+        self.combo_cultivo_3 = QtWidgets.QComboBox()
+        self.combo_cultivo_3.setEditable(True)
+        self.combo_cultivo_3.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+
+        self.filtrar_cultivo_layout.addWidget(QtWidgets.QLabel("Cultivo:"))
+        self.filtrar_cultivo_layout.addWidget(self.combo_cultivo_3)
+
+
+
+
+        self.analisis_gee_group = QtWidgets.QGroupBox("Tipo de Analisis:")
+        self.analisis_gee_layout = QtWidgets.QHBoxLayout(self.analisis_gee_group)
+        self.page_gee_layout.setContentsMargins(10, 10, 10, 10)  # Add margins to the layout
+        self.ndvi_radio = QtWidgets.QRadioButton("NDVI")
+        self.savi_radio = QtWidgets.QRadioButton("SAVI")
+        self.natural_color_radio = QtWidgets.QRadioButton("Color Natural")
+
+        self.savi_radio.setEnabled(False)
+        self.natural_color_radio.setEnabled(False)
+
+
+        self.analisis_gee_layout.addWidget(self.ndvi_radio)
+        self.analisis_gee_layout.addWidget(self.savi_radio)
+        self.analisis_gee_layout.addWidget(self.natural_color_radio)
+        self.ndvi_radio.setChecked(True)
+        # self.analisis_gee_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins for a cleaner look
+        self.analisis_gee_layout.setSpacing(10)  # Add spacing between buttons
+
+
+        
+
+        self.analisis_gee_date_range_group = QtWidgets.QGroupBox("Rango de Fechas:")
+        self.analisis_gee_date_range_group.setToolTip('Rango de fechas para el análisis, si se desactiva, se usara la ultima imagen disponible según parametros.')
+        self.analisis_gee_date_range_group.setCheckable(True)
+        self.analisis_gee_date_range_group.setChecked(True)
+        self.analisis_gee_date_range_layout = QtWidgets.QGridLayout(self.analisis_gee_date_range_group)
+
+        self.date_edit_desde = QtWidgets.QDateEdit()
+        self.date_edit_hasta = QtWidgets.QDateEdit()
+        self.date_edit_desde.setCalendarPopup(True)
+        self.date_edit_hasta.setCalendarPopup(True)
+        self.date_edit_desde.setDate(QDate.currentDate().addYears(-1))
+        self.date_edit_hasta.setDate(QDate.currentDate())
+        self.date_edit_desde.setMaximumDate(QDate.currentDate())
+        self.date_edit_hasta.setMaximumDate(QDate.currentDate())
+        self.analisis_gee_date_range_layout.addWidget(QtWidgets.QLabel("Desde:"), 0, 0)
+        self.analisis_gee_date_range_layout.addWidget(self.date_edit_desde, 1, 0)
+        self.analisis_gee_date_range_layout.addWidget(QtWidgets.QLabel("Hasta:"), 0, 1)
+        self.analisis_gee_date_range_layout.addWidget(self.date_edit_hasta, 1, 1)
+
+        self.analisis_gee_progressbar = QtWidgets.QProgressBar()
+        self.analisis_gee_progressbar.setRange(0, 100)
+        self.analisis_gee_progressbar.setValue(0)
+        self.analisis_gee_progressbar.setTextVisible(True)
+
+        self.analisis_gee_ejecutar_button = QtWidgets.QPushButton("Ejecutar")
+        self.analisis_gee_ejecutar_button.clicked.connect(self.run_ndvi_processor)
+
+        self.page_gee_layout.addWidget(self.filtrar_cultivo_group)
+        self.page_gee_layout.addWidget(self.analisis_gee_group)
+        self.page_gee_layout.addWidget(self.analisis_gee_date_range_group)
+        self.page_gee_layout.addWidget(self.analisis_gee_progressbar)
+        self.page_gee_layout.addWidget(self.analisis_gee_ejecutar_button)
+        self.page_gee_layout.addStretch()  # Add stretch to push content to the top
 
         # Herramientas Generales (fuera del ToolBox)
         self.tool_agrae = QtWidgets.QToolButton()
@@ -327,10 +418,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         page_fertilizacion_layout.addStretch() 
         self.toolBox.addItem(self.page_fertilizacion_cultivos, "Datos de Fertilización y Cultivo")
 
-        self.page_facturacion = QtWidgets.QWidget()
-        page_facturacion_layout = QtWidgets.QVBoxLayout()
-        self.page_facturacion.setLayout(page_facturacion_layout)
-        self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
+        # self.page_facturacion = QtWidgets.QWidget()
+        # page_facturacion_layout = QtWidgets.QVBoxLayout()
+        # self.page_facturacion.setLayout(page_facturacion_layout)
+        # self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
+
+        self.toolBox.addItem(self.page_gee_module, "Modulo de Google Earth Engine")
 
 
         # Set initial properties and connections
@@ -339,7 +432,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.toolBox.setCurrentIndex(0)
         self.toolBox.setItemIcon(0,agraeGUI().getIcon('info'))
         self.toolBox.setItemIcon(1,agraeGUI().getIcon('tractor')) # Icono para la segunda pestaña
-        self.toolBox.setItemIcon(2,agraeGUI().getIcon('explotacion')) # Icono para la segunda pestaña
+        self.toolBox.setItemIcon(2,agraeGUI().getIcon('satelite')) # Icono para la segunda pestaña
         self.toolBox.currentChanged.connect(self.infoLote)
         
         for c in [self.combo_cultivo]:
@@ -649,6 +742,15 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
         dlg = new_Composer(self.combo_campania.currentData(),self.combo_explotacion.currentData(),self.layer)
         dlg.exec()
+
+    def run_ndvi_processor(self):
+        idcampania = self.combo_campania.currentData()
+        idexplotacion = self.combo_explotacion.currentData()
+        fecha_inicio = self.date_edit_desde.date().toString('yyyy-MM-dd')
+        fecha_fin = self.date_edit_hasta.date().toString('yyyy-MM-dd')
+
+        processor = NDVIProcessor(idcampania, idexplotacion, fecha_inicio, fecha_fin)
+        processor.run()
 
     def geeDialog(self):
         dlg = aGraeGEEDialog()
