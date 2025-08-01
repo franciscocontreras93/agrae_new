@@ -44,7 +44,6 @@ from .monitor_dialogs import MonitorRendimientosDialog
 from .gee_dialog import aGraeGEEDialog
 from .reportes_dialog import ReportesDialog
 from .asignar_cultivos_dialog import AsignarCultivosDialog
-from .gee_dialogs import GEEModuleDialog
 
 
 class agraeToolsDockwidget(QtWidgets.QDockWidget):
@@ -473,8 +472,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.CrearAmbientes.triggered.connect(lambda : self.gestionarDatosBaseDialog(2))
         self.ActualizarDatosFromCSV = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Actualizar Informacion de Cultivos desde CSV',self)
         self.ActualizarDatosFromCSV.triggered.connect(self.actualizarDatosCultivosCSV)
-        self.DescargarNDVI = QtWidgets.QAction(agraeGUI().getIcon('add'),'Descargar NDVI',self)
-        self.DescargarNDVI.triggered.connect(lambda: GEEModuleDialog(self).exec_())
+        
         actions_agrae = [self.IndentifyLoteAction,self.CargarLotes,self.CrearCE,self.CrearSegmentos,self.CrearAmbientes,self.ActualizarDatosFromCSV,self.DescargarNDVI]
         self.tools.settingsToolsButtons(self.tool_agrae,actions_agrae,icon=agraeGUI().getIcon('tools'),setMainIcon=True)
 
