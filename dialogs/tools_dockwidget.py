@@ -1,7 +1,7 @@
+#type: ignore
+
 import os
 
-from sympy import false
-import processing
 import psycopg2
 
 
@@ -9,13 +9,13 @@ from psycopg2 import extras
 
 
 
-from qgis.PyQt import QtWidgets
-from qgis.PyQt.QtCore import pyqtSignal, Qt,QDate,QSize,QSettings
-from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt import QtWidgets #type: ignore
+from qgis.PyQt.QtCore import pyqtSignal, Qt,QDate,QSize,QSettings #type: ignore
+from qgis.PyQt.QtGui import QIcon #type: ignore
 
-from qgis.core import *
-from qgis.utils import iface
-from qgis.gui import QgsMapToolIdentify,QgsMapMouseEvent
+from qgis.core import * #type: ignore
+from qgis.utils import iface #type: ignore
+from qgis.gui import QgsMapToolIdentify,QgsMapMouseEvent # type: ignore
 from ..tools import aGraeTools
 from ..tools.analisis_tools import aGraeResamplearMuestras
 from ..tools.agrae_csv_tools import aGraeCSVTools
@@ -48,7 +48,7 @@ from .asignar_cultivos_dialog import AsignarCultivosDialog
 
 class agraeToolsDockwidget(QtWidgets.QDockWidget):
     def __init__(self,
-                 layer:QgsVectorLayer,
+                 layer:QgsVectorLayer, # type: ignore
                  parent=None):
         super(agraeToolsDockwidget,self).__init__(parent)
         self.instance = QgsProject.instance()
@@ -473,7 +473,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.ActualizarDatosFromCSV = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Actualizar Informacion de Cultivos desde CSV',self)
         self.ActualizarDatosFromCSV.triggered.connect(self.actualizarDatosCultivosCSV)
         
-        actions_agrae = [self.IndentifyLoteAction,self.CargarLotes,self.CrearCE,self.CrearSegmentos,self.CrearAmbientes,self.ActualizarDatosFromCSV,self.DescargarNDVI]
+        actions_agrae = [self.IndentifyLoteAction,self.CargarLotes,self.CrearCE,self.CrearSegmentos,self.CrearAmbientes,self.ActualizarDatosFromCSV]
         self.tools.settingsToolsButtons(self.tool_agrae,actions_agrae,icon=agraeGUI().getIcon('tools'),setMainIcon=True)
 
         
@@ -747,7 +747,14 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         fecha_inicio = self.date_edit_desde.date().toString('yyyy-MM-dd')
         fecha_fin = self.date_edit_hasta.date().toString('yyyy-MM-dd')
 
-        processor = NDVIProcessor(idcampania, idexplotacion, fecha_inicio, fecha_fin)
+        # processor = NDVIProcessor(42, 52, "2025-01-01", "2025-01-31")
+        # processor.run()
+        print("[DEBUG] ID Campania:", idcampania)
+        print("[DEBUG] ID Explotación:", idexplotacion)
+        print("[DEBUG] Fecha Inicio:", fecha_inicio)
+        print("[DEBUG] Fecha Fin:", fecha_fin)
+
+        processor = NDVIProcessor(idcampania, idexplotacion, str(fecha_inicio), str(fecha_fin))
         processor.run()
 
     def geeDialog(self):

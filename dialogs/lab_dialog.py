@@ -570,8 +570,8 @@ class GestionLaboratorioDialog(QDialog):
         FROM
             conteo_muestras cm
         JOIN agrae.explotacion e ON cm.idexplotacion = e.idexplotacion -- Unir con tabla de explotaciones
-        WHERE
-            (cm.num_muestras - cm.total_muestreadas) > 0 OR (cm.total_muestreadas - cm.total_procesadas) > 0 -- Condición más amplia para pendientes
+        --WHERE
+            --(cm.num_muestras - cm.total_muestreadas) > 0 OR (cm.total_muestreadas - cm.total_procesadas) > 0 -- Condición más amplia para pendientes
         ORDER BY
             cm.fecha_min_creacion ASC; -- Ordenar por la nueva columna
         """
@@ -671,7 +671,7 @@ class GestionLaboratorioDialog(QDialog):
             self.tree_muestras_pendientes.resizeColumnToContents(0)
             self.tree_muestras_pendientes.resizeColumnToContents(1)
             self.tree_muestras_pendientes.resizeColumnToContents(5)
-            print(suma_total_general_muestras, suma_total_muestreadas, suma_total_procesadas) # Debug
+            # print(suma_total_general_muestras, suma_total_muestreadas, suma_total_procesadas) # Debug
             self.canvas_muestras_pendientes.plot_muestras_pendientes_donut((suma_total_general_muestras, suma_total_muestreadas, suma_total_procesadas))
 
         except Exception as e:
