@@ -2,6 +2,7 @@ import os
 from PyQt5.QtGui import QIcon, QPixmap
 from qgis.PyQt.QtCore import pyqtSignal, QSize, QDate
 from qgis.PyQt.QtWidgets import QLineEdit
+from .components import CampaniasComboBox
 
 class agraeGUI():
 

@@ -1,4 +1,8 @@
 import os, csv
+import aiohttp
+import asyncio
+import json
+
 import pandas as pd
 import numpy as np
 import processing
@@ -34,6 +38,9 @@ class aGraeTools():
             print(ex)
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
+
+        # self.backend_endpoint = 'http://142.93.41.109:8000'
+        self.backend_endpoint = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
@@ -905,54 +912,73 @@ class aGraeTools():
                 self.messages('aGrae Tools','No se pudieron actualizar la informacion de los cultivos.\n {}'.format(ex),2,alert=True)
                 raise Exception(ex)
 
-    def crearPuntosMuestreo(self,ids:list,segmento_remuestreo:list,segmento_derivar:list,tipo:int=1):
-        # TODO
-        from .gdriveCore import GDrive
-        ids = ','.join([str(id) for id in ids])
-        segmentos_remuestreo = ','.join([str(seg) for seg in segmento_remuestreo])
-        segmentos_derivar = ','.join([str(seg) for seg in segmento_derivar])
-        data = None
-        query = aGraeSQLTools().getSql('query_create_muestreo.sql').format(ids,tipo,segmentos_remuestreo,segmentos_derivar)
-        core = aGraeLabelGenerator()
-        drive = GDrive()
+    async def crearPuntosMuestreo(self,ids:list,segmento_remuestreo:list,segmento_derivar:list,tipo:int=1):
 
+        endpoint = '/gis/muestreo/crear_muestreo'
+        payload = {
+            "ids": ids,
+            "segmentos_muestreo": segmento_remuestreo,
+            "segmentos_derivar": segmento_derivar,
+            "tipo": tipo
+        }
 
-        
         try:
-            
-            cursor = agraeDataBaseDriver().cursor(self.conn)
-            cursor.execute(query)
-            data = cursor.fetchall()
-            # cursor.close()
-            self.conn.commit()
-            self.messages('aGrae GIS','Muestras generadas correctamente.',3,5)
-                
-        except errors.lookup('23505'):
-            self.messages('aGrae GIS','Ya Existen muestras para los lotes en la campaña actual.')
-            self.conn.rollback()
-        except Exception as ex:
-            print(ex)
-            self.messages('Error:','{}'.format(ex),1,5)
-            self.conn.rollback()
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.backend_endpoint + endpoint, json=payload) as response:
+                    
+                    data = await response.json()
+                    return data
+                    
+        except Exception as e:
+            print(f"Exception: {e}")
+
+        # # TODO
+        # from .gdriveCore import GDrive
+        # ids = ','.join([str(id) for id in ids])
+        # segmentos_remuestreo = ','.join([str(seg) for seg in segmento_remuestreo])
+        # segmentos_derivar = ','.join([str(seg) for seg in segmento_derivar])
+        # data = None
+        # query = aGraeSQLTools().getSql('query_create_muestreo.sql').format(ids,tipo,segmentos_remuestreo,segmentos_derivar)
+        # core = aGraeLabelGenerator()
+        # drive = GDrive()
+
+
         
-        if data:
-            try:
-                cursor = agraeDataBaseDriver().cursor(self.conn)
-                query_update = '''UPDATE field.muestras as m set label = q.label from (values {}) as q(label,codigo) where m.codigo = q.codigo'''
-                values = ''
-                for r in data:
-                    codigo = r[1]
-                    uid = r[0]
-                    qr = core.generateQR(codigo)
-                    label = core.generateLabel(qr,codigo)
-                    url = drive.upload_file(label)
-                    values = values + ''' ('{}' ,'{}'),\n'''.format(url,codigo)
-                query_update = query_update.format(values[:-2])
-                cursor.execute(query_update)
-                self.conn.commit()     
-            except Exception as ex:
-                self.conn.rollback()
-                print(ex)
+        # try:
+            
+        #     cursor = agraeDataBaseDriver().cursor(self.conn)
+        #     cursor.execute(query)
+        #     data = cursor.fetchall()
+        #     # cursor.close()
+        #     self.conn.commit()
+        #     self.messages('aGrae GIS','Muestras generadas correctamente.',3,5)
+                
+        # except errors.lookup('23505'):
+        #     self.messages('aGrae GIS','Ya Existen muestras para los lotes en la campaña actual.')
+        #     self.conn.rollback()
+        # except Exception as ex:
+        #     print(ex)
+        #     self.messages('Error:','{}'.format(ex),1,5)
+        #     self.conn.rollback()
+        
+        # if data:
+        #     try:
+        #         cursor = agraeDataBaseDriver().cursor(self.conn)
+        #         query_update = '''UPDATE field.muestras as m set label = q.label from (values {}) as q(label,codigo) where m.codigo = q.codigo'''
+        #         values = ''
+        #         for r in data:
+        #             codigo = r[1]
+        #             uid = r[0]
+        #             qr = core.generateQR(codigo)
+        #             label = core.generateLabel(qr,codigo)
+        #             url = drive.upload_file(label)
+        #             values = values + ''' ('{}' ,'{}'),\n'''.format(url,codigo)
+        #         query_update = query_update.format(values[:-2])
+        #         cursor.execute(query_update)
+        #         self.conn.commit()     
+        #     except Exception as ex:
+        #         self.conn.rollback()
+        #         print(ex)
     
     def cargarLabelsDRIVE(self,file_path:str):
         from .gdriveCore import GDrive
