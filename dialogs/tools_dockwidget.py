@@ -24,6 +24,7 @@ from ..tools.gee import NDVIProcessor
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..gui import agraeGUI
+from ..gui.components import CampaniasComboBox, ExplotacionesComboBox
 
 from ..dialogs import aGraeDialogs
 
@@ -98,11 +99,16 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
         # Page 1: Información de Lote
         self.page_info_lote = QtWidgets.QWidget()
-        self.combo_campania = QtWidgets.QComboBox()
+        # self.combo_campania = QtWidgets.QComboBox()
+        self.combo_campania = CampaniasComboBox()
         self.tool_camp = QtWidgets.QToolButton()
-        self.combo_explotacion = QtWidgets.QComboBox()
-        self.combo_explotacion.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-        self.combo_explotacion.setEditable(True)
+        # self.combo_explotacion = QtWidgets.QComboBox()
+        # self.combo_explotacion.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        # self.combo_explotacion.setEditable(True)
+        self.combo_explotacion = ExplotacionesComboBox()
+        self.combo_explotacion.bind_to_campaigns(self.combo_campania)
+        self.combo_explotacion.currentIndexChanged.connect(self.getLotesExplotacionLayer)
+
         self.tool_exp = QtWidgets.QToolButton()
         self.label_info = QtWidgets.QLabel("")
         self.label_info_muestreo = QtWidgets.QLabel("") 
@@ -439,8 +445,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
             c.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
             c.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
 
-        self.combo_campania.currentIndexChanged.connect(lambda: self.getExplotacionData(self.combo_campania.currentData()))
-        self.combo_explotacion.currentIndexChanged.connect(self.getLotesExplotacionLayer)
+        # self.combo_campania.currentIndexChanged.connect(lambda: self.getExplotacionData(self.combo_campania.currentData()))
+        
         self.combo_cultivo_2.currentIndexChanged.connect(self.clearAplicacion)
         
         self.initTools()
