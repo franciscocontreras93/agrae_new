@@ -1,3 +1,4 @@
+from math import exp
 from qgis.PyQt.QtWidgets import * 
 from qgis.PyQt.QtCore import * 
 from qgis.PyQt.QtGui import * 
@@ -8,7 +9,7 @@ from qgis.gui import *
 from qgis.PyQt import uic
 
 from ..gui import agraeGUI
-from ..gui.components import CampaniasComboBox
+from ..gui.components import CampaniasComboBox, ExplotacionesComboBox
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..tools import aGraeTools
@@ -38,12 +39,10 @@ class MuestreoDialog(QDialog):
         self.tab_remuestreo = QWidget(self.tab_widget)
 
         # ====== TAB: MUESTREO ======
-        # Pestaña -> layout vertical
         tab_muestreo_v = QVBoxLayout(self.tab_muestreo)
         tab_muestreo_v.setContentsMargins(8, 8, 8, 8)
         tab_muestreo_v.setSpacing(10)
 
-        # Group principal
         group_muestreo = QGroupBox('Generar Puntos de Muestreo en Lotes', self.tab_muestreo)
         group_muestreo_g = QGridLayout(group_muestreo)
         group_muestreo_g.setContentsMargins(10, 10, 10, 10)
@@ -75,9 +74,10 @@ class MuestreoDialog(QDialog):
         group_segmentos_h.addWidget(self.check_segmento_3)
         group_segmentos_h.addStretch(1)
 
-        # Botón
-        self.btn_create = QPushButton('Generar', self.tab_muestreo)
-        self.btn_create.clicked.connect(self.createMuestreoPoints)
+        # Botón MUestreo
+        self.btn_create_muestreo = QPushButton('Generar', self.tab_muestreo)
+        # Importante: conectar al slot correcto (no a self.create)
+        self.btn_create_muestreo.clicked.connect(self.createMuestreoPoints)
 
         # Colocar en la grilla del group principal
         row = 0
@@ -89,9 +89,8 @@ class MuestreoDialog(QDialog):
         row += 1
         group_muestreo_g.addWidget(group_segmentos, row, 0, 1, 2)
         row += 1
-        group_muestreo_g.addWidget(self.btn_create, row, 0, 1, 2)
+        group_muestreo_g.addWidget(self.btn_create_muestreo, row, 0, 1, 2)
 
-        # Añadir el group a la pestaña
         tab_muestreo_v.addWidget(group_muestreo)
         tab_muestreo_v.addStretch(1)
 
@@ -106,28 +105,70 @@ class MuestreoDialog(QDialog):
         group_remuestreo_g.setHorizontalSpacing(8)
         group_remuestreo_g.setVerticalSpacing(6)
 
-        # Controles iniciales para remuestreo (base para que sigas)
-        self.combo_campania = CampaniasComboBox(parent=group_remuestreo)
+        # Controles Remuestreo
+        self.combo_campania = CampaniasComboBox(parent=group_remuestreo,exclude_latest=True)
         self.combo_campania.setPlaceholderText('Selecciona una campaña')
 
-        group_remuestreo_g.addWidget(QLabel('Selecciona la Campaña'), 0, 0)
-        group_remuestreo_g.addWidget(self.combo_campania, 0, 1)
+        self.combo_explotacion = ExplotacionesComboBox(parent=group_remuestreo)
+        self.combo_explotacion.setPlaceholderText('Selecciona una explotación')
+        self.combo_explotacion.bind_to_campaigns(self.combo_campania)
 
-        # (deja preparado el espacio para más controles)
-        # p.ej.: self.combo_lotes_remuestreo = QgsMapLayerComboBox(group_remuestreo)
-        # group_remuestreo_g.addWidget(QLabel('Lotes'), 1, 0)
-        # group_remuestreo_g.addWidget(self.combo_lotes_remuestreo, 1, 1)
+        self.combo_segmentos_remuestreo = QgsMapLayerComboBox(group_remuestreo)
+        self.combo_segmentos_remuestreo.setPlaceholderText('Selecciona la capa de Segmentos de Remuestreo')
+        self.combo_segmentos_remuestreo.setFilters(QgsMapLayerProxyModel.PolygonLayer)
+
+        # Botón Remuestreo
+        self.btn_create_remuestreo = QPushButton('Generar', self.tab_remuestreo)
+        self.btn_create_remuestreo.clicked.connect(self.createRemuestreoPoints)
+
+        # Distribución Remuestreo con contador local
+        row_r = 0
+        group_remuestreo_g.addWidget(QLabel('Remuestrear desde la Campaña'), row_r, 0)
+        group_remuestreo_g.addWidget(self.combo_campania, row_r, 1); row_r += 1
+
+        group_remuestreo_g.addWidget(QLabel('Remuestrear desde  la Explotación'), row_r, 0)
+        group_remuestreo_g.addWidget(self.combo_explotacion, row_r, 1); row_r += 1
+
+        group_remuestreo_g.addWidget(QLabel('Remuestrear desde  la capa de\nSegmentos de Remuestreo'), row_r, 0)
+        group_remuestreo_g.addWidget(self.combo_segmentos_remuestreo, row_r, 1); row_r += 1
+
+        group_remuestreo_g.addWidget(self.btn_create_remuestreo, row_r, 0, 1, 2)
 
         tab_remuestreo_v.addWidget(group_remuestreo)
         tab_remuestreo_v.addStretch(1)
+
+        # Validación reactiva de la capa de remuestreo (UX: deshabilita botón si falta schema)
+        if hasattr(self.combo_segmentos_remuestreo, "layerChanged"):
+            self.combo_segmentos_remuestreo.layerChanged.connect(self._validate_remuestreo_layer)
+        # Validación inicial
+        self._validate_remuestreo_layer(self.combo_segmentos_remuestreo.currentLayer())
 
         # ====== ENSAMBLAR TABS ======
         self.tab_widget.addTab(self.tab_muestreo, 'Muestreo')
         self.tab_widget.addTab(self.tab_remuestreo, 'Remuestreo')
         main_layout.addWidget(self.tab_widget)
 
+    # ------------------ helpers UX ------------------
+    def _validate_remuestreo_layer(self, layer: QgsMapLayer | None):
+        """
+        Habilita/Deshabilita el botón de remuestreo según que la capa tenga
+        los campos 'idlote' e 'idsegmento'. Coloca un tooltip explicativo.
+        """
+        ok = False
+        if layer is not None and isinstance(layer, QgsVectorLayer):
+            names = {f.name() for f in layer.fields()}
+            ok = ("idlote" in names) and ("idsegmento" in names)
+        self.btn_create_remuestreo.setEnabled(ok)
+        tip = "" if ok else "La capa debe tener los campos 'idlote' e 'idsegmento'."
+        self.btn_create_remuestreo.setToolTip(tip)
+
     # ================== LÓGICA ==================
     def createMuestreoPoints(self):
+        """
+        Mantiene tu lógica tal cual, pero con una mejora de UX:
+        si está marcado 'Lotes seleccionados' y no hay selección,
+        ofrece procesar todos los lotes o cancelar para que seleccione.
+        """
         layer = self.combo_layer_lotes.currentLayer()
         if layer is None:
             QMessageBox.warning(self, 'aGrae Toolbox', 'Selecciona una capa de lotes válida.')
@@ -143,12 +184,28 @@ class MuestreoDialog(QDialog):
         if self.check_segmento_3.isChecked():
             selected.append(3)
 
+        # UX mejorada para "Lotes seleccionados"
         if self.check_seleccionados.isChecked():
-            ids = [f['iddata'] for f in list(layer.getSelectedFeatures())]
+            sel_feats = list(layer.getSelectedFeatures())
+            if not sel_feats:
+                ask = QMessageBox.question(
+                    self,
+                    'aGrae Toolbox',
+                    'No hay lotes seleccionados.\n\n¿Quieres procesar TODOS los lotes de la capa?',
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No
+                )
+                if ask == QMessageBox.Yes:
+                    ids = [f['iddata'] for f in layer.getFeatures()]
+                else:
+                    QMessageBox.information(self, 'aGrae Toolbox', 'Debes seleccionar uno o más lotes y volver a intentarlo.')
+                    return
+            else:
+                ids = [f['iddata'] for f in sel_feats]
         else:
-            ids = [f['iddata'] for f in list(layer.getFeatures())]
+            ids = [f['iddata'] for f in layer.getFeatures()]
 
-        # Calcular segmentos a derivar
+        # Calcular segmentos a derivar (MISMA LÓGICA)
         for x in selected:
             if x in segmentos:
                 segmentos.remove(x)
@@ -174,17 +231,130 @@ class MuestreoDialog(QDialog):
         if reply == QMessageBox.Yes:
             data = asyncio.run(self.tools.crearPuntosMuestreo(ids, segmento_remuestreo, segmento_derivar, tipo))
             if data:
-                if data.get('status_code') == 200:
+                # Acepta contrato nuevo (ok/status_code/message) o el anterior
+                ok = data.get('ok', None)
+                status = data.get('status_code')
+                message = data.get('message', '')
+
+                if ok is True or status == 200:
                     self.tools.messages(
                         'Puntos de Muestreo',
-                        f'Se han generado los puntos de muestreo correctamente.\n{data.get("message")}',
+                        f'Se han generado los puntos de muestreo correctamente.\n{message}',
                         3,
                         alert=True
                     )
-                elif data.get('status_code') == 409:
+                elif status == 409:
                     self.tools.messages(
                         'Puntos de Muestreo',
-                        f'No se han podido generar los puntos de muestreo.\n{data.get("message")}',
+                        f'No se han podido generar los puntos de muestreo.\n{message}',
                         1,
                         alert=True
                     )
+                else:
+                    self.tools.messages(
+                        'Puntos de Muestreo',
+                        f'Respuesta del servidor ({status}).\n{message}',
+                        2,
+                        alert=True
+                    )
+
+    def createRemuestreoPoints(self):
+        """
+        Genera puntos de RE-muestreo con validación de esquema de capa.
+        Evita KeyError si la capa no contiene 'idlote' o 'idsegmento'.
+        """
+        # 1) Campaña y Explotación
+        idcamp = self.combo_campania.get_current_campaign_id() if hasattr(self.combo_campania, "get_current_campaign_id") else self.combo_campania.currentData()
+        idexpl = self.combo_explotacion.get_current_explotacion_id() if hasattr(self.combo_explotacion, "get_current_explotacion_id") else self.combo_explotacion.currentData()
+
+        campania_name = self.combo_campania.get_current_campaign_name() if hasattr(self.combo_campania, "get_current_campaign_name") else "N/A"
+        explotacion_name = self.combo_explotacion.get_current_explotacion_name() if hasattr(self.combo_explotacion, "get_current_explotacion_name") else "N/A"
+
+        if idcamp is None:
+            QMessageBox.warning(self, "aGrae Toolbox", "Selecciona una campaña válida para el remuestreo.")
+            return
+        if idexpl is None:
+            QMessageBox.warning(self, "aGrae Toolbox", "Selecciona una explotación válida para el remuestreo.")
+            return
+
+        # 2) Capa de segmentos
+        layer = self.combo_segmentos_remuestreo.currentLayer()
+        if layer is None:
+            QMessageBox.warning(self, "aGrae Toolbox", "Selecciona la capa de Segmentos de Remuestreo (poligonal).")
+            return
+
+        # 3) Validación de campos requeridos
+        field_names = {f.name() for f in layer.fields()}
+        required = {"idlote", "idsegmento"}
+        missing = sorted(required - field_names)
+        if missing:
+            QMessageBox.warning(
+                self,
+                "aGrae Toolbox",
+                "La capa seleccionada no contiene los campos requeridos:\n - " + "\n - ".join(missing) +
+                "\n\nElige otra capa o ajusta el modelo para incluir estos campos."
+            )
+            return
+
+        # 4) Extraer listas únicas usando attribute() para evitar KeyError
+        idlotes = set()
+        idsegmentos = set()
+        for feat in layer.getFeatures():  # cambia a getSelectedFeatures() si prefieres solo seleccionados
+            v_lote = feat.attribute("idlote")
+            v_seg  = feat.attribute("idsegmento")
+            if v_lote is not None:
+                try:
+                    idlotes.add(int(v_lote))
+                except Exception:
+                    pass
+            if v_seg is not None:
+                try:
+                    idsegmentos.add(int(v_seg))
+                except Exception:
+                    pass
+
+        idlotes_lista = sorted(idlotes)
+        idsegmentos_lista = sorted(idsegmentos)
+
+        if not idlotes_lista or not idsegmentos_lista:
+            QMessageBox.information(self, "aGrae Toolbox", "No se encontraron valores válidos de 'idlote' y/o 'idsegmento' en la capa.")
+            return
+
+        # 5) Confirmación
+        msg = (
+            "Vas a generar puntos de Remuestreo:\n"
+            f" - Campaña anterior: {campania_name}\n"
+            f" - Explotación: {explotacion_name}\n"
+            f" - # Lotes: {len(idlotes_lista)}\n"
+            f" - # Segmentos: {len(idsegmentos_lista)}\n\n"
+            "¿Continuar?"
+        )
+        if QMessageBox.question(self, "aGrae Toolbox", msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+            return
+
+        # 6) Llamada al backend
+        resp = asyncio.run(
+            self.tools.crearPuntosRemuestreo(
+                idcampania_anterior=int(idcamp),
+                idexplotacion=int(idexpl),
+                idlotes_lista=idlotes_lista,
+                idsegmentos_lista=idsegmentos_lista,
+            )
+        )
+
+        if not resp:
+            self.tools.messages("Puntos de Remuestreo", "Sin respuesta del servidor.", 1, alert=True)
+            return
+
+        if resp.get("ok") or resp.get("status_code") == 200:
+            self.tools.messages(
+                "Puntos de Remuestreo",
+                f"Se generaron los puntos de remuestreo correctamente.\n{resp.get('message','')}",
+                3, alert=True
+            )
+        else:
+            self.tools.messages(
+                "Puntos de Remuestreo",
+                f"Error ({resp.get('status_code')}): {resp.get('message','')}",
+                1, alert=True
+            )

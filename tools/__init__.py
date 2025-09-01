@@ -2,6 +2,7 @@ import os, csv
 import aiohttp
 import asyncio
 import json
+from typing import Any
 
 import pandas as pd
 import numpy as np
@@ -39,8 +40,8 @@ class aGraeTools():
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        # self.backend_endpoint = 'http://142.93.41.109:8000'
-        self.backend_endpoint = 'http://localhost:8000'
+        self.backend_endpoint = 'http://142.93.41.109:8000'
+        # self.backend_endpoint = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
@@ -912,73 +913,111 @@ class aGraeTools():
                 self.messages('aGrae Tools','No se pudieron actualizar la informacion de los cultivos.\n {}'.format(ex),2,alert=True)
                 raise Exception(ex)
 
-    async def crearPuntosMuestreo(self,ids:list,segmento_remuestreo:list,segmento_derivar:list,tipo:int=1):
+    async def _post_json(self, endpoint: str, payload: dict[str, Any], *, timeout_sec: int = 300) -> dict[str, Any]:
+        """
+        Helper común para POST JSON.
+        Siempre devuelve un dict con al menos:
+        - status_code: int
+        - ok: bool (True si 200-299)
+        - message: str (mensaje del backend o texto de respuesta)
+        - data: Any (cuerpo JSON cuando aplique)
+        """
+        url = self.backend_endpoint.rstrip("/") + endpoint
+        try:
+            timeout = aiohttp.ClientTimeout(total=timeout_sec)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(url, json=payload) as resp:
+                    status = resp.status
+                    # Intenta parsear JSON (aunque falte content-type)
+                    data: Any = None
+                    message: str = ""
+                    try:
+                        data = await resp.json(content_type=None)
+                        # Intenta obtener un mensaje “humano” si existe
+                        if isinstance(data, dict):
+                            message = str(
+                                data.get("message")
+                                or data.get("detail")
+                                or data.get("error")
+                                or ""
+                            )
+                    except Exception:
+                        # Si no es JSON, usa el texto plano de la respuesta
+                        try:
+                            message = await resp.text()
+                        except Exception:
+                            message = ""
 
-        endpoint = '/gis/muestreo/crear_muestreo'
+                    # Arma la respuesta estandarizada
+                    return {
+                        "status_code": status,
+                        "ok": 200 <= status < 300,
+                        "message": message,
+                        "data": data,
+                    }
+        except Exception as e:
+            err = f"[POST {endpoint}] Exception: {e}"
+            QgsMessageLog.logMessage(err, "aGraeTools", Qgis.Critical)
+            return {
+                "status_code": -1,
+                "ok": False,
+                "message": str(e),
+                "data": None,
+            }
+
+
+    async def crearPuntosMuestreo(
+        self,
+        ids: list,
+        segmento_remuestreo: list,
+        segmento_derivar: list,
+        tipo: int = 1,
+    ) -> dict[str, Any]:
+        """
+        Crea puntos de muestreo.
+        Request:
+        {
+            "ids": [idlote, ...],
+            "segmentos_muestreo": [1,2,3]   # seleccionados
+            "segmentos_derivar":  [ ... ]   # los que faltan o [0] si seleccionaste los 3
+            "tipo": 1|3                     # 3 = seguimiento
+        }
+        """
+        endpoint = "/gis/muestreo/crear_muestreo"
         payload = {
             "ids": ids,
             "segmentos_muestreo": segmento_remuestreo,
             "segmentos_derivar": segmento_derivar,
-            "tipo": tipo
+            "tipo": tipo,
         }
-
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(self.backend_endpoint + endpoint, json=payload) as response:
-                    
-                    data = await response.json()
-                    return data
-                    
-        except Exception as e:
-            print(f"Exception: {e}")
-
-        # # TODO
-        # from .gdriveCore import GDrive
-        # ids = ','.join([str(id) for id in ids])
-        # segmentos_remuestreo = ','.join([str(seg) for seg in segmento_remuestreo])
-        # segmentos_derivar = ','.join([str(seg) for seg in segmento_derivar])
-        # data = None
-        # query = aGraeSQLTools().getSql('query_create_muestreo.sql').format(ids,tipo,segmentos_remuestreo,segmentos_derivar)
-        # core = aGraeLabelGenerator()
-        # drive = GDrive()
+        return await self._post_json(endpoint, payload, timeout_sec=300)
 
 
-        
-        # try:
-            
-        #     cursor = agraeDataBaseDriver().cursor(self.conn)
-        #     cursor.execute(query)
-        #     data = cursor.fetchall()
-        #     # cursor.close()
-        #     self.conn.commit()
-        #     self.messages('aGrae GIS','Muestras generadas correctamente.',3,5)
-                
-        # except errors.lookup('23505'):
-        #     self.messages('aGrae GIS','Ya Existen muestras para los lotes en la campaña actual.')
-        #     self.conn.rollback()
-        # except Exception as ex:
-        #     print(ex)
-        #     self.messages('Error:','{}'.format(ex),1,5)
-        #     self.conn.rollback()
-        
-        # if data:
-        #     try:
-        #         cursor = agraeDataBaseDriver().cursor(self.conn)
-        #         query_update = '''UPDATE field.muestras as m set label = q.label from (values {}) as q(label,codigo) where m.codigo = q.codigo'''
-        #         values = ''
-        #         for r in data:
-        #             codigo = r[1]
-        #             uid = r[0]
-        #             qr = core.generateQR(codigo)
-        #             label = core.generateLabel(qr,codigo)
-        #             url = drive.upload_file(label)
-        #             values = values + ''' ('{}' ,'{}'),\n'''.format(url,codigo)
-        #         query_update = query_update.format(values[:-2])
-        #         cursor.execute(query_update)
-        #         self.conn.commit()     
-        #     except Exception as ex:
-        #         self.conn.rollback()
-        #         print(ex)
+    async def crearPuntosRemuestreo(
+        self,
+        idcampania_anterior: int,
+        idexplotacion: int,
+        idlotes_lista: list[int],
+        idsegmentos_lista: list[int],
+        endpoint: str = "/gis/muestreo/crear_remuestreo",
+    ) -> dict[str, Any]:
+        """
+        Crea puntos de remuestreo.
+        Request:
+        {
+            "idcampania_anterior": int,
+            "idexplotacion": int,
+            "idlotes_lista": [int, ...],
+            "idsegmentos_lista": [int, ...]
+        }
+        """
+        payload = {
+            "idcampania_anterior": idcampania_anterior,
+            "idexplotacion": idexplotacion,
+            "idlotes_lista": idlotes_lista,
+            "idsegmentos_lista": idsegmentos_lista,
+        }
+        return await self._post_json(endpoint, payload, timeout_sec=300)
     
     def cargarLabelsDRIVE(self,file_path:str):
         from .gdriveCore import GDrive
