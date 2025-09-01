@@ -556,3 +556,39 @@ class ExplotacionesComboBox(CustomComboBox):
         if " - " in txt:
             return txt.split(" - ", 1)[1]
         return txt or None
+
+
+# =============================================================================
+# Cultivos 
+# =============================================================================
+class CultivosComboBox(CustomComboBox):
+    """
+    Combo para Cultivos:
+    - Editable + autocompletado.
+    - Etiqueta formateada "Nombre".
+    - Incluye kickstart robusto para la primera carga.
+    """
+
+    def __init__(self, endpoint: str = "/api/cultivos", parent=None):
+        super().__init__(
+            endpoint=endpoint,
+            parent=parent,
+            label_field="nombre",
+            value_field="id",
+            allow_all=False,
+            editable=True,
+            sort_key="nombre",
+            sort_reverse=False,
+            # param_provider=None,  # se define al bindear con campañas
+            # label_formatter=lambda it: f"{it.get('nombre', '')}",
+        )
+
+     # --- Helpers de lectura de datos “puros” ---
+    def get_current_cultivo_id(self) -> int | None:
+        return self.get_current_id() or None
+
+    def get_current_cultivo_name(self) -> str | None:
+        """
+        Devuelve el nombre  del Cultivo.
+        """
+        return self.get_current_label() or None

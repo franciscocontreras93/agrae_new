@@ -1,1 +1,1 @@
-from .CampaniasComboBox import CampaniasComboBox, ExplotacionesComboBox
+from .CustomComboBox import CampaniasComboBox, ExplotacionesComboBox
