@@ -1,5 +1,5 @@
 """
-CampaniasComboBox.py
+CustomComboBox.py
 --------------------
 
 Combos reutilizables para QGIS (PyQt5) que cargan datos desde un backend en un
@@ -12,8 +12,9 @@ hilo separado (QThread), con:
   - Opción editable + QCompleter (filtro 'contains').
   - Dependencias entre combos (Explotaciones filtradas por Campaña).
   - Métodos utilitarios para obtener el ID y el NOMBRE “puro” (sin formateo).
-  - (Nuevo) Transformación opcional de items en el base (items_transform).
-  - (Nuevo) En CampaniasComboBox: opción exclude_latest para excluir la campaña más reciente (id más alto).
+  - Transformación opcional de items en el base (items_transform).
+  - En CampaniasComboBox: opción exclude_latest para excluir la campaña más reciente (id más alto).
+  - En CampaniasComboBox: soporte para fechas (fecha_desde/fecha_hasta) con helpers.
 
 Requisitos:
 - aGraeTools().backend_endpoint → URL base del backend (sin slash final).
@@ -24,14 +25,15 @@ Autor: aGrae
 """
 
 from qgis.PyQt.QtWidgets import QComboBox, QCompleter
-from qgis.PyQt.QtCore import Qt, pyqtSignal, QThread, QStringListModel, QTimer
+from qgis.PyQt.QtCore import Qt, pyqtSignal, QThread, QStringListModel, QTimer, QDate
 from qgis.core import QgsMessageLog, Qgis
 
 from ...tools import aGraeTools
 from ...tools.api_worker import GenericApiWorker
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Optional, Tuple
+import re
 
 
 # =============================================================================
@@ -66,12 +68,9 @@ class CustomComboBox(QComboBox):
     - label_formatter: Callable[[dict[str, Any]], str] | None = None
         Formatea la etiqueta visible a partir del dict del backend (sólo al poblar).
     - items_transform: Callable[[list[dict[str, Any]]], list[dict[str, Any]]] | None = None
-        **Nuevo**: transformación de la lista de items justo antes de ordenar y poblar.
-        Útil para filtrados/exclusiones sin reescribir lógica del base.
-
-    Señales:
-    - items_loaded(object): lista de dicts recibida (ya ordenada/después de transform).
-    - current_value_changed(object): userData actual (normalmente, el ID).
+        Transformación de la lista de items justo antes de ordenar y poblar.
+    - auto_enable_on_load: bool = True
+        Si True, el combo se habilita automáticamente tras cargar datos.
     """
 
     items_loaded = pyqtSignal(object)
@@ -96,6 +95,7 @@ class CustomComboBox(QComboBox):
         param_provider: Callable[[], dict[str, Any]] | None = None,
         label_formatter: Callable[[dict[str, Any]], str] | None = None,
         items_transform: Callable[[list[dict[str, Any]]], list[dict[str, Any]]] | None = None,
+        auto_enable_on_load: bool = True
     ):
         super().__init__(parent)
 
@@ -111,7 +111,8 @@ class CustomComboBox(QComboBox):
 
         self.param_provider = param_provider
         self.label_formatter = label_formatter
-        self.items_transform = items_transform  # <— NUEVO
+        self.items_transform = items_transform
+        self._auto_enable_on_load = bool(auto_enable_on_load)
 
         self.loading_text = self.DEFAULT_LOADING_TEXT
         self.error_text = self.DEFAULT_ERROR_TEXT
@@ -188,6 +189,16 @@ class CustomComboBox(QComboBox):
         self.items_transform = transform
         if refresh:
             self.refresh()
+
+    def set_auto_enable_on_load(self, flag: bool, *, enable_now_if_loaded: bool = False) -> None:
+        """
+        Controla si el combo se auto-habilita al cargar datos.
+        - flag=True  -> comportamiento por defecto (se habilita al cargar)
+        - flag=False -> respeta el estado externo (útil para modo edición)
+        """
+        self._auto_enable_on_load = bool(flag)
+        if enable_now_if_loaded and flag and self.count() > 0:
+            self.setEnabled(True)
 
     def select_by_id(self, value: Any) -> bool:
         """Selecciona la fila cuyo userData == value. Devuelve True si lo encontró."""
@@ -320,7 +331,7 @@ class CustomComboBox(QComboBox):
         self._last_items = response_data
         self._labels_for_completer = labels
 
-        self.setEnabled(True)
+        self.setEnabled(self._auto_enable_on_load)
         self.setCurrentIndex(0)  # si hay "Todos": índice 0 es "Todos"
 
         self._setup_completer_if_needed()
@@ -366,6 +377,36 @@ class CustomComboBox(QComboBox):
 
 
 # =============================================================================
+# Helpers de fechas (uso interno de CampaniasComboBox)
+# =============================================================================
+def _parse_date_to_str(val: Any) -> Optional[str]:
+    """
+    Devuelve 'YYYY-MM-DD' o None a partir de distintos formatos:
+    - 'YYYY-MM-DD' puro
+    - ISO con tiempo ('YYYY-MM-DDTHH:MM:SSZ')  -> recorta
+    - QDate                                    -> toString
+    - números (timestamp/yyyymmdd)             -> intenta parsear a ciegas
+    """
+    if val is None:
+        return None
+    if isinstance(val, QDate):
+        return val.toString("yyyy-MM-dd")
+    try:
+        s = str(val).strip()
+        # Busca un patrón yyyy-mm-dd en la cadena
+        m = re.search(r"\d{4}-\d{2}-\d{2}", s)
+        if m:
+            return m.group(0)
+        # Intenta yyyy/mm/dd
+        m = re.search(r"\d{4}/\d{2}/\d{2}", s)
+        if m:
+            return m.group(0).replace("/", "-")
+    except Exception:
+        return None
+    return None
+
+
+# =============================================================================
 # Campañas
 # =============================================================================
 class CampaniasComboBox(CustomComboBox):
@@ -373,14 +414,43 @@ class CampaniasComboBox(CustomComboBox):
     Combo específico para Campañas.
     - No editable.
     - Orden por ID descendente (más recientes primero).
-    - (Nuevo) exclude_latest: si True, excluye la campaña más reciente (id más alto).
-    - Para mostrar 'ID - Nombre', puedes pasar un label_formatter en el __init__.
+    - exclude_latest: si True, excluye la campaña más reciente (id más alto).
+    - Soporte para fechas: date_from_field/date_to_field (+ fallbacks) y helpers de lectura.
+    - show_dates_in_label: si True, añade el rango de fechas al texto visible.  etiqueta: "43 - C-CAMPAÑA 26 (2025-09-01→2026-08-31)"
     """
 
     campaigns_loaded = pyqtSignal()  # señal legacy para compatibilidad
 
-    def __init__(self, endpoint: str = "/api/campanias/", parent=None, *, exclude_latest: bool = False):
+    def __init__(
+        self,
+        endpoint: str = "/api/campanias/",
+        parent=None,
+        *,
+        exclude_latest: bool = False,
+        date_from_field: str = "fecha_desde",
+        date_to_field: str = "fecha_hasta",
+        alt_date_from_field: str = "fecha_inicio",
+        alt_date_to_field: str = "fecha_fin",
+        show_dates_in_label: bool = False,
+    ):
         self._exclude_latest_flag = bool(exclude_latest)
+        self._date_from_field = date_from_field
+        self._date_to_field = date_to_field
+        self._alt_date_from_field = alt_date_from_field
+        self._alt_date_to_field = alt_date_to_field
+        self._show_dates_in_label = bool(show_dates_in_label)
+
+        # Si se quiere mostrar fechas en la etiqueta, definimos un label_formatter
+        def _campaign_label(it: dict[str, Any]) -> str:
+            base = f"{it.get('id', '')} - {it.get('nombre', '')}"
+            if self._show_dates_in_label:
+                fd = it.get(self._date_from_field) or it.get(self._alt_date_from_field)
+                fh = it.get(self._date_to_field) or it.get(self._alt_date_to_field)
+                s_fd = _parse_date_to_str(fd) or ""
+                s_fh = _parse_date_to_str(fh) or ""
+                if s_fd or s_fh:
+                    base = f"{base} ({s_fd}→{s_fh})"
+            return base
 
         super().__init__(
             endpoint=endpoint,
@@ -392,9 +462,8 @@ class CampaniasComboBox(CustomComboBox):
             sort_key="id",
             sort_reverse=True,
             param_provider=None,
-            # Si quieres mostrar "ID - Nombre", descomenta:
-            # label_formatter=lambda it: f"{it.get('id', '')} - {it.get('nombre', '')}",
-            items_transform=self._make_items_transform()  # <— NUEVO
+            label_formatter=_campaign_label if self._show_dates_in_label else None,
+            items_transform=self._make_items_transform(),  # exclusión + normalización fechas
         )
         # Alias de señal para compatibilidad con código previo
         self.current_campaign_changed = self.current_value_changed
@@ -407,33 +476,50 @@ class CampaniasComboBox(CustomComboBox):
         self._exclude_latest_flag = bool(exclude)
         self.set_items_transform(self._make_items_transform(), refresh=refresh)
 
-    # --- Genera la función de transformación de items según flag ---
+    # --- Genera la transformación de items: exclude_latest + normaliza fechas ---
     def _make_items_transform(self) -> Callable[[list[dict[str, Any]]], list[dict[str, Any]]] | None:
-        if not self._exclude_latest_flag:
-            return None
-
         def _transform(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
             if not items:
                 return items
-            # Buscar el item con 'id' más alto y excluirlo
-            max_id = None
-            max_idx = -1
-            for i, it in enumerate(items):
-                try:
-                    v = it.get("id")
-                    if isinstance(v, str) and v.isdigit():
-                        v_int = int(v)
-                    elif isinstance(v, (int, float)):
-                        v_int = int(v)
-                    else:
-                        continue
-                    if max_id is None or v_int > max_id:
-                        max_id = v_int
-                        max_idx = i
-                except Exception:
+
+            # 1) Normaliza/asegura date_from/date_to en cada item (si existen)
+            out: list[dict[str, Any]] = []
+            for it in items:
+                if not isinstance(it, dict):
                     continue
-            if max_idx >= 0:
-                return [it for j, it in enumerate(items) if j != max_idx]
+                fd = it.get(self._date_from_field) or it.get(self._alt_date_from_field)
+                fh = it.get(self._date_to_field) or it.get(self._alt_date_to_field)
+                s_fd = _parse_date_to_str(fd)
+                s_fh = _parse_date_to_str(fh)
+                if s_fd is not None:
+                    it[self._date_from_field] = s_fd
+                if s_fh is not None:
+                    it[self._date_to_field] = s_fh
+                out.append(it)
+
+            items = out
+
+            # 2) Excluir la campaña con id más alto si se pide
+            if self._exclude_latest_flag:
+                max_id = None
+                max_idx = -1
+                for i, it in enumerate(items):
+                    try:
+                        v = it.get("id")
+                        if isinstance(v, str) and v.isdigit():
+                            v_int = int(v)
+                        elif isinstance(v, (int, float)):
+                            v_int = int(v)
+                        else:
+                            continue
+                        if max_id is None or v_int > max_id:
+                            max_id = v_int
+                            max_idx = i
+                    except Exception:
+                        continue
+                if max_idx >= 0:
+                    items = [it for j, it in enumerate(items) if j != max_idx]
+
             return items
 
         return _transform
@@ -454,6 +540,26 @@ class CampaniasComboBox(CustomComboBox):
         if " - " in txt:  # por si el label fuera "ID - Nombre"
             return txt.split(" - ", 1)[1]
         return txt or None
+
+    def get_current_campaign_date_strings(self) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Devuelve (fecha_desde, fecha_hasta) como strings 'YYYY-MM-DD' si están disponibles.
+        """
+        it = self.get_current_item()
+        if not isinstance(it, dict):
+            return (None, None)
+        fd = it.get(self._date_from_field) or it.get(self._alt_date_from_field)
+        fh = it.get(self._date_to_field) or it.get(self._alt_date_to_field)
+        return (_parse_date_to_str(fd), _parse_date_to_str(fh))
+
+    def get_current_campaign_qdates(self) -> Tuple[Optional[QDate], Optional[QDate]]:
+        """
+        Devuelve (fecha_desde, fecha_hasta) como QDate si están disponibles; None si no.
+        """
+        s_fd, s_fh = self.get_current_campaign_date_strings()
+        qd = QDate.fromString(s_fd, "yyyy-MM-dd") if s_fd else QDate()
+        qh = QDate.fromString(s_fh, "yyyy-MM-dd") if s_fh else QDate()
+        return (qd if qd.isValid() else None, qh if qh.isValid() else None)
 
 
 # =============================================================================
@@ -566,10 +672,10 @@ class CultivosComboBox(CustomComboBox):
     Combo para Cultivos:
     - Editable + autocompletado.
     - Etiqueta formateada "Nombre".
-    - Incluye kickstart robusto para la primera carga.
+    - auto_enable_on_load=False por defecto: el dock controla su estado (modo edición).
     """
 
-    def __init__(self, endpoint: str = "/api/cultivos", parent=None):
+    def __init__(self, endpoint: str = "/api/cultivos", auto_enable_on_load: bool = False, parent=None):
         super().__init__(
             endpoint=endpoint,
             parent=parent,
@@ -579,16 +685,42 @@ class CultivosComboBox(CustomComboBox):
             editable=True,
             sort_key="nombre",
             sort_reverse=False,
-            # param_provider=None,  # se define al bindear con campañas
-            # label_formatter=lambda it: f"{it.get('nombre', '')}",
+            auto_enable_on_load=auto_enable_on_load,
         )
 
-     # --- Helpers de lectura de datos “puros” ---
-    def get_current_cultivo_id(self) -> int | None:
+    # --- Helpers de lectura de datos “puros” ---
+    def get_current_id(self) -> int | None:
         return self.get_current_id() or None
 
-    def get_current_cultivo_name(self) -> str | None:
-        """
-        Devuelve el nombre  del Cultivo.
-        """
+    def get_current_name(self) -> str | None:
+        """Devuelve el nombre del Cultivo."""
+        return self.get_current_label() or None
+    
+class RegimenComboBox(CustomComboBox):
+    """
+    Combo para Regimen:
+    - Editable + autocompletado.
+    - Etiqueta formateada "Nombre".
+    - auto_enable_on_load=False por defecto: el dock controla su estado (modo edición).
+    """
+
+    def __init__(self, endpoint: str = "/api/regimen", auto_enable_on_load: bool = False, parent=None):
+        super().__init__(
+            endpoint=endpoint,
+            parent=parent,
+            label_field="nombre",
+            value_field="id",
+            allow_all=False,
+            editable=True,
+            sort_key="nombre",
+            sort_reverse=False,
+            auto_enable_on_load=auto_enable_on_load,
+        )
+
+    # --- Helpers de lectura de datos “puros” ---
+    def get_current_id(self) -> int | None:
+        return self.get_current_id() or None
+
+    def get_current_name(self) -> str | None:
+        """Devuelve el nombre del Cultivo."""
         return self.get_current_label() or None

@@ -8,7 +8,6 @@ import psycopg2
 from psycopg2 import extras
 
 
-
 from qgis.PyQt import QtWidgets #type: ignore
 from qgis.PyQt.QtCore import pyqtSignal, Qt,QDate,QSize,QSettings #type: ignore
 from qgis.PyQt.QtGui import QIcon #type: ignore
@@ -24,7 +23,7 @@ from ..tools.gee import NDVIProcessor
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..gui import agraeGUI
-from ..gui.components import CampaniasComboBox, ExplotacionesComboBox
+from ..gui.components import CampaniasComboBox, ExplotacionesComboBox, CultivosComboBox, RegimenComboBox
 
 from ..dialogs import aGraeDialogs
 
@@ -63,6 +62,18 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.conn = agraeDataBaseDriver().connection()
         self.tools = aGraeTools()
         self.UIComponents()
+        # --- Wire backend-driven combo signals ---
+        try:
+            self.combo_campania.items_loaded.connect(self._on_campaigns_ready)
+            self.combo_campania.current_value_changed.connect(self._on_campaign_changed)
+        except Exception:
+            pass
+        try:
+            self.combo_explotacion.items_loaded.connect(self._maybe_load_lotes)
+            self.combo_explotacion.current_value_changed.connect(self._maybe_load_lotes)
+        except Exception:
+            pass
+
         # self.identifyTool = selectTool(self.layer)
         # self.identifyTool.featureSelected.connect(self.fillDataLote)
         self.currentDate = QDate().currentDate()
@@ -83,7 +94,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.FechaHasta = QDate()
         
 
-        self.getCampaniasData()
+        # self.combo_campania.refresh()  # backend-driven combo loads itself
         self.getCultivosData()
         self.getRegimenData()
 
@@ -99,12 +110,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
         # Page 1: Información de Lote
         self.page_info_lote = QtWidgets.QWidget()
-        # self.combo_campania = QtWidgets.QComboBox()
         self.combo_campania = CampaniasComboBox()
+
         self.tool_camp = QtWidgets.QToolButton()
-        # self.combo_explotacion = QtWidgets.QComboBox()
-        # self.combo_explotacion.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-        # self.combo_explotacion.setEditable(True)
+
         self.combo_explotacion = ExplotacionesComboBox()
         self.combo_explotacion.bind_to_campaigns(self.combo_campania)
         self.combo_explotacion.currentIndexChanged.connect(self.getLotesExplotacionLayer)
@@ -117,11 +126,11 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.line_nombre = QtWidgets.QLineEdit()
         self.line_nombre.setEnabled(False)
         self.label_2 = QtWidgets.QLabel("Cultivo:")
-        self.combo_cultivo = QtWidgets.QComboBox()
-        self.combo_cultivo.setEnabled(False)
+        self.combo_cultivo = CultivosComboBox()
+        self.combo_cultivo.setPlaceholderText('Seleccionar cultivo')
         self.label_4 = QtWidgets.QLabel("Régimen:")
-        self.combo_regimen = QtWidgets.QComboBox()
-        self.combo_regimen.setEnabled(False)
+        self.combo_regimen = RegimenComboBox()
+        self.combo_regimen.setPlaceholderText('Seleccionar régimen')
         self.label_7 = QtWidgets.QLabel("Producción Esperada (Kg/Ha):")
         self.line_produccion = QtWidgets.QSpinBox()
         self.line_produccion.setEnabled(False)
@@ -440,12 +449,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.toolBox.setItemIcon(2,agraeGUI().getIcon('satelite')) # Icono para la segunda pestaña
         self.toolBox.currentChanged.connect(self.infoLote)
         
-        for c in [self.combo_cultivo]:
-            c.setEditable(True)
-            c.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-            c.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        # for c in [self.combo_cultivo]:
+        #     c.setEditable(True)
+        #     c.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        #     c.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
 
-        # self.combo_campania.currentIndexChanged.connect(lambda: self.getExplotacionData(self.combo_campania.currentData()))
+        # self.combo_campania.currentIndexChanged.connect(lambda: self.combo_explotacion.refresh()))
         
         self.combo_cultivo_2.currentIndexChanged.connect(self.clearAplicacion)
         
@@ -569,7 +578,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.EliminarCampaniaAction.triggered.connect(self.deleteCampania)
 
         self.ReloadCampaniaAction = QtWidgets.QAction(agraeGUI().getIcon('reload'),'Recargar Campaña',self)
-        self.ReloadCampaniaAction.triggered.connect(self.getCampaniasData)
+        self.ReloadCampaniaAction.triggered.connect(self.combo_campania.refresh)
 
         self.tool_camp_menu = self.tool_camp.menu()
         self.tools.settingsToolsButtons(self.tool_camp,[self.ReloadCampaniaAction,self.CrearCampaniaAction,self.ClonarCampaniaAction,self.EditarCampaniaAction,self.EliminarCampaniaAction])
@@ -627,18 +636,18 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
     # DIALOGS
     def campaniaCreateDialog(self):
         dlg = CreateCampaniaDialog()
-        dlg.campCreated.connect(self.getCampaniasData)
+        dlg.campCreated.connect(self.combo_campania.refresh)
         dlg.exec()
 
     def campaniaUpdateDialog(self):
         dlg = UpdateCampaniaDialog(self.combo_campania.currentData())
-        dlg.campUpdated.connect(self.getCampaniasData)
+        dlg.campUpdated.connect(self.combo_campania.refresh)
         dlg.exec()
         # print(self.combo_campania.currentData())
 
     def campaniaCloneDialog(self):
         dlg = CloneCampaniaDialog()
-        dlg.campCloned.connect(self.getCampaniasData)
+        dlg.campCloned.connect(self.combo_campania.refresh)
         dlg.exec()
 
     def explotacionCreateDialog(self):
@@ -649,12 +658,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
     
     def explotacionUpdateDialog(self):
         dlg = UpdateExplotacionDialog(self.combo_explotacion.currentData(),self.combo_explotacion.currentText())
-        dlg.expUpdated.connect(lambda: self.getExplotacionData(self.combo_campania.currentData()))
+        dlg.expUpdated.connect(lambda: self.combo_explotacion.refresh())
         dlg.exec()
     
     def explotacionCopyDialog(self):
         dlg = CopyExplotacionDialog(self.combo_explotacion.currentData(),self.combo_campania.currentData(),self.combo_explotacion.currentText())
-        dlg.expCopied.connect(self.getCampaniasData)
+        dlg.expCopied.connect(self.combo_explotacion.refresh)
         dlg.exec()
 
     def loteAnliticDialog(self):
@@ -782,6 +791,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         
 
     def getIdCultivo(self,data):
+        """[DEPRECATED]"""
         self.idCultivo = data
         
 
@@ -850,6 +860,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.date_cosecha.setMinimumDate(self.date_siembra.date().addDays(15))
         
     def dateCosechaChanged(self,e):
+        """[DEPRECATED]"""
         # print(e)
         self.fechaCosecha = ''
 
@@ -1144,77 +1155,67 @@ FROM
               self.conn.rollback()
             #   print('{}'.format(ex))
 
-    def enableElements(self,widget,elements:list):
-       
-        if widget.isChecked():
-            for e in elements:
-                e.setEnabled(True)
-        else:
-            for e in elements:
-                e.setEnabled(False)
-
-        pass
     
+    # -------- helpers for backend-driven combos --------
+    def _apply_campaign_dates_from_combo(self):
+        """
+        Lee 'fecha_desde' y 'fecha_hasta' del item actual del CampaniasComboBox (si vienen en el payload)
+        y ajusta las restricciones de los QDateEdit relevantes. Silencioso si no existen.
+        """
+        try:
+            it = self.combo_campania.get_current_item() if hasattr(self.combo_campania, 'get_current_item') else None
+            if not isinstance(it, dict):
+                return
+            fecha_desde = it.get('fecha_desde') or it.get('fecha_inicio')
+            fecha_hasta = it.get('fecha_hasta') or it.get('fecha_fin')
+            if not (fecha_desde and fecha_hasta):
+                return
+            fd = QDate.fromString(str(fecha_desde), 'yyyy-MM-dd')
+            fh = QDate.fromString(str(fecha_hasta), 'yyyy-MM-dd')
+            if not fd.isValid() or not fh.isValid():
+                return
+            # Guarda para lógica existente que use estos atributos
+            self.FechaDesde = fd
+            self.FechaHasta = fh
+            # Aplica a los date edits si existen
+            for de in (getattr(self, 'date_siembra', None), getattr(self, 'date_cosecha', None), getattr(self, 'date_aplicacion', None)):
+                if de:
+                    de.setMinimumDate(fd)
+                    de.setMaximumDate(fh)
+        except Exception:
+            pass
+
+    def _on_campaigns_ready(self, _items):
+        """Primera carga de campañas lista: aplica fechas (si hay)."""
+        self._apply_campaign_dates_from_combo()
+
+    def _on_campaign_changed(self, _cid):
+        """Cambio de campaña por el usuario: aplica fechas (si hay)."""
+        self._apply_campaign_dates_from_combo()
+
+    def _maybe_load_lotes(self, *_):
+        """Cuando hay explotación válida, dispara la carga de lotes."""
+        try:
+            eid = self.combo_explotacion.currentData()
+            if eid is None:
+                return
+            self.getLotesExplotacionLayer()
+        except Exception:
+            pass
     def getCampaniasData(self):
-        self.combo_campania.clear()
-        with agraeDataBaseDriver().connection().cursor() as cursor:
-            # try:
-                cursor.execute('''SELECT DISTINCT concat(upper(prefix),'-',UPPER(nombre)) as nombre , id  FROM campaign.campanias ORDER BY id desc''')
-                data_camp = cursor.fetchall()
-                self.conn.commit()
-                for e in data_camp:
-                    self.combo_campania.addItem(e[0],e[1])
-                
-                self.getExplotacionData(self.combo_campania.currentData())
-                self.getLotesExplotacionLayer()
+        """[DEPRECATED]"""
+
+        self.combo_campania.refresh()
+        self.getLotesExplotacionLayer()
             
             # except Exception as ex:
             #     self.conn.rollback()
             #     print(ex,'Error getCampaniasData')
                 
     def getExplotacionData(self,idcampania):
-        self.combo_explotacion.clear()
-        sql = '''select distinct e.nombre , d.idexplotacion from campaign.data d
-        join campaign.campanias c on c.id = d.idcampania 
-        join agrae.explotacion e on e.idexplotacion = d.idexplotacion 
-        where c.id = {}
-        order by e.nombre'''.format(idcampania)
-        # print(idcampania)
-        if idcampania != None:
-            with  agraeDataBaseDriver().connection().cursor() as cursor:
-                try:
-                    cursor.execute(sql)
-                    data = cursor.fetchall()
-                    # print(idcampania)
-                    if len(data) >= 1 and self.combo_campania.currentData() != None:
-                        data_completer = ['{}-{}'.format(e[1],e[0]) for e in data]
-                        for e in data:
-                            self.combo_explotacion.addItem('{}-{}'.format(e[1],e[0]),e[1])
-                        
-                        exp_completer = self.tools.dataCompleter(data_combo=data_completer)
-                        self.combo_explotacion.setCompleter(exp_completer)
-
-                        sql_date_camp = 'select fecha_desde, fecha_hasta from campaign.campanias where id = {}'.format(self.combo_campania.currentData())
-                        cursor.execute(sql_date_camp)
-                        data = cursor.fetchone()
-                    
-                        self.FechaDesde = data[0]
-                        self.FechaHasta = data[1]
-                        try:
-                            self.date_siembra.setMinimumDate(data[0])
-                            self.date_siembra.setMaximumDate(data[1])
-                            self.date_cosecha.setMinimumDate(data[0])
-                            self.date_cosecha.setMaximumDate(data[1])
-                        except Exception as ex:
-                            print(ex)
-                            pass
-
-                    
-                        
-                
-                except Exception as ex:
-                    agraeDataBaseDriver().connection().rollback()
-                    print(ex,'Error getExpData')
+        """[DEPRECATED]"""
+        self.combo_explotacion.refresh()
+        self.getLotesExplotacionLayer()
             
     def getCultivosData(self):
         with agraeDataBaseDriver().connection().cursor() as cursor:
@@ -1242,59 +1243,12 @@ FROM
                 print(ex)
 
     def fillCombos(self):
-        self.combo_campania.clear()
-        self.combo_explotacion.clear()
-
-        with agraeDataBaseDriver().connection().cursor(cursor_factory=extras.DictCursor) as cursor:
-            
-            try:
-                cursor.execute('SELECT DISTINCT UPPER(nombre), id  FROM campaign.campanias ORDER BY id desc')
-                data_camp = cursor.fetchall()
-                self.conn.commit()
-                for e in data_camp:
-                    self.combo_campania.addItem(e[0],e[1])
-            
-            except Exception as ex:
-                self.conn.rollback()
-                print(ex)
-
-            self.updateComboExp()
-            self.getLotesExplotacionLayer()
-
-            try:
-                cursor.execute('SELECT DISTINCT UPPER(nombre), idcultivo  FROM agrae.cultivo ORDER BY UPPER(nombre)')
-                data_exp = cursor.fetchall() 
-                self.conn.commit()
-                for e in data_exp: 
-                    self.combo_cultivo.addItem(e[0],e[1])
-            
-            except Exception as ex:
-                self.conn.rollback()
-                print(ex)
-            
-            try:
-                cursor.execute('SELECT DISTINCT UPPER(nombre), id  FROM analytic.regimen ORDER BY id')
-                data_reg = cursor.fetchall()
-                self.conn.commit()
-                for e in data_reg:
-                    self.combo_regimen.addItem(e[0],e[1])
-                
-            except Exception as ex:
-                self.conn.rollback()
-                print(ex)
+        """[DEPRECATED]"""
+        self.combo_campania.refresh()
+        self.combo_explotacion.refresh()
+        # self.combo_regimen_2.refresh()
 
     
-    def createMuestreoPoints(self):
-        
-        if len(list(self.layer.getSelectedFeatures())) > 0:
-            ids  = [f['iddata'] for f in  list(self.layer.getSelectedFeatures())]
-        else:
-            ids = [f['iddata'] for f in  list(self.layer.getFeatures())]
-        
-        reply = QtWidgets.QMessageBox.question(self,'aGrae Toolbox','Quieres generar los puntos de muestreo para:\n{} Lotes de la explotacion :\n{}?'.format(len(ids) , self.combo_explotacion.currentText()),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
-        if reply == QtWidgets.QMessageBox.Yes:
-
-                self.tools.crearPuntosMuestreo(ids)
  
     def checkData(self,condition,label,value,widget):
         styleNormal = "QLabel { background-color : transparent; color : black; font-weight : normal }"
@@ -1578,13 +1532,13 @@ FROM
             print(ex)
 
         self.reloadLayer()
-        self.getCampaniasData()
+        # self.combo_campania.refresh()  # backend-driven combo loads itself
 
     def deleteExplotacion(self):
         question = 'Quieres eliminar la Explotacion {}?, esta acción eliminará\nsolo los datos asociados a la campaña seleccionada.'.format(self.combo_explotacion.currentText())
         sql = '''delete from campaign.data where idcampania = {} and idexplotacion = {}'''.format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
         self.tools.deleteAction(question,sql)
-        self.getExplotacionData(self.combo_campania.currentData())
+        self.combo_explotacion.refresh()
         self.reloadLayer()
 
     def deleteLote(self):
