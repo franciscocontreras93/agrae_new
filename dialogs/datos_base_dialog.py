@@ -16,6 +16,8 @@ from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..tools import aGraeTools
 
+from ..gui.components import CampaniasComboBox, ExplotacionesComboBox
+
 agraeDatosBaseDialog , _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui/datos_base_dialog.ui'))
 class GestionDatosBaseDialog(QDialog,agraeDatosBaseDialog): 
     closingPlugin = pyqtSignal()
@@ -122,12 +124,20 @@ class CrearLotesDialog(QDialog):
         self.select_explotacion = QCheckBox('Añadir lotes a la Explotacion')
         self.select_explotacion.stateChanged.connect(self.enableCombos)
     
-        self.combo_campania = QComboBox()
-        self.combo_campania.currentIndexChanged.connect(lambda: self.tools.getExplotacionData(self.combo_explotacion,self.combo_campania.currentData()))
+        # self.combo_campania = QComboBox()
+        # self.combo_campania.currentIndexChanged.connect(lambda: self.tools.getExplotacionData(self.combo_explotacion,self.combo_campania.currentData()))
+        # self.combo_campania.setEnabled(False)
+
+        # self.combo_explotacion = QComboBox()
+        # self.combo_explotacion.setEnabled(False)
+
+
+        self.combo_campania = CampaniasComboBox()
         self.combo_campania.setEnabled(False)
 
-        self.combo_explotacion = QComboBox()
+        self.combo_explotacion = ExplotacionesComboBox()
         self.combo_explotacion.setEnabled(False)
+        self.combo_explotacion.bind_to_campaigns(self.combo_campania)
 
         self.tools.getCampaniasData(self.combo_campania)
         self.tools.getExplotacionDataNoFilter(self.combo_explotacion)
@@ -200,12 +210,10 @@ class CrearLotesDialog(QDialog):
                 if sourceCrs != crsBase:
                     geom.transform(tr)
                 if self.select_explotacion.isChecked():
-                    query = sql.format(nombre,geom.asWkt(),self.combo_campania.currentData(),self.combo_explotacion.currentData())
+                    query = sql.format(nombre,geom.asWkt(),self.combo_campania.get_current_campaign_id(),self.combo_explotacion.get_current_explotacion_id())
                 else:
                     query = sql.format(nombre,geom.asWkt())
                 
-                # print(query)
-
                 try:
                     cursor.execute(query)
                     response = cursor.fetchone()
@@ -225,7 +233,7 @@ class CrearLotesDialog(QDialog):
                 except Exception as ex:
                     print(ex)
                     self.conn.rollback()
-            # print(query) 
+
         
     
     
