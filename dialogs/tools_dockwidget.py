@@ -10,20 +10,21 @@ from psycopg2 import extras
 
 from qgis.PyQt import QtWidgets #type: ignore
 from qgis.PyQt.QtCore import pyqtSignal, Qt,QDate,QSize,QSettings #type: ignore
-from qgis.PyQt.QtGui import QIcon #type: ignore
+from qgis.PyQt.QtGui import QIcon,QColor #type: ignore
 
 from qgis.core import * #type: ignore
 from qgis.utils import iface #type: ignore
-from qgis.gui import QgsMapToolIdentify,QgsMapMouseEvent # type: ignore
+from qgis.gui import QgsMapToolIdentify,QgsMapMouseEvent, QgsHighlight # type: ignore
 from ..tools import aGraeTools
 from ..tools.analisis_tools import aGraeResamplearMuestras
 from ..tools.agrae_csv_tools import aGraeCSVTools
 from ..tools.gee import NDVIProcessor
+from ..tools.agraeIdentifyTool import aGraeSelectTool
 
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..gui import agraeGUI
-from ..gui.components import CampaniasComboBox, ExplotacionesComboBox, CultivosComboBox, RegimenComboBox
+from ..gui.components import CampaniasComboBox, ExplotacionesComboBox, CultivosComboBox, RegimenComboBox, InfoCardNumLotes
 
 from ..dialogs import aGraeDialogs
 
@@ -119,10 +120,14 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.combo_explotacion.currentIndexChanged.connect(self.getLotesExplotacionLayer)
 
         self.tool_exp = QtWidgets.QToolButton()
+
+        # self.card_num_lotes = InfoCardNumLotes()
+        # self.card_num_lotes.bind_to_explotacion(self.combo_campania, self.combo_explotacion)
+
         self.label_info = QtWidgets.QLabel("")
-        self.label_info_muestreo = QtWidgets.QLabel("") 
-        self.label_num_lotes = QtWidgets.QLabel("-") # Nuevo QLabel para número de lotes
-        self.label_area_lotes = QtWidgets.QLabel("- ha") # Nuevo QLabel para área de lotes
+        self.label_info_muestreo = QtWidgets.QLabel("")
+        self.label_num_lotes = QtWidgets.QLabel("-")  # Nuevo QLabel para número de lotes
+        self.label_area_lotes = QtWidgets.QLabel("- ha")  # Nuevo QLabel para área de lotes
         self.line_nombre = QtWidgets.QLineEdit()
         self.line_nombre.setEnabled(False)
         self.label_2 = QtWidgets.QLabel("Cultivo:")
@@ -305,10 +310,15 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         layout_camp_exp.addWidget(QtWidgets.QLabel("Explotación:"), 1, 0)
         layout_camp_exp.addWidget(self.combo_explotacion, 1, 1)
         layout_camp_exp.addWidget(self.tool_exp, 1, 2)
-        layout_camp_exp.addWidget(self.label_info, 2, 0, 1, 3)
-        layout_camp_exp.addWidget(self.label_info_muestreo, 3, 0, 1, 3)
+      
         # Añadir nuevos labels para información de lotes
         dock_layout.addWidget(group_camp_exp)
+
+        info_group_box = QtWidgets.QGroupBox("Datos de la Explotación.")
+        layout_info_group = QtWidgets.QGridLayout(info_group_box)
+        layout_info_group.addWidget(self.label_info,0,0)
+        layout_info_group.addWidget(self.label_info_muestreo,1,0)
+        # layout_info_group.addWidget(self.card_num_lotes,0,0)
 
         # Group: Herramientas Generales (Fuera del ToolBox)
         tools_group_box = QtWidgets.QGroupBox("Herramientas")
@@ -327,6 +337,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         layout_tools_group.addWidget(self.tool_exp_2,1,1) 
         layout_tools_group.addWidget(self.tool_lab,1,2)
         layout_tools_group.addWidget(self.tool_data,1,3)
+        dock_layout.addWidget(info_group_box)
         dock_layout.addWidget(tools_group_box)
 
 
@@ -805,7 +816,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
     # FUCNTIONS
     def identify(self):
-        self.identifyTool = selectTool(self.layer)
+        self.identifyTool = aGraeSelectTool(self.layer)
         self.identifyTool.featureSelected.connect(self.fillDataLote)
         iface.mapCanvas().setMapTool(self.identifyTool)
 
@@ -1743,43 +1754,6 @@ FROM
 
 
 
-
-
-class selectTool(QgsMapToolIdentify):
-
-    featureSelected = pyqtSignal(QgsFeature)
-    def __init__(self, layer):
-        self.iface = iface
-        self.canvas = self.iface.mapCanvas()
-        self.layer = layer
-        iface.setActiveLayer(self.layer)
-
-        QgsMapToolIdentify.__init__(self, self.canvas)
-        
-        # self.iface.currentLayerChanged.connect(self.active_changed)
-        
-    def active_changed(self, layer):
-        if isinstance(layer, QgsVectorLayer) and layer.isSpatial():
-            self.layer = layer
-            
-    def canvasPressEvent(self, event):
-        results = self.identify(event.x(), event.y(), [self.layer], QgsMapToolIdentify.TopDownAll)
-        # context = QgsRenderContext()
-        
-
-    #    print(results)
-        if len(results) == 1:
-            feature = results[0].mFeature
-            # print(feature)
-            self.featureSelected.emit(feature)
-            # print(results[i].mFeature)
-            self.layer.select(feature.id())
-        
-        
-    def deactivate(self):
-        # self.iface.currentLayerChanged.disconnect(self.active_changed)
-
-        pass
 
 
 

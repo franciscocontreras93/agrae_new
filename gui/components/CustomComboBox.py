@@ -39,7 +39,9 @@ import re
 # =============================================================================
 # Combo base genérico
 # =============================================================================
+
 class CustomComboBox(QComboBox):
+   
     """
     ComboBox que carga ítems desde un endpoint REST en un hilo aparte.
 
@@ -79,6 +81,7 @@ class CustomComboBox(QComboBox):
     DEFAULT_LOADING_TEXT = "Cargando..."
     DEFAULT_ERROR_TEXT = "Error al cargar datos"
     DEFAULT_ALL_TEXT = "Todos"
+    DEFAULT_FIRST_ITEM_TEXT = "Seleccione una opción..."
 
     def __init__(
         self,
@@ -89,6 +92,7 @@ class CustomComboBox(QComboBox):
         value_field: str = "id",
         allow_all: bool = False,
         all_text: str | None = None,
+        first_item_text: bool = False,
         editable: bool = False,
         sort_key: str | None = None,
         sort_reverse: bool = True,
@@ -105,6 +109,7 @@ class CustomComboBox(QComboBox):
         self.label_field = label_field
         self.value_field = value_field
         self.allow_all = allow_all
+        self.allow_first_item_text = first_item_text
         self.all_text = all_text or self.DEFAULT_ALL_TEXT
         self.sort_key = sort_key
         self.sort_reverse = sort_reverse
@@ -308,6 +313,9 @@ class CustomComboBox(QComboBox):
         # Opción "Todos"
         if self.allow_all:
             self.addItem(self.all_text, None)
+        
+        if self.allow_first_item_text:
+            self.addItem(self.DEFAULT_FIRST_ITEM_TEXT, None)
 
         # Poblar ítems (¡aquí sí usamos label_formatter con el dict!)
         labels: list[str] = []
@@ -686,6 +694,7 @@ class CultivosComboBox(CustomComboBox):
             sort_key="nombre",
             sort_reverse=False,
             auto_enable_on_load=auto_enable_on_load,
+            first_item_text=True,
         )
 
     # --- Helpers de lectura de datos “puros” ---
@@ -715,6 +724,7 @@ class RegimenComboBox(CustomComboBox):
             sort_key="nombre",
             sort_reverse=False,
             auto_enable_on_load=auto_enable_on_load,
+             first_item_text=True,
         )
 
     # --- Helpers de lectura de datos “puros” ---
