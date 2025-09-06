@@ -2,6 +2,8 @@ from .datos_base_dialog import CrearLotesDialog
 from .muestreo_dialog import MuestreoDialog
 from .lab_dialog import GestionLaboratorioDialog
 
+from . gee_dialog import aGraeGEEDialog
+
 
 class aGraeDialogs():
     def __init__(self):
