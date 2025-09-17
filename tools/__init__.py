@@ -6,6 +6,7 @@ from typing import Any
 
 import pandas as pd
 import numpy as np
+import requests
 import processing
 from io import BytesIO
 from PIL import Image
@@ -40,8 +41,8 @@ class aGraeTools():
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        # self.backend_endpoint = 'http://142.93.41.109:8000'
-        self.backend_endpoint = 'http://localhost:8000'
+        self.backend_endpoint = 'http://142.93.41.109:8000'
+        # self.backend_endpoint = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
@@ -131,11 +132,7 @@ class aGraeTools():
 
         finally:
             if conn:
-                conn.close()
-            
-
-    
-    
+                conn.close()       
 
     def messages(self,title:str,text:str,level:int=0,duration:int=2,alert=False):
         """Levels:\n
@@ -667,8 +664,7 @@ class aGraeTools():
         with self.conn.cursor() as cursor:
             try:   
                 for index, r in df1.iterrows():
-                    sql = aGraeSQLTools().getSql('csv_report_create.sql').format(r['COD'],r['ceap'],r['PH'],r['CE'],r['CARBON'],r['CALIZA'],r['CA'],r['MG'],r['K'],r['NA'],r['N'],r['P'],r['ORGANI'],r['AL'],r['B'],r['FE'],r['MN'],r['CU'],r['ZN'],r['S'],r['MO'],r['ARCILLA'],r['LIMO'],r['ARENA'],r['NI'],r['CO'],r['TI'],r['AS'],r['PB'],r['CR'],2)
-                    
+                    sql = aGraeSQLTools().getSql('csv_report_create.sql').format(r['COD'],r['ceap'],r['PH'],r['CE'],r['CARBON'],r['CALIZA'],r['CA'],r['MG'],r['K'],r['NA'],r['N'],r['P'],r['ORGANI'],r['AL'],r['B'],r['FE'],r['MN'],r['CU'],r['ZN'],r['S'],r['MO'],r['ARCILLA'],r['LIMO'],r['ARENA'],r['NI'],r['CO'],r['TI'],r['AS'],r['PB'],r['CR'],2,r['NO3'],r['NH4'])
                     try:
                         cursor.execute(sql)
                         
@@ -716,7 +712,7 @@ class aGraeTools():
     def exportarResumenFertilizacion(self,idcampania:int,idexplotacion:int,nameExp:str):
         s = QSettings('agrae','dbConnection')
         path = s.value('reporte_path')
-        q = '''select distinct 0 as wkt_geom, row_number() over () as fid, row_number() over () as _uid_, fp.* from fert_intraparcelaria  fi join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf order by lote,uf_etiqueta;'''
+        q = '''select distinct 0 as wkt_geom, row_number() over () as fid, row_number() over () as _uid_, fp.*, ((fp.densidad * 1000 * 10000 * 0.3) * fp.no3) /1000 as no3_kg_ha, ((fp.densidad * 1000 * 10000 * 0.3) * fp.nh4)/1000 as nh4_kg_ha, fi.prod_ponderada as rinde from fert_intraparcelaria  fi join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf order by lote,uf_etiqueta;'''
         query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,q)
         try: 
             with agraeDataBaseDriver().connection().cursor() as cursor:  
@@ -965,7 +961,6 @@ class aGraeTools():
                 "data": None,
             }
 
-
     async def crearPuntosMuestreo(
         self,
         ids: list,
@@ -991,7 +986,6 @@ class aGraeTools():
             "tipo": tipo,
         }
         return await self._post_json(endpoint, payload, timeout_sec=300)
-
 
     async def crearPuntosRemuestreo(
         self,
@@ -1050,6 +1044,19 @@ class aGraeTools():
             }
 
         }
+
+    def updateLoteInfo(self,payload:dict):
+        """ Actualiza la información de un lote mediante una solicitud PATCH al backend. """
+        endpoint = self.backend_endpoint + '/gis/lotes/update'
+        try:
+            response = requests.patch(endpoint,json=payload,timeout=300)
+            if response.status_code == 200:
+                self.messages('aGrae GIS','Lote Actualizado Correctamente',3,alert=True)
+            else:
+                self.messages('aGrae GIS','Ocurrio un error al actualizar el lote.\n {}'.format(response.text),2,alert=True)
+        except Exception as ex:
+            self.messages('aGrae GIS','Ocurrio un error al actualizar el lote.\n {}'.format(ex),2,alert=True)
+            print(ex)
 
 
 

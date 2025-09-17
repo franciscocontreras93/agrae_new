@@ -71,8 +71,17 @@ segm_analitica as (select distinct
 	txt.grupo_label suelo,
 	s.ceap,
 	a.n,
-    n.tipo AS n_tipo,
-    n.incremento AS n_inc,
+	(
+		case
+			when a.no3 is not null and a.nh4 is not null then concat(no3.tipo,'-',nh4.tipo)
+			else n.tipo
+		end
+	) as n_tipo,
+	(
+		case when a.no3 is not null and a.nh4 is not null then rel_no3_nh4.incremento
+		else n.incremento
+		end
+	) as n_inc,
  	a.p,
 	met.nombre AS p_metodo,
     p_n.etiqueta as p_tipo,
@@ -132,6 +141,8 @@ segm_analitica as (select distinct
     a.mg_eq,
     a.k_eq,
     a.na_eq,
+	a.no3,
+	a.nh4,
 	s.geometria
 	FROM segmentos s 
 	JOIN lotes d  on  s.iddata = d.iddata
@@ -146,6 +157,9 @@ segm_analitica as (select distinct
 	LEFT JOIN analytic.magnesio mg ON mg.suelo = txt.grupo AND a.mg >= mg.limite_inferior AND a.mg < mg.limite_superior
 	LEFT JOIN analytic.cic cic ON a.cic >= cic.limite_i AND a.cic < cic.limite_s
 	LEFT JOIN analytic.nitrogeno n ON a.n >= n.limite_inferior AND a.n < n.limite_superior and n.textura = txt.grupo
+	LEFT JOIN analytic.no3 no3 ON a.no3 >= no3.limite_inferior AND a.no3 < no3.limite_superior and no3.textura = txt.grupo
+	LEFT JOIN analytic.nh4 nh4 ON a.nh4 >= nh4.limite_inferior AND a.nh4 < nh4.limite_superior and nh4.textura = txt.grupo
+	LEFT JOIN analytic.rel_no3_nh4 rel_no3_nh4 ON no3.nivel = rel_no3_nh4.nivel_no3 and nh4.nivel = rel_no3_nh4.nivel_nh4
 	LEFT JOIN analytic.potasio k ON k.textura = txt.grupo AND a.k >= k.limite_inferior AND a.k < k.limite_superior
 	LEFT JOIN analytic.sodio na ON na.suelo = txt.grupo AND a.na >= na.limite_inferior AND a.na < na.limite_superior
     LEFT JOIN analytic.fosforo_nuevo p_n on p_n.metodo = a.metodo AND p_n.textura = txt.grupo and p_n.carbonatos = carb.nivel AND a.p >= p_n.limite_inferior AND a.p < p_n.limite_superior
@@ -585,7 +599,10 @@ fert_report as (select
 	s.ca_eq,
 	s.mg_eq,
 	s.k_eq,
-	s.na_eq
+	s.na_eq,
+	s.no3,
+	s.nh4,
+	((1.23+0.0020 * (s.arena * 100)) - (0.0030 * (s.arcilla * 100))) as densidad
 from fert_intraparcelaria uf
 left join  segm_analitica s on uf.codigo = s.codigo),
 fert_parcelaria as (select 

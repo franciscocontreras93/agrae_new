@@ -789,8 +789,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
     def asignarCultivosLotes(self):
         #* NUEVO 
-        iddata = [str(f['iddata']) for f in self.layer.selectedFeatures()]
-        dlg = AsignarCultivosDialog(iddata)
+
+        iddata = [f['iddata'] for f in self.layer.selectedFeatures()]
+        dlg = AsignarCultivosDialog(iddata,self.combo_campania.get_current_campaign_qdates())
         dlg.exec()
         pass
     
@@ -1347,65 +1348,35 @@ FROM
         
     def updateLote(self):
         
-        cultivo = self.combo_cultivo.currentData()
-        regimen = self.combo_regimen.currentData() 
+        idcultivo = self.combo_cultivo.get_current_id()
+        idregimen = self.combo_regimen.get_current_id()
         nombre = self.line_nombre.text()
-        produccion = self.line_produccion.value()
-        # prod_final = self.line_prod_final.value()
-        fechaSiembra = ''
-        fechaCosecha = ''
+        prod_esperada = self.line_produccion.value()
+        # # prod_final = self.line_prod_final.value()
+        
+        json_payload = {
+        "lote": {
+            "nombre": str(nombre)
+        },
+        "data_campania": {
+            "iddata": self.idData,
+            "idcultivo": idcultivo,
+            "idregimen": idregimen,
+            "prod_esperada": prod_esperada,
+            "fechasiembra": None,
+            "fechacosecha": None
+        }
+        }
+
         if self.check_siembra.isChecked():
-            fechaSiembra = self.date_siembra.date().toString('yyyy-MM-dd')
-       
+            json_payload['data_campania']['fechasiembra'] = self.date_siembra.date().toString('yyyy-MM-dd')
         if self.check_cosecha.isChecked():
-            fechaCosecha = self.date_cosecha.date().toString('yyyy-MM-dd')
+            json_payload['data_campania']['fechacosecha'] = self.date_cosecha.date().toString('yyyy-MM-dd')
+
+        # print(json_payload)
+
+        self.tools.updateLoteInfo(json_payload)
         
-        sql = f"""
-                    WITH updated_lote AS (
-                        UPDATE agrae.lotes
-                        SET nombre = '{nombre}'
-                        WHERE idlote = {self.idLote}
-                        RETURNING idlote
-                    )
-                    UPDATE campaign.data
-                    SET idcultivo = {cultivo},
-                        idregimen = {regimen},
-                        fechasiembra = nullif('{fechaSiembra}','')::date,
-                        fechacosecha = nullif('{fechaCosecha}','')::date,
-                        prod_esperada = {produccion}
-                    FROM updated_lote
-                    WHERE iddata = {self.idData};
-                """
-          
-        try:
-            conn = agraeDataBaseDriver().connection()
-            with conn.cursor() as cursor:
-                cursor.execute(sql)
-                conn.commit()
-                self.tools.messages('aGrae Tools','Lote actualizado correctamente',3)
-                self.reloadLayer()
-        
-        except Exception as ex:
-            if conn:
-                conn.rollback()
-                QgsMessageLog.logMessage('{}'.format(ex), 'aGrae Tools', 2)
-                self.tools.messages('aGrae Tools','Ocurrio un error, verifica la información ingresada.',1)
-        finally:
-            if conn:
-                conn.close()
-
-        self.date_siembra.setDate(self.FechaDesde)
-        self.date_cosecha.setDate(self.FechaDesde)
-
-        self.fechaSiembra = ''
-        self.fechaCosecha = ''
-
-        self.EditarLoteAction.setChecked(False)
-        self.tools.enableElements(self.EditarLoteAction,[self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.date_siembra,self.date_cosecha,self.ActualizarLoteAction,self.EliminarLoteAction])
-        self.getCampaniaCultivoCombo(self.combo_explotacion.currentData())
-        self.fillDataLote(self.featureLote)
-
-        pass
                 
     def reloadLayer(self):
         try:

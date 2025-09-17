@@ -697,13 +697,13 @@ class CultivosComboBox(CustomComboBox):
             first_item_text=True,
         )
 
-    # --- Helpers de lectura de datos “puros” ---
-    def get_current_id(self) -> int | None:
-        return self.get_current_id() or None
+    # # --- Helpers de lectura de datos “puros” ---
+    # def get_current_id(self) -> int | None:
+    #     return self.get_current_id() or None
 
-    def get_current_name(self) -> str | None:
-        """Devuelve el nombre del Cultivo."""
-        return self.get_current_label() or None
+    # def get_current_name(self) -> str | None:
+    #     """Devuelve el nombre del Cultivo."""
+    #     return self.get_current_label() or None
     
 class RegimenComboBox(CustomComboBox):
     """
@@ -727,10 +727,10 @@ class RegimenComboBox(CustomComboBox):
              first_item_text=True,
         )
 
-    # --- Helpers de lectura de datos “puros” ---
-    def get_current_id(self) -> int | None:
-        return self.get_current_id() or None
+    # # --- Helpers de lectura de datos “puros” ---
+    # def get_current_id(self) -> int | None:
+    #     return self.get_current_id() or None
 
-    def get_current_name(self) -> str | None:
-        """Devuelve el nombre del Cultivo."""
-        return self.get_current_label() or None
+    # def get_current_name(self) -> str | None:
+    #     """Devuelve el nombre del Cultivo."""
+    #     return self.get_current_label() or None
