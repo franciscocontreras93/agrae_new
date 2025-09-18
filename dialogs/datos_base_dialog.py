@@ -186,12 +186,19 @@ class CrearLotesDialog(QDialog):
 
 
     def loadLotes(self):
+        print('hey!')
         layer = self.combo_layer.currentLayer()
         sourceCrs = layer.crs()
         crsBase = QgsCoordinateReferenceSystem(4326)
         tr = QgsCoordinateTransform(sourceCrs, crsBase, QgsProject.instance())
         if self.select_seleccionados.isChecked():
             features = [f for f in layer.getSelectedFeatures()]
+
+            if len(features) > 0:
+                pass
+            else:
+                self.tools.messages('Advertencia','No hay lotes seleccionados.',1,alert=True)
+                return
         else: 
             features = [f for f in layer.getFeatures()]
         

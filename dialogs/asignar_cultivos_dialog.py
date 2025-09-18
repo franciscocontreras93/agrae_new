@@ -169,9 +169,6 @@ class AsignarCultivosDialog(QDialog):
             # === Lógica actual (local) ===
             # self.tools.asignarMultiplesCultivos(idcultivo, idregimen, prod_esperada, self.iddata)
 
-            # Si migras al backend, comenta la línea anterior y usa tu cliente HTTP aquí.
-            # Por ejemplo, iterando self.get_backend_payloads(...) con PATCH /{iddata}
-            # print(self.get_backend_payloads()) 
 
             payload = self.get_backend_payloads()
 
