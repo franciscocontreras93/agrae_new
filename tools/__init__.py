@@ -1057,7 +1057,19 @@ class aGraeTools():
         except Exception as ex:
             self.messages('aGrae GIS','Ocurrio un error al actualizar el lote.\n {}'.format(ex),2,alert=True)
             print(ex)
-
+    
+    def updateMultiLoteInfo(self,payload:dict):
+        """ Actualiza la información de múltiples lotes mediante una solicitud PATCH al backend. """
+        endpoint = self.backend_endpoint + '/gis/lotes/update/multi'
+        try:
+            response = requests.patch(endpoint,json=payload,timeout=300)
+            if response.status_code == 200:
+                self.messages('aGrae GIS','Lotes Actualizados Correctamente',3,alert=True)
+            else:
+                self.messages('aGrae GIS','Ocurrio un error al actualizar los lotes.\n {}'.format(response.text),2,alert=True)
+        except Exception as ex:
+            self.messages('aGrae GIS','Ocurrio un error al actualizar los lotes.\n {}'.format(ex),2,alert=True)
+            print(ex)
 
 
             

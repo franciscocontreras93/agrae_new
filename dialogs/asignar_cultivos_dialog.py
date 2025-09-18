@@ -171,7 +171,12 @@ class AsignarCultivosDialog(QDialog):
 
             # Si migras al backend, comenta la línea anterior y usa tu cliente HTTP aquí.
             # Por ejemplo, iterando self.get_backend_payloads(...) con PATCH /{iddata}
-            print(self.get_backend_payloads()) 
+            # print(self.get_backend_payloads()) 
+
+            payload = self.get_backend_payloads()
+
+            self.tools.updateMultiLoteInfo(payload)
+            
 
             QMessageBox.information(self, "aGrae Toolbox", "Asignación completada.")
             self.accept()
@@ -188,10 +193,10 @@ class AsignarCultivosDialog(QDialog):
         (si decides dejar de usar aGraeTools y migrar a FastAPI).
 
         Returns:
-            [
+            
               {"iddata": 123, "payload": {"data_campania": {...}}},
               ...
-            ]
+            
         """
         idcultivo = self.combo_cultivo.get_current_id()
         idregimen = self.combo_regimen.get_current_id()
