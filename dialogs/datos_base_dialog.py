@@ -97,7 +97,7 @@ class CrearLotesDialog(QDialog):
 
        
 
-        self.resize(300,200)
+        self.resize(500,200)
         self.setModal(False)
 
     def UIComponents(self):
@@ -133,19 +133,22 @@ class CrearLotesDialog(QDialog):
 
 
         self.combo_campania = CampaniasComboBox()
-        self.combo_campania.setEnabled(False)
+        # self.combo_campania.setEnabled(False)
+        self.combo_campania._auto_enable_on_load = False
 
         self.combo_explotacion = ExplotacionesComboBox()
-        self.combo_explotacion.setEnabled(False)
-        self.combo_explotacion.bind_to_campaigns(self.combo_campania)
+        self.combo_explotacion._auto_enable_on_load = False
+        # self.combo_explotacion.setEnabled(False)
+        # self.combo_explotacion.refresh()
+        # self.combo_explotacion.bind_to_campaigns(self.combo_campania)
 
-        self.tools.getCampaniasData(self.combo_campania)
-        self.tools.getExplotacionDataNoFilter(self.combo_explotacion)
+        # self.tools.getCampaniasData(self.combo_campania)
+        # self.tools.getExplotacionDataNoFilter(self.combo_explotacion)
         
 
-        self.combo_explotacion.setEditable(True)
-        self.combo_explotacion.setInsertPolicy(QComboBox.NoInsert)
-        self.combo_explotacion.completer().setCompletionMode(QCompleter.PopupCompletion)
+        # self.combo_explotacion.setEditable(True)
+        # self.combo_explotacion.setInsertPolicy(QComboBox.NoInsert)
+        # self.combo_explotacion.completer().setCompletionMode(QCompleter.PopupCompletion)
 
 
         self.btn_cargar = QPushButton('Cargar Lotes')

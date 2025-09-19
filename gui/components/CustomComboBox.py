@@ -580,6 +580,7 @@ class ExplotacionesComboBox(CustomComboBox):
     - Etiqueta formateada "ID - Nombre".
     - Puede enlazarse a CampaniasComboBox para filtrar por ?idcampania=...
     - Incluye kickstart robusto para la primera carga.
+    - Ahora soporta trabajar sin estar bindeado, y decidir si requiere campaña o no.
     """
 
     def __init__(self, endpoint: str = "/api/explotaciones/", parent=None):
@@ -592,18 +593,41 @@ class ExplotacionesComboBox(CustomComboBox):
             editable=True,
             sort_key="nombre",
             sort_reverse=False,
-            param_provider=None,  # se define al bindear con campañas
+            param_provider=None,  # se define al bindear con campañas o modo libre
             label_formatter=lambda it: f"{it.get('id', '')} - {it.get('nombre', '')}",
         )
         self._bound_campaign_combo: CampaniasComboBox | None = None
+        # NUEVO: si True => sin campaña, no carga (queda vacío). Si False => sin campaña, carga sin filtro.
+        self._require_campaign: bool = False
 
-    def bind_to_campaigns(self, campaign_combo: "CampaniasComboBox") -> None:
+        # Param provider por defecto (modo libre, sin filtros)
+        if self.param_provider is None:
+            self.set_param_provider(lambda: {})
+
+    # --- NUEVO: permitir configurar si requiere campaña o no ---
+    def set_require_campaign(self, require: bool) -> None:
+        self._require_campaign = require
+        self._kickstart_from_campaign()
+
+    # --- NUEVO: desbindear campañas y volver a modo libre ---
+    def unbind_campaigns(self) -> None:
+        self._bound_campaign_combo = None
+        self.set_param_provider(lambda: {})
+        self.refresh()
+
+    def bind_to_campaigns(self, campaign_combo: CampaniasComboBox, require_campaign: bool | None = None) -> None:
         """
         Vincula el combo de Explotaciones al de Campañas.
         - Cada cambio de campaña produce un refresh filtrado.
         - Kickstart inicial: sólo si ya existe un ID de campaña válido.
+        - NUEVO: require_campaign (opcional):
+            True  -> si no hay campaña, no cargar (vacío)
+            False -> si no hay campaña, cargar sin filtro
+            None  -> mantener configuración actual
         """
         self._bound_campaign_combo = campaign_combo
+        if require_campaign is not None:
+            self._require_campaign = require_campaign
 
         def _params() -> dict[str, Any]:
             cid = campaign_combo.get_current_campaign_id()
@@ -637,24 +661,41 @@ class ExplotacionesComboBox(CustomComboBox):
         QTimer.singleShot(0, self._kickstart_from_campaign)
 
     def _on_campaign_changed(self, _value: object) -> None:
-        """Recarga sólo si hay un ID de campaña válido."""
+        """Recarga según haya campaña o no, respetando _require_campaign. (No toca tu threading.)"""
         if self._bound_campaign_combo is None:
+            # No hay binding => refresca sin filtro
+            self.refresh()
             return
+
         cid = self._bound_campaign_combo.get_current_campaign_id()
         if cid is None:
+            if self._require_campaign:
+                self._clear_items_safe()
+                return
+            # No requiere campaña: refrescar sin filtro temporalmente
+            self._temporarily_use_default_params_and_refresh()
             return
+
+        # Hay campaña válida => cargar filtrado
         self.refresh()
 
     def _kickstart_from_campaign(self) -> None:
         """Primera carga filtrada cuando la campaña actual ya está disponible."""
         if self._bound_campaign_combo is None:
+            # Modo libre
+            self.refresh()
             return
         cid = self._bound_campaign_combo.get_current_campaign_id()
         if cid is None:
+            if self._require_campaign:
+                self._clear_items_safe()
+                return
+            # No requiere: carga sin filtro
+            self._temporarily_use_default_params_and_refresh()
             return
         self.refresh()
 
-    # --- Helpers de lectura de datos “puros” ---
+    # --- Helpers de lectura de datos “puros” (sin cambios) ---
     def get_current_explotacion_id(self) -> int | None:
         return self.get_current_id()
 
@@ -671,6 +712,25 @@ class ExplotacionesComboBox(CustomComboBox):
             return txt.split(" - ", 1)[1]
         return txt or None
 
+    # --- NUEVOS helpers internos, no afectan tu threading ---
+    def _temporarily_use_default_params_and_refresh(self) -> None:
+        """Refresca sin filtro una vez, preservando el provider original (si está bindeado)."""
+        original_provider = getattr(self, "_param_provider", None)
+        self.set_param_provider(lambda: {})
+        try:
+            self.refresh()
+        finally:
+            # Restaurar provider original si seguimos bindeados
+            if self._bound_campaign_combo is not None and callable(original_provider):
+                self.set_param_provider(original_provider)
+            else:
+                self.set_param_provider(lambda: {})
+
+    def _clear_items_safe(self) -> None:
+        try:
+            self.clear()
+        except Exception:
+            pass
 
 # =============================================================================
 # Cultivos 
