@@ -712,7 +712,16 @@ class aGraeTools():
     def exportarResumenFertilizacion(self,idcampania:int,idexplotacion:int,nameExp:str):
         s = QSettings('agrae','dbConnection')
         path = s.value('reporte_path')
-        q = '''select distinct 0 as wkt_geom, row_number() over () as fid, row_number() over () as _uid_, fp.*, ((fp.densidad * 1000 * 10000 * 0.3) * fp.no3) /1000 as no3_kg_ha, ((fp.densidad * 1000 * 10000 * 0.3) * fp.nh4)/1000 as nh4_kg_ha, fi.prod_ponderada as rinde from fert_intraparcelaria  fi join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf order by lote,uf_etiqueta;'''
+        q = '''select distinct 0 as wkt_geom, 
+            row_number() over () as fid, 
+            row_number() over () as _uid_, 
+            fp.*, 
+            round(((((fp.densidad   * 10000 * 0.3) * fp.no3) /1000))::numeric,2) as no3_kg_ha, 
+            round(((((fp.densidad  * 10000 * 0.3) * fp.nh4) /1000))::numeric,2) as nh4_kg_ha, 
+            fi.prod_ponderada as rinde 
+            from fert_intraparcelaria  fi 
+            join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf 
+            order by lote,uf_etiqueta;'''
         query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,q)
         try: 
             with agraeDataBaseDriver().connection().cursor() as cursor:  
