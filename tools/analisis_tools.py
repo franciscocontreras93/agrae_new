@@ -44,7 +44,9 @@ class aGraeResamplearMuestras():
             'FE' : -82.36,
             'MN' : -7.24,
             'CU' : 36.60,
-            'AL'  : 3.03    
+            'AL'  : 3.03,
+            'NO3' : 198047 / 10000,
+            'NH4' : 198047 / 10000
         }
 
 
@@ -112,6 +114,8 @@ class aGraeResamplearMuestras():
                                 row['MN'] = rand / adjust_index['MN'] + scope_row['MN']
                                 row['CU'] = rand / adjust_index['CU'] + scope_row['CU']
                                 row['AL'] = rand / adjust_index['AL'] + scope_row['AL']
+                                row['NO3'] = round(rand / (adjust_index['N'] / 10000) + scope_row['NO3'])
+                                row['NH4'] = round(rand / (adjust_index['N'] / 10000) + scope_row['NH4'])
                                 row['METODO_P'] = scope_row['METODO_P']
                             except Exception as ex:
                                 print(ex)

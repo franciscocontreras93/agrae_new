@@ -23,11 +23,15 @@ with data as (select distinct
 	c.extraccionresiduon,
 	c.extraccionresiduop,
 	c.extraccionresiduok, 
+    c.cef_n,
+	c.cef_p,
+	c.cef_k,
+    c.indice_cosecha,
 	d.prod_esperada 
 	from campaign.data d 
 	left join agrae.cultivo c on c.idcultivo = d.idcultivo
 	join agrae.explotacion ex on d.idexplotacion = ex.idexplotacion
-	where d.idcampania = {} and d.idexplotacion = {} ), -- REQUIERE EL ID DE LA CAMPANIA Y DE LA EXPLOTACION
+	where d.idcampania = {} and d.idexplotacion = {} ),
 lotes as (select l.idlote, l.nombre, st_transform(st_buffer(st_transform(l.geom,8857),-0.5),4326) as geom,
 	d.iddata,
 	d.idcampania,
@@ -57,7 +61,7 @@ l.iddata,
 l.regimen 
 from agrae.segmentos s 
 join lotes l on st_intersects(st_buffer(CAST(l.geom AS geography),0)::geometry,s.geometria)
-group by s.idsegmento,s.ceap,s.segmento,l.idlote,l.iddata,l.regimen,l.geom),
+group by s.idsegmento,s.ceap,s.segmento,l.idlote,l.iddata,l.regimen,l.geom), --TESTEAR BUFFER DE EL LOTE
 segm_analitica as (select distinct
 	m.codigo,
 	d.idlote,
@@ -67,8 +71,18 @@ segm_analitica as (select distinct
 	txt.grupo_label suelo,
 	s.ceap,
 	a.n,
-    n.tipo AS n_tipo,
-    n.incremento AS n_inc,
+	-- (
+	-- 	case
+	-- 		when a.no3 is not null and a.nh4 is not null then concat(no3.tipo,'-',nh4.tipo)
+	-- 		else n.tipo
+	-- 	end
+	-- ) as n_tipo,
+	n.tipo as n_tipo,
+	(
+		case when a.no3 is not null and a.nh4 is not null then rel_no3_nh4.incremento
+		else n.incremento
+		end
+	) as n_inc,
  	a.p,
 	met.nombre AS p_metodo,
     p_n.etiqueta as p_tipo,
@@ -128,24 +142,28 @@ segm_analitica as (select distinct
     a.mg_eq,
     a.k_eq,
     a.na_eq,
+	a.no3,
+	a.nh4,
 	s.geometria as geom
 	FROM segmentos s 
 	JOIN lotes d  on  s.iddata = d.iddata
-	LEFT JOIN field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and m.segmento = s.segmento and m.tipo in (1,2) --join MUESTRAS
-	LEFT JOIN analytic.analitica a on m.codigo = a.cod
-	LEFT JOIN analytic.ph ph ON a.ph > ph.limite_inferior AND a.ph < ph.limite_superior
+	left JOIN field.muestras m on m.idcampania = d.idcampania and m.idexplotacion = d.idexplotacion and m.idlote = d.idlote and st_intersects(m.geom,s.geometria) and m.tipo in (1,2,4) --join MUESTRAS
+	left JOIN analytic.analitica a on m.codigo = a.cod
+	LEFT JOIN analytic.ph ph ON a.ph >= ph.limite_inferior AND a.ph < ph.limite_superior
 	LEFT JOIN analytic.textura txt ON  a.ceap >= txt.ceap_i AND a.ceap < txt.ceap_s
 	LEFT JOIN analytic.conductividad_electrica ce ON a.ce >= ce.limite_i AND a.ce < ce.limite_s
-	LEFT JOIN analytic.carbonatos carb ON (a.carbon / 100::double precision) >= carb.limite_inferior AND (a.carbon / 100::double precision) < carb.limite_superior
+	LEFT JOIN analytic.carbonatos carb ON a.carbon >= carb.limite_inferior AND a.carbon < carb.limite_superior
 	LEFT JOIN analytic.caliza_activa ca_ac ON a.caliza >= ca_ac.limite_i AND a.caliza < ca_ac.limite_s
 	LEFT JOIN analytic.calcio ca ON ca.suelo = txt.grupo AND a.ca >= ca.limite_inferior AND a.ca < ca.limite_superior
 	LEFT JOIN analytic.magnesio mg ON mg.suelo = txt.grupo AND a.mg >= mg.limite_inferior AND a.mg < mg.limite_superior
 	LEFT JOIN analytic.cic cic ON a.cic >= cic.limite_i AND a.cic < cic.limite_s
 	LEFT JOIN analytic.nitrogeno n ON a.n >= n.limite_inferior AND a.n < n.limite_superior and n.textura = txt.grupo
+	LEFT JOIN analytic.no3 no3 ON a.no3 >= no3.limite_inferior AND a.no3 < no3.limite_superior and no3.textura = txt.grupo
+	LEFT JOIN analytic.nh4 nh4 ON a.nh4 >= nh4.limite_inferior AND a.nh4 < nh4.limite_superior and nh4.textura = txt.grupo
+	LEFT JOIN analytic.rel_no3_nh4 rel_no3_nh4 ON no3.nivel = rel_no3_nh4.nivel_no3 and nh4.nivel = rel_no3_nh4.nivel_nh4
 	LEFT JOIN analytic.potasio k ON k.textura = txt.grupo AND a.k >= k.limite_inferior AND a.k < k.limite_superior
 	LEFT JOIN analytic.sodio na ON na.suelo = txt.grupo AND a.na >= na.limite_inferior AND a.na < na.limite_superior
     LEFT JOIN analytic.fosforo_nuevo p_n on p_n.metodo = a.metodo AND p_n.textura = txt.grupo and p_n.carbonatos = carb.nivel AND a.p >= p_n.limite_inferior AND a.p < p_n.limite_superior
 	LEFT JOIN analytic.p_metodos met on a.metodo = met.id
-	where not st_isEmpty(s.geometria)
-	)
+    where not st_isEmpty(s.geometria))
 {} --QUERY DE LA SELECCION
