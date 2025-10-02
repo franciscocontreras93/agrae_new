@@ -129,7 +129,14 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.label_info_muestreo = QtWidgets.QLabel("")
         self.label_num_lotes = QtWidgets.QLabel("-")  # Nuevo QLabel para número de lotes
         self.label_area_lotes = QtWidgets.QLabel("- ha")  # Nuevo QLabel para área de lotes
-        self.area_lote = QtWidgets.QDoubleSpinBox()  # Nuevo QDoubleSpinBox para área del lote seleccionado
+        self.area_lote = QtWidgets.QDoubleSpinBox()
+        self.area_lote.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
+        self.area_lote.setAlignment(Qt.AlignRight)  # Nuevo QDoubleSpinBox para área del lote seleccionado
+        self.area_lote.setDecimals(2)
+        self.area_lote.setSuffix(" ha")
+        self.area_lote.setMaximum(10000)  # Máximo 10,000 ha
+        self.area_lote.setReadOnly(True)  # Deshabilitado para que sea solo de lectura
+        self.area_lote.setMinimum(0)
         self.line_nombre = QtWidgets.QLineEdit()
         self.line_nombre.setEnabled(False)
         self.label_2 = QtWidgets.QLabel("Cultivo:")
@@ -360,7 +367,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         h_layout_nombre_lote.addWidget(self.line_nombre)
         h_layout_nombre_lote.addWidget(self.tool_lote)
         layout_info_lote_details.addRow(QtWidgets.QLabel("Nombre Lote:"), h_layout_nombre_lote)
-        layout_info_lote_details.addRow(QtWidgets.QLabel("Área Lote Seleccionado:"), self.label_area_lote_detalle)
+        layout_info_lote_details.addRow(QtWidgets.QLabel("Área Lote Seleccionado:"), self.area_lote)
         layout_info_lote_details.addRow(self.label_2, self.combo_cultivo)
         layout_info_lote_details.addRow(self.label_4, self.combo_regimen)
         layout_info_lote_details.addRow(self.label_7, self.line_produccion)
@@ -1312,6 +1319,7 @@ FROM
         self.prodEsperada = feat['prod_esperada']
         self.prodFinal = feat['prod_final']
         self.line_nombre.setText(self.nombreLote)
+        self.area_lote.setValue(feat['area_ha'])
         
 
 
