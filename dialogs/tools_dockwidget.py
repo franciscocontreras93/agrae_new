@@ -6,6 +6,7 @@ import psycopg2
 
 
 from psycopg2 import extras
+from torch import layout
 
 
 from qgis.PyQt import QtWidgets #type: ignore
@@ -128,6 +129,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.label_info_muestreo = QtWidgets.QLabel("")
         self.label_num_lotes = QtWidgets.QLabel("-")  # Nuevo QLabel para número de lotes
         self.label_area_lotes = QtWidgets.QLabel("- ha")  # Nuevo QLabel para área de lotes
+        self.area_lote = QtWidgets.QDoubleSpinBox()  # Nuevo QDoubleSpinBox para área del lote seleccionado
         self.line_nombre = QtWidgets.QLineEdit()
         self.line_nombre.setEnabled(False)
         self.label_2 = QtWidgets.QLabel("Cultivo:")
@@ -358,7 +360,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         h_layout_nombre_lote.addWidget(self.line_nombre)
         h_layout_nombre_lote.addWidget(self.tool_lote)
         layout_info_lote_details.addRow(QtWidgets.QLabel("Nombre Lote:"), h_layout_nombre_lote)
-
+        layout_info_lote_details.addRow(QtWidgets.QLabel("Área Lote Seleccionado:"), self.label_area_lote_detalle)
         layout_info_lote_details.addRow(self.label_2, self.combo_cultivo)
         layout_info_lote_details.addRow(self.label_4, self.combo_regimen)
         layout_info_lote_details.addRow(self.label_7, self.line_produccion)
@@ -1304,11 +1306,13 @@ FROM
         self.idLote = feat['idlote']
         self.idData = feat['iddata']
         self.nombreLote = feat['lote']
+        self.areaLoteSeleccionado = feat['area_ha']
         self.idCultivo = feat['idcultivo']
         self.idRegimen = feat['idregimen']
         self.prodEsperada = feat['prod_esperada']
         self.prodFinal = feat['prod_final']
         self.line_nombre.setText(self.nombreLote)
+        
 
 
         self.checkData(isinstance(self.idCultivo,int),self.label_2,self.idCultivo,self.combo_cultivo)
