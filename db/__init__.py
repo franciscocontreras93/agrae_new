@@ -12,7 +12,7 @@ class agraeDataBaseDriver():
     
         self.conn = None
         self.s = QSettings('agrae','dbConnection')
-        self.local  = True
+        self.local  = False
         
 
         if self.local and os.environ['COMPUTERNAME'] == 'FRANCISCO':
