@@ -1047,7 +1047,7 @@ muestras AS (
     SELECT DISTINCT m.codigo, m.muestreado
     FROM data d
     JOIN field.muestras m USING (idcampania, idexplotacion, idlote)
-    where m.tipo in (1,3)
+    where m.tipo in (1,3,4)
 ),
 muestras_procesado AS (
     SELECT
