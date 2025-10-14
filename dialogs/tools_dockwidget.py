@@ -533,7 +533,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.GenerarAmbientes = QtWidgets.QAction(agraeGUI().getIcon('satelite'),'Generar Mapas de Ambientes',self)
         self.GenerarAmbientes.triggered.connect(self.geeDialog)
         # SIEMBRA VARIABLE
-        self.GenerarMapaSiembra = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar Mapa de Siembra',self)
+        self.GenerarMapaSiembra = QtWidgets.QAction(agraeGUI().getIcon('seed-icon'),'Generar Mapa de Siembra',self)
         self.GenerarMapaSiembra.triggered.connect(self.MapaSiembraDialog)
 
         self.MonitorDeRendimiento = QtWidgets.QAction(agraeGUI().getIcon('rindes'),'Monitor de Rendimiento',self)
