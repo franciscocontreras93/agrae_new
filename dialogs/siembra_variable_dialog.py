@@ -1,12 +1,8 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QPushButton, QLabel, QGroupBox, QGridLayout, QSpinBox
-from PyQt5.QtCore import Qt
-from sympy import im
+from PyQt5.QtCore import Qt, QVariant
 from qgis.core import *
 from qgis.gui import *
-
-from qgis.PyQt.QtCore import QVariant
 import numpy as np
-from qgis.core import QgsFeature, QgsField
 import processing
 
 from ..sql import aGraeSQLTools
@@ -144,7 +140,6 @@ class SiembraVariableDialog(QDialog):
         # Ejemplo: iterar sobre cada grupo de polígonos con el mismo idlote
         for idlote, features in features_by_lote.items():
             # Aquí puedes procesar cada grupo de features (polígonos) con el mismo idlote
-            print(f"Procesando idlote: {idlote}, cantidad de polígonos: {len(features)}")
             # Ejemplo: acceder a los valores ce36 de cada polígono
             ce_values = [feat['ce36'] for feat in features if isinstance(feat['ce36'], (int, float))]
 
@@ -173,6 +168,6 @@ class SiembraVariableDialog(QDialog):
         })
 
         dissolved_layer = dissolved_layer_result['OUTPUT']
-        dissolved_layer.setName("semilla")
+        dissolved_layer.setName('Siembra - {}'.format(self.combo_cultivo.currentText()))
 
         QgsProject.instance().addMapLayer(dissolved_layer)
