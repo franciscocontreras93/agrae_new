@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QPushButton, QLabel, QGroupBox, QGridLayout, QSpinBox
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QPushButton, QLabel, QGroupBox, QGridLayout, QSpinBox,QMessageBox
 from PyQt5.QtCore import Qt, QVariant
 from qgis.core import *
 from qgis.gui import *
@@ -78,6 +78,35 @@ class SiembraVariableDialog(QDialog):
         parametros_layout.addWidget(self.y_max_value, 1, 1)
         parametros_layout.addWidget(QLabel("Índice de Variabilidad:"), 0, 2)
         parametros_layout.addWidget(self.index_value, 1, 2)
+        
+        # Grupo colapsable para parámetros avanzados
+
+        advanced_group_box = QgsCollapsibleGroupBox("Parámetros Avanzados")
+        advanced_group_box.setCollapsed(True)
+        advanced_group_box.collapsedStateChanged.connect(self.showWarning)
+        advanced_layout = QGridLayout()
+
+        self.percentil_min_spin = QSpinBox()
+        self.percentil_min_spin.setMinimum(0)
+        self.percentil_min_spin.setMaximum(100)
+        self.percentil_min_spin.setValue(1)
+        self.percentil_min_spin.setMinimumHeight(24)
+
+        self.percentil_max_spin = QSpinBox()
+        self.percentil_max_spin.setMinimum(0)
+        self.percentil_max_spin.setMaximum(100)
+        self.percentil_max_spin.setValue(99)
+        self.percentil_max_spin.setMinimumHeight(24)
+
+        advanced_layout.addWidget(QLabel("Percentil Mínimo:"), 0, 0)
+        advanced_layout.addWidget(self.percentil_min_spin, 1, 0)
+        advanced_layout.addWidget(QLabel("Percentil Máximo:"), 0, 1)
+        advanced_layout.addWidget(self.percentil_max_spin, 1, 1)
+
+        advanced_group_box.setLayout(advanced_layout)
+        parametros_layout.addWidget(advanced_group_box, 2, 0, 1, 3)
+
+
 
         generate_button = QPushButton("Generar Mapa de Siembra")
         generate_button.clicked.connect(self.generar_mapa_siembra)
@@ -143,8 +172,8 @@ class SiembraVariableDialog(QDialog):
             # Ejemplo: acceder a los valores ce36 de cada polígono
             ce_values = [feat['ce36'] for feat in features if isinstance(feat['ce36'], (int, float))]
 
-            ce_min = np.percentile(ce_values, 1)
-            ce_max = np.percentile(ce_values, 99) 
+            ce_min = np.percentile(ce_values, self.percentil_min_spin.value())
+            ce_max = np.percentile(ce_values, self.percentil_max_spin.value())
 
             _slope = (self.y_max_value.value() - self.y_min_value.value()) / (ce_max - ce_min)
             _intercept = self.y_min_value.value() - _slope * ce_min
@@ -171,3 +200,19 @@ class SiembraVariableDialog(QDialog):
         dissolved_layer.setName('Siembra - {}'.format(self.combo_cultivo.currentText()))
 
         QgsProject.instance().addMapLayer(dissolved_layer)
+
+    def showWarning(self, collapsed):
+        if not collapsed:  # Only show warning when expanding
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Warning)
+            msgBox.setWindowTitle("Advertencia")
+            msgBox.setText("Los parámetros están ajustados de forma predeterminada.")
+            msgBox.setInformativeText(
+                "Cualquier cambio puede alterar la calidad de los resultados. ¿Desea continuar?"
+            )
+            msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            msgBox.setDefaultButton(QMessageBox.Ok)
+            ret = msgBox.exec_()
+
+            if ret == QMessageBox.Cancel:
+                self.advanceParametersGroup.setCollapsed(True) # Collapse if cancelled
