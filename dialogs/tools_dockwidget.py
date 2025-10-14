@@ -46,6 +46,7 @@ from .monitor_dialogs import MonitorRendimientosDialog
 from .gee_dialog import aGraeGEEDialog
 from .reportes_dialog import ReportesDialog
 from .asignar_cultivos_dialog import AsignarCultivosDialog
+from .siembra_variable_dialog import SiembraVariableDialog
 
 
 class agraeToolsDockwidget(QtWidgets.QDockWidget):
@@ -531,6 +532,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.GenerarResumenFertilizacion.triggered.connect(self.exportarResumen)
         self.GenerarAmbientes = QtWidgets.QAction(agraeGUI().getIcon('satelite'),'Generar Mapas de Ambientes',self)
         self.GenerarAmbientes.triggered.connect(self.geeDialog)
+        # SIEMBRA VARIABLE
+        self.GenerarMapaSiembra = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar Mapa de Siembra',self)
+        self.GenerarMapaSiembra.triggered.connect(self.MapaSiembraDialog)
+
         self.MonitorDeRendimiento = QtWidgets.QAction(agraeGUI().getIcon('rindes'),'Monitor de Rendimiento',self)
         self.MonitorDeRendimiento.triggered.connect(self.monitorRendimientoDialog)
         actions_exp = [
@@ -542,7 +547,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
             self.GenerarUnidadesFertilizacion,
             self.GenerarResumenFertilizacion,
             self.GenerarAmbientes,
-            self.MonitorDeRendimiento]
+            self.MonitorDeRendimiento,
+            self.GenerarMapaSiembra]
         # actions_exp = [self.AsignarLotesExplotacion,self.CargarCapasExplotacion,self.GenerarReporteFertilizacion,self.GenerarUnidadesFertilizacion,self.GenerarResumenFertilizacion]
         self.tools.settingsToolsButtons(self.tool_exp_2,actions_exp,icon=agraeGUI().getIcon('explotacion'),setMainIcon=True)
 
@@ -807,6 +813,14 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
     def actualizarDatosCultivosCSV(self):
         file = self.tools.openFileDialog()
         aGraeCSVTools(file).updateCultivoDataFromCSV()
+
+
+    def MapaSiembraDialog(self):
+        dlg = SiembraVariableDialog(
+            idcampania=self.combo_campania.currentData(),
+            idexplotacion= self.combo_explotacion.currentData()
+        )
+        dlg.exec()
         
 
         
