@@ -107,8 +107,11 @@ class SiembraVariableDialog(QDialog):
         parametros_layout.addWidget(advanced_group_box, 2, 0, 1, 3)
 
 
-
         generate_button = QPushButton("Generar Mapa de Siembra")
+        generate_button.setEnabled(False)
+        self.combo_cultivo.currentIndexChanged.connect(
+            lambda _: generate_button.setEnabled(self.combo_cultivo.currentData() is not None)
+        )
         generate_button.clicked.connect(self.generar_mapa_siembra)
 
         parametros_group_box.setLayout(parametros_layout)
