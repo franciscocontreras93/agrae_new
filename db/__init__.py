@@ -13,7 +13,6 @@ class agraeDataBaseDriver():
         self.conn = None
         self.s = QSettings('agrae','dbConnection')
         self.local  = False
-        
 
         if self.local and os.environ['COMPUTERNAME'] == 'FRANCISCO':
             from dotenv import load_dotenv
@@ -25,7 +24,6 @@ class agraeDataBaseDriver():
                 'host': os.getenv('HOST'),
                 'port': self.s.value('dbport')
             }
-            
         else:
             self.dsn = {
                 'dbname': self.s.value('dbname'),
@@ -37,37 +35,13 @@ class agraeDataBaseDriver():
         pass
 
     def connection(self):
-        # try:
-        #     self.conn = psycopg2.connect(
-        #         database=self.dsn['dbname'], 
-        #         user = self.dsn['user'], 
-        #         password = self.dsn['password'], 
-        #         host = self.dsn['host'], 
-        #         port = self.dsn['port'])
-        #     if self.conn != None: 
-        #         return self.conn
-        # except psycopg2.OperationalError:
-        #     raise Exception('Error de conexion a la Base de datos')
-        # except psycopg2.InterfaceError : 
-        #     self.conn = psycopg2.connect(
-        #         database=self.dsn['dbname'], 
-        #         user = self.dsn['user'], 
-        #         password = self.dsn['password'], 
-        #         host = self.dsn['host'], 
-        #         port = self.dsn['port'])
-        #     if self.conn != None: 
-        #         return self.conn
-
         if self.local:
             return psycopg2.connect(service='local' , user=self.dsn['user'] ,password=self.dsn['password'])
         else :
             return psycopg2.connect(service='production' , user=self.dsn['user'] ,password=self.dsn['password'])
-
-        
     def getDSN(self):
         return self.dsn
     
-
     def read(self,query) : 
         conn = self.connection() 
 
@@ -75,11 +49,8 @@ class agraeDataBaseDriver():
             cursor.execute(query)
             data =  cursor.fetchall()
             return data
-
         
     def cursor(self,connection,factory=None):
-        # print(connection.close)
-       
         try:
             conn = connection
             if factory:
@@ -98,5 +69,3 @@ class agraeDataBaseDriver():
             pass
 
         return cursor
-
-

@@ -55,7 +55,7 @@ class aGraeResamplearMuestras():
                 new_df = df[df['idlote'] == id]
                 
                 scope = list(new_df[new_df['COD'].str.contains(r'_D\d{1}',regex=True) == False]['ceap'])
-                print(scope)
+                # print(scope)
                 scope = min(scope)
                 derivates = list(new_df[new_df['COD'].str.contains(r'_D\d{1}',regex=True) == True]['ceap'])
 
@@ -84,39 +84,55 @@ class aGraeResamplearMuestras():
                         if '_D' in row['COD'] and row['N'] == float(0):
                             
                             try:
-                                row['PH'] = rand / adjust_index['PH'] + scope_row['PH']
-                                row['CE'] = rand / adjust_index['CE'] + scope_row['CE']
+                                ph = rand / adjust_index['PH'] + scope_row['PH']
+                                row['PH'] = ph if ph > 0 else ph * -1
+                                ce = rand / adjust_index['CE'] + scope_row['CE']
+                                row['CE'] = ce if ce > 0 else ce * -1
+                                
                                 nit = rand / adjust_index['N'] + scope_row['N']
                                 if nit > 2 * scope_row['N']:
                                     nit = rand / 100 * scope_row['N']
-                                row['N'] = nit
+                                row['N'] = nit if nit > 0 else nit * -1
                                 
                                 p = rand / adjust_index['P'] + scope_row['P']
                                 if p < 0 :
                                     p = p * -1
 
-                                row['P'] = p
-                                row['K'] = rand / adjust_index['K'] + scope_row['K']
-                                row['CARBON'] = scope_row['CARBON']
-                                row['CA'] = rand / adjust_index['CA'] + scope_row['CA']
-                                row['MG'] = rand / adjust_index['MG'] + scope_row['MG']
-                                row['NA'] = rand / adjust_index['NA'] + scope_row['NA']
+                                row['P'] = p if p >= 0 else p * -1
+                                k = rand / adjust_index['K'] + scope_row['K']
+                                row['K'] = k if k >= 0 else k * -1   
+                                carb = scope_row['CARBON']
+                                row['CARBON'] = carb if carb >= 0 else carb * -1
+                                ca = rand / adjust_index['CA'] + scope_row['CA']
+                                row['CA'] = ca if ca >= 0 else ca * -1
+                                mg = rand / adjust_index['MG'] + scope_row['MG']
+                                row['MG'] = mg if mg >= 0 else mg * -1
+                                na = rand / adjust_index['NA'] + scope_row['NA']
+                                row['NA'] = na if na >= 0 else na * -1   
                                 if row['S'] != 0 : 
                                     row['S'] = rand / adjust_index['S'] + scope_row['S'] 
                                 else: 
                                     row['S'] = 0 
-                                row['ZN'] = rand / adjust_index['ZN'] + scope_row['ZN']
-                                if row['B'] != 0 : 
-                                    row['B'] = rand / adjust_index['B'] + scope_row['B']
-                                else:
-                                    row['B'] = 0
-                                row['FE'] = rand / adjust_index['FE'] + scope_row['FE']
-                                row['MN'] = rand / adjust_index['MN'] + scope_row['MN']
-                                row['CU'] = rand / adjust_index['CU'] + scope_row['CU']
-                                row['AL'] = rand / adjust_index['AL'] + scope_row['AL']
-                                row['NO3'] = round(rand / (adjust_index['N'] / 10000) + scope_row['NO3'])
-                                row['NH4'] = round(rand / (adjust_index['N'] / 10000) + scope_row['NH4'])
+                                zn = rand / adjust_index['ZN'] + scope_row['ZN']
+                                row['ZN'] = zn if zn >= 0 else zn * -1
+                                
+                                b = rand / adjust_index['B'] + scope_row['B']
+                                row['B'] = b if b >= 0 else b * -1
+
+                                fe = rand / adjust_index['FE'] + scope_row['FE']
+                                row['FE'] = fe if fe >= 0 else fe * -1
+                                mn = rand / adjust_index['MN'] + scope_row['MN']
+                                row['MN'] = mn if mn >= 0 else mn * -1
+                                cu = rand / adjust_index['CU'] + scope_row['CU']
+                                row['CU'] = cu if cu >= 0 else cu * -1
+                                al = rand / adjust_index['AL'] + scope_row['AL']
+                                row['AL'] = al if al >= 0 else al * -1
+                                no3 = round(rand / (adjust_index['N'] / 10000) + scope_row['NO3'])
+                                row['NO3'] = round(no3, 2) if no3 >= 0 else round(no3 * -1, 2)
+                                nh4 = round(rand / (adjust_index['N'] / 10000) + scope_row['NH4'])
+                                row['NH4'] = round(nh4, 2) if nh4 >= 0 else round(nh4 * -1, 2)
                                 row['METODO_P'] = scope_row['METODO_P']
+
                             except Exception as ex:
                                 print(ex)
                         rand = random.uniform(min_v,max_v)
