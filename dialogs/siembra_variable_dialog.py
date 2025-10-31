@@ -49,7 +49,7 @@ class SiembraVariableDialog(QDialog):
 
         self.y_min_value = QSpinBox()
         self.y_min_value.setMinimum(0)
-        self.y_min_value.setMaximum(250)
+        # self.y_min_value.setMaximum(250)
         self.y_min_value.setValue(210)
         
         self.combo_cultivo.setMinimumHeight(24)
@@ -57,7 +57,7 @@ class SiembraVariableDialog(QDialog):
 
         self.y_max_value = QSpinBox()
         self.y_max_value.setMinimum(0)
-        self.y_max_value.setMaximum(250)
+        # self.y_max_value.setMaximum(250)
         self.y_max_value.setValue(250)
         
 

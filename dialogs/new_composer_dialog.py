@@ -84,22 +84,27 @@ class new_Composer(QDialog):
         # Create the checkboxes
         self.check_basicos = QCheckBox("Mapas Basicos (Ambientes-Segmentos-Texturas)")
         self.check_preescripcion = QCheckBox("Preescripcion")
+        self.check_preescripcion_materia_organica = QCheckBox("Incluir Materia Organica y Relacion C/N")
+         # Set default checked state
         self.check_preescripcion.setChecked(True)
+        
 
         # Create a button group
-        self.button_group = QButtonGroup()
+        # self.button_group = QButtonGroup()
 
-        # Add the checkboxes to the button group
-        self.button_group.addButton(self.check_basicos)
-        self.button_group.addButton(self.check_preescripcion)
-
-        # Set exclusive mode (only one can be checked at a time)
-        self.button_group.setExclusive(True)
+        # # Add the checkboxes to the button group
+        # self.button_group.addButton(self.check_basicos)
+        # self.button_group.addButton(self.check_preescripcion)
+        # self.button_group.addButton(self.check_preescripcion_materia_organica)
+        # # Set exclusive mode (only one can be checked at a time)
+        # self.button_group.setExclusive(True)
 
         # Create a horizontal layout for the checkboxes
         checkbox_layout = QHBoxLayout()
         checkbox_layout.addWidget(self.check_basicos)
         checkbox_layout.addWidget(self.check_preescripcion)
+        checkbox_layout.addWidget(self.check_preescripcion_materia_organica)
+
 
         # Create a widget to hold the checkbox layout
         checkbox_widget = QWidget()
