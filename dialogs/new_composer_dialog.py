@@ -192,8 +192,8 @@ class new_Composer(QDialog):
             'Boro': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,b,st_asText(geom) as geom from segm_analitica;'''),
             'Cinq': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,zn ,st_asText(geom) as geom from segm_analitica;'''),
             'Cobre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,cu,st_asText(geom) as geom from segm_analitica;'''),
-            # 'Materia Organica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,organi ,st_asText(geom) as geom from segm_analitica;'''),
-            # 'Relacion CN': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,rel_cn,st_asText(geom) as geom from segm_analitica;'''),
+            'Materia Organica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,organi ,st_asText(geom) as geom from segm_analitica;'''),
+            'Relacion CN': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,rel_cn,st_asText(geom) as geom from segm_analitica;'''),
             'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.idcampania, self.idexplotacion, 'select * from mapa_sig'),
             # 'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.idcampania, self.idexplotacion, 'select iddata,uf,uf_etiqueta,st_asText(geom) as geom  from fert_intraparcelaria'),
             
@@ -231,7 +231,7 @@ class new_Composer(QDialog):
         if self.check_basicos.isChecked():
             aGraeComposerTools(self.layers,self.idcampania,self.idexplotacion).generateComposer(self.combo_basemap.currentText(),basic=True)
         else:
-            aGraeComposerTools(self.layers,self.idcampania,self.idexplotacion).generateComposer(self.combo_basemap.currentText())
+            aGraeComposerTools(self.layers,self.idcampania,self.idexplotacion).generateComposer(self.combo_basemap.currentText(),materia_organica=self.check_preescripcion_materia_organica.isChecked())
         # print(self.layers)
 
         # self.btn_generar.setEnabled(True)
