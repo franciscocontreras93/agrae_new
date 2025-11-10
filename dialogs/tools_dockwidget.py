@@ -495,6 +495,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
         # TOOLBUTTONS 
         # TOOL_AGRAE
+        self.AsignarLotesExplotacion = QtWidgets.QAction(agraeGUI().getIcon('selection'),'Asignar Lotes Seleccionados a Explotacion',self)
+        self.AsignarLotesExplotacion.triggered.connect(self.asignarLotesExp)
         self.IndentifyLoteAction = QtWidgets.QAction(agraeGUI().getIcon('info'),'Identificar Lotes',self) 
         self.IndentifyLoteAction.triggered.connect(self.identify)
         self.CargarLotes = QtWidgets.QAction(agraeGUI().getIcon('add'),'Cargar Nuevos Lotes',self)
@@ -508,13 +510,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.ActualizarDatosFromCSV = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Actualizar Informacion de Cultivos desde CSV',self)
         self.ActualizarDatosFromCSV.triggered.connect(self.actualizarDatosCultivosCSV)
         
-        actions_agrae = [self.IndentifyLoteAction,self.CargarLotes,self.CrearCE,self.CrearSegmentos,self.CrearAmbientes,self.ActualizarDatosFromCSV]
+        actions_agrae = [self.IndentifyLoteAction,self.CargarLotes,self.CrearCE,self.CrearSegmentos,self.CrearAmbientes,self.ActualizarDatosFromCSV,self.AsignarLotesExplotacion]
         self.tools.settingsToolsButtons(self.tool_agrae,actions_agrae,icon=agraeGUI().getIcon('tools'),setMainIcon=True)
 
         
         # TOOL_EXP_2
-        self.AsignarLotesExplotacion = QtWidgets.QAction(agraeGUI().getIcon('selection'),'Asignar Lotes Seleccionados a Explotacion',self)
-        self.AsignarLotesExplotacion.triggered.connect(self.asignarLotesExp)
+       
         self.AsignarCultivosLotes = QtWidgets.QAction(agraeGUI().getIcon('select-cultivo'),'Asignar Cultivo a Lotes Seleccionados',self)
         self.AsignarCultivosLotes.triggered.connect(self.asignarCultivosLotes)
         self.CargarCapasExplotacion = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar capas de Explotacion',self)
@@ -538,7 +539,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.MonitorDeRendimiento = QtWidgets.QAction(agraeGUI().getIcon('rindes'),'Monitor de Rendimiento',self)
         self.MonitorDeRendimiento.triggered.connect(self.monitorRendimientoDialog)
         actions_exp = [
-            self.AsignarLotesExplotacion,
             self.AsignarCultivosLotes,
             self.CargarCapasExplotacion,
             self.GenerarReporteFertilizacion,
