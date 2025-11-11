@@ -199,9 +199,11 @@ class SiembraVariableDialog(QDialog):
             'OUTPUT': 'memory:'
         })
 
-        dissolved_layer = dissolved_layer_result['OUTPUT']
-        dissolved_layer.setName('Siembra - {}'.format(self.combo_cultivo.currentText()))
+        final = processing.run("native:deletecolumn", {'INPUT':dissolved_layer_result['OUTPUT'],'COLUMN':['idlote','ce36'],'OUTPUT':'memory:'})
 
+        dissolved_layer = final['OUTPUT']
+        dissolved_layer.setName('Siembra - {}'.format(self.combo_cultivo.currentText()))
+    
         QgsProject.instance().addMapLayer(dissolved_layer)
 
     def showWarning(self, collapsed):
