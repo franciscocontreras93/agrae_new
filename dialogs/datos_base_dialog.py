@@ -29,17 +29,12 @@ class GestionDatosBaseDialog(QDialog,agraeDatosBaseDialog):
         self.tools = aGraeTools()
 
         self.UIComponents()
-        self.updateSegmentosField(self.layers_segmento.currentLayer())
-        self.updateAmbientesField(self.layers_ambiente.currentLayer())
-        # print(self.layers_segmento.currentLayer())
+        # self.updateSegmentosField(self.layers_segmento.currentLayer())
+        # self.updateAmbientesField(self.layers_ambiente.currentLayer())
+
 
     def UIComponents(self):
-        self.layers_ce.layerChanged.connect(self.updateCEFields)
-        self.layers_segmento.layerChanged.connect(self.updateSegmentosField)
-        self.layers_ambiente.layerChanged.connect(self.updateAmbientesField)
-        # self.field_segmento.setFilters(QgsFieldProxyModel.Numeric)
-        # self.field_ambiente.setFilters(QgsFieldProxyModel.Numeric)
-        # self.field_ndvi.setFilters(QgsFieldProxyModel.Numeric)
+        
 
         self.btn_create_ce.clicked.connect(self.loadCE)
         self.btn_create_segmentos.clicked.connect(self.loadSegmentos)
@@ -67,19 +62,19 @@ class GestionDatosBaseDialog(QDialog,agraeDatosBaseDialog):
     def loadSegmentos(self):
         self.tools.crearSegmento(
             layer = self.layers_segmento.currentLayer(),
-            field_segmento = self.field_segmento.currentField(),
-            field_ceap=self.field_ceap.currentField())
+            field_segmento = 'SEGM',
+            field_ceap='ceap')
         pass
     def loadAmbientes(self):
         self.tools.crearAmbiente(layer = self.layers_ambiente.currentLayer(),
-                                 field_ambiente = self.field_ambiente.currentField(),
-                                 field_ndvi = self.field_ndvi.currentField())
+                                 field_ambiente = 'ambiente',
+                                 field_ndvi = 'NDVImax')
         pass
 
     def loadCE(self):
          self.tools.crearCE(layer = self.layers_ce.currentLayer(),
-                                 field_ce36= self.field_ce36.currentField(),
-                                 field_ce90 = self.field_ce90.currentField())
+                                 field_ce36= 'ce36',
+                                 field_ce90 = 'ce90')
 
 
 class CrearLotesDialog(QDialog):
@@ -101,6 +96,10 @@ class CrearLotesDialog(QDialog):
         self.setModal(False)
 
     def UIComponents(self):
+        
+        #TODO : mejorar el layout
+        #TODO: eliminar todas las referencias a self.select_explotacion y su logica asociada
+        
         self.layout = QGridLayout()
         
         self.groupBoxLayout = QGridLayout()
@@ -121,47 +120,32 @@ class CrearLotesDialog(QDialog):
         self.combo_nombre.setFilters(QgsFieldProxyModel.String)
         self.combo_nombre.setLayer(self.combo_layer.currentLayer())
 
-        self.select_explotacion = QCheckBox('Añadir lotes a la Explotacion')
-        self.select_explotacion.stateChanged.connect(self.enableCombos)
-    
-        # self.combo_campania = QComboBox()
-        # self.combo_campania.currentIndexChanged.connect(lambda: self.tools.getExplotacionData(self.combo_explotacion,self.combo_campania.currentData()))
-        # self.combo_campania.setEnabled(False)
+        # self.select_explotacion = QCheckBox('Añadir lotes a la Explotacion')
+        # self.select_explotacion.stateChanged.connect(self.enableCombos)
 
-        # self.combo_explotacion = QComboBox()
-        # self.combo_explotacion.setEnabled(False)
+    
 
 
         self.combo_campania = CampaniasComboBox()
-        # self.combo_campania.setEnabled(False)
-        self.combo_campania._auto_enable_on_load = False
+        # self.combo_campania._auto_enable_on_load = False
 
         self.combo_explotacion = ExplotacionesComboBox()
-        self.combo_explotacion._auto_enable_on_load = False
-        # self.combo_explotacion.setEnabled(False)
-        # self.combo_explotacion.refresh()
-        # self.combo_explotacion.bind_to_campaigns(self.combo_campania)
-
-        # self.tools.getCampaniasData(self.combo_campania)
-        # self.tools.getExplotacionDataNoFilter(self.combo_explotacion)
-        
-
-        # self.combo_explotacion.setEditable(True)
-        # self.combo_explotacion.setInsertPolicy(QComboBox.NoInsert)
-        # self.combo_explotacion.completer().setCompletionMode(QCompleter.PopupCompletion)
-
+        # self.combo_explotacion._auto_enable_on_load = True
+        self.combo_explotacion.DEFAULT_FIRST_ITEM_TEXT = 'Seleccionar Explotacion...'
+        self.combo_explotacion.allow_first_item_text = True
+    
 
         self.btn_cargar = QPushButton('Cargar Lotes')
-        self.btn_cargar.clicked.connect(self.loadLotes)
+        self.btn_cargar.clicked.connect(self.action)
         
         
         
         self.groupBoxLayout.addWidget(QLabel('Selecciona la Capa con los Lotes'),0,0,1,0)
         self.groupBoxLayout.addWidget(self.combo_layer,1,0,1,0)
-        self.groupBoxLayout.addWidget(self.select_seleccionados,2,0,1,0)
-        self.groupBoxLayout.addWidget(QLabel('Seleccionar Campo Nombre del Lote'),3,0,1,0)
-        self.groupBoxLayout.addWidget(self.combo_nombre,4,0,1,0)
-        self.groupBoxLayout.addWidget(self.select_explotacion,5,0,1,0)
+        self.groupBoxLayout.addWidget(QLabel('Seleccionar Campo Nombre del Lote'),2,0,1,0)
+        self.groupBoxLayout.addWidget(self.combo_nombre,3,0,1,0)
+        self.groupBoxLayout.addWidget(self.select_seleccionados,4,0,1,0)
+        # self.groupBoxLayout.addWidget(self.select_explotacion,5,0,1,0)
         self.groupBoxLayout.addWidget(QLabel('Seleccionar Campaña'),6,0,1,0)
         self.groupBoxLayout.addWidget(QLabel('Seleccionar Explotacion'),6,1,1,0)
         self.groupBoxLayout.addWidget(self.combo_campania,7,0)
@@ -179,36 +163,38 @@ class CrearLotesDialog(QDialog):
     def updateCombo(self,layer):
         self.combo_nombre.setLayer(layer)
 
-    def enableCombos(self):
-        if self.select_explotacion.isChecked():
-            self.combo_campania.setEnabled(True)
-            self.combo_explotacion.setEnabled(True)
-        else:
-            self.combo_campania.setEnabled(False)
-            self.combo_explotacion.setEnabled(False)
 
+    def action(self):
+        nombre = self.combo_explotacion.get_current_explotacion_name()
+        self.tools.question('¿Estás seguro de cargar los lotes seleccionados a la explotacion {}?'.format(nombre.upper()),self.loadLotes)
 
     def loadLotes(self):
-        print('hey!')
+        # print('hey!')
+        if self.combo_explotacion.get_current_explotacion_id() is None:
+            return self.tools.messages('Error','Debes seleccionar una Explotacion para asignar los lotes.',1,alert=True)
         layer = self.combo_layer.currentLayer()
         sourceCrs = layer.crs()
         crsBase = QgsCoordinateReferenceSystem(4326)
-        tr = QgsCoordinateTransform(sourceCrs, crsBase, QgsProject.instance())
-        if self.select_seleccionados.isChecked():
-            features = [f for f in layer.getSelectedFeatures()]
+        tr = QgsCoordinateTransform(sourceCrs, crsBase, QgsProject.instance(
 
-            if len(features) > 0:
-                pass
-            else:
-                self.tools.messages('Advertencia','No hay lotes seleccionados.',1,alert=True)
-                return
-        else: 
-            features = [f for f in layer.getFeatures()]
+        ))
         
-        if self.select_explotacion.isChecked():
-            sql = self.agraeSql.getSql('new_lote_assign_copy.sql')
-        else:
-            sql = self.agraeSql.getSql('create_lote.sql')
+        selected_only = self.select_seleccionados.isChecked()
+        features = list(layer.getSelectedFeatures() if selected_only else layer.getFeatures())
+
+        if selected_only and not features:
+            self.tools.messages('Advertencia', 'No hay lotes seleccionados.', 1, alert=True)
+            return
+        
+        sql = self.agraeSql.getSql('new_lote_assign_copy.sql')
+        
+        
+
+        # se quita la posibilidad de cargar un lote sin asignarlo a una explotacion. 
+        # if self.select_explotacion.isChecked():
+        #     sql = self.agraeSql.getSql('new_lote_assign_copy.sql')
+        # # else:
+        #     sql = self.agraeSql.getSql('create_lote.sql')
         
         with self.conn.cursor() as cursor:
             for f in features: 
@@ -219,10 +205,13 @@ class CrearLotesDialog(QDialog):
                 geom = f.geometry()
                 if sourceCrs != crsBase:
                     geom.transform(tr)
-                if self.select_explotacion.isChecked():
-                    query = sql.format(nombre,geom.asWkt(),self.combo_campania.get_current_campaign_id(),self.combo_explotacion.get_current_explotacion_id())
-                else:
-                    query = sql.format(nombre,geom.asWkt())
+
+                query = sql.format(nombre,geom.asWkt(),self.combo_campania.get_current_campaign_id(),self.combo_explotacion.get_current_explotacion_id())
+
+                # if self.select_explotacion.isChecked():
+                #     query = sql.format(nombre,geom.asWkt(),self.combo_campania.get_current_campaign_id(),self.combo_explotacion.get_current_explotacion_id())
+                # else:
+                #     query = sql.format(nombre,geom.asWkt())
                 
                 try:
                     cursor.execute(query)
@@ -243,8 +232,3 @@ class CrearLotesDialog(QDialog):
                 except Exception as ex:
                     print(ex)
                     self.conn.rollback()
-
-        
-    
-    
-
