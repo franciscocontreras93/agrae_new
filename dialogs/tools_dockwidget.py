@@ -1673,7 +1673,8 @@ FROM
         # QgsProject.instance().addMapLayer(ambientes)
 
     def getMapaSig(self):
-        query =  aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'select * from mapa_sig')
+
+        query =  aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData(),'NULL','NULL', 'select * from mapa_sig')
         name = '{}_{}_MAPA_SIG'.format(self.combo_campania.currentText(),self.combo_explotacion.currentText().split('-')[1])
         layer = self.tools.getDataBaseLayer(query,name,styleName='Fert Variable Intraparcelaria',debug=True)
         QgsProject.instance().addMapLayer(layer)

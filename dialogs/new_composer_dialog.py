@@ -1,9 +1,12 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QCheckBox, QButtonGroup, QPushButton, QGridLayout, QWidget, QHBoxLayout, QLabel, QComboBox, QProgressBar
+from ast import main
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QCheckBox, QButtonGroup, QPushButton, QGridLayout, QGroupBox, QWidget, QHBoxLayout, QLabel, QComboBox, QProgressBar
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QRunnable, QThreadPool, QObject
 from qgis.core import QgsProject, QgsMessageLog, Qgis,QgsVectorLayer
 from ..tools.composerTools import aGraeComposerTools
 from ..tools import aGraeTools, aGraeSQLTools
 from ..gui import agraeGUI
+from ..gui.components import CustomComboBox, CultivosComboBox
+
 
 
 class WorkerSignals(QObject):
@@ -89,26 +92,53 @@ class new_Composer(QDialog):
         self.check_preescripcion.setChecked(True)
         
 
-        # Create a button group
-        # self.button_group = QButtonGroup()
+        #Create a button group
+        self.button_group = QButtonGroup()
 
-        # # Add the checkboxes to the button group
-        # self.button_group.addButton(self.check_basicos)
-        # self.button_group.addButton(self.check_preescripcion)
-        # self.button_group.addButton(self.check_preescripcion_materia_organica)
-        # # Set exclusive mode (only one can be checked at a time)
-        # self.button_group.setExclusive(True)
+        # Add the checkboxes to the button group
+        self.button_group.addButton(self.check_basicos)
+        self.button_group.addButton(self.check_preescripcion)
+        self.button_group.addButton(self.check_preescripcion_materia_organica)
+        # Set exclusive mode (only one can be checked at a time)
+        self.button_group.setExclusive(True)
 
         # Create a horizontal layout for the checkboxes
         checkbox_layout = QHBoxLayout()
-        checkbox_layout.addWidget(self.check_basicos)
-        checkbox_layout.addWidget(self.check_preescripcion)
-        checkbox_layout.addWidget(self.check_preescripcion_materia_organica)
+        checkbox_layout = QHBoxLayout()
+        for i, checkbox in enumerate(
+                (self.check_basicos,
+                self.check_preescripcion,
+                self.check_preescripcion_materia_organica),
+                start=1):
+            self.button_group.addButton(checkbox, i)  # el grupo solo controla el estado
+            checkbox_layout.addWidget(checkbox)       # aquí agregas el widget real a la UI
+      
 
 
         # Create a widget to hold the checkbox layout
         checkbox_widget = QWidget()
         checkbox_widget.setLayout(checkbox_layout)
+        # Create  GROUPBOX 
+        groupbox_checks_tipos = QGroupBox("Selecciona el tipo de Reporte a Generar")
+        groupbox_checks_tipos.setLayout(QHBoxLayout())
+        groupbox_checks_tipos.layout().addWidget(checkbox_widget)
+
+
+
+        group_parametros = QGroupBox("Parámetros de Generación")
+        group_parametros.setLayout(QGridLayout())
+        self.check_seleccionados = QCheckBox("Solo Lotes Seleccionados")
+        self.combo_cultivos = CultivosComboBox(
+            endpoint=f'/gis/cultivos/data_combo/?idcampania={self.idcampania}&idexplotacion={self.idexplotacion}',
+            auto_enable_on_load=True, 
+            allow_all=True,
+            multi_select=True)
+        # self.combo_cultivos.all_text = 'Todos los Cultivos'
+        # group_parametros.layout().addWidget(QLabel("Cultivo:"))
+        group_parametros.layout().addWidget(self.check_seleccionados,0,0,1,2)
+        group_parametros.layout().addWidget(QLabel("Cultivo:"),0,1)
+        group_parametros.layout().addWidget(self.combo_cultivos,1,1)
+
 
         # create Basemap selector
         label_basemap = QLabel('Seleccionar un Basemap')
@@ -142,7 +172,8 @@ class new_Composer(QDialog):
 
         # Create a main layout and add the checkboxes and buttons
         main_layout = QVBoxLayout()
-        main_layout.addWidget(checkbox_widget)
+        main_layout.addWidget(groupbox_checks_tipos)
+        main_layout.addWidget(group_parametros)
         main_layout.addLayout(combo_layout)
         main_layout.addWidget(self.progress_bar)
         main_layout.addWidget(self.current_layer_label)  # Add the label to the layout
@@ -163,56 +194,319 @@ class new_Composer(QDialog):
         return None
 
     def generateLayers(self):
+        """
+        Genera el diccionario de queries para crear las capas,
+        aplicando filtros opcionales por cultivos seleccionados
+        e iddata de los lotes seleccionados.
+        """
+
+        # --- 1) Resolver lista de idcultivo desde el combo (multi o single) ---
+        # En el CultivosComboBox multi:
+        #   - get_selected_ids() -> [] si solo está "Todos los cultivos..." o nada
+        #   - [3,5,7] si hay cultivos seleccionados
+        try:
+            cultivo_ids = self.combo_cultivos.get_selected_ids()
+        except Exception:
+            cultivo_ids = []
+
+        if cultivo_ids:
+            # p.ej. [3, 5, 7] => ARRAY[3,5,7]
+            cultivo_literal = "ARRAY[{}]".format(
+                ",".join(str(int(cid)) for cid in cultivo_ids)
+            )
+
+            self.layers['Atlas'].setSubsetString('idcultivo in ({})'.format(
+                        ','.join(str(int(i)) for i in cultivo_ids)
+                    ))
+        else:
+            # sin selección real de cultivos (o solo "Todos...") -> sin filtro por cultivo
+            cultivo_literal = "NULL"
+
+        # --- 2) Resolver lista de iddata a partir de los lotes seleccionados ---
+        # Esto ya te estaba funcionando para "Solo Lotes Seleccionados"
+        
+        if self.check_seleccionados.isChecked():
+            atlas_layer = self.layers.get('Atlas')
+            if atlas_layer is not None:
+                iddatas = [
+                    f['id']
+                    for f in atlas_layer.getSelectedFeatures()
+                    if 'id' in f.fields().names()
+                ]
+                if iddatas:
+                    # Coincide con: {}::int[] AS iddata_list en los .sql
+                    # Ejemplo resultante: ARRAY[10,11,25]
+                    iddata_literal = 'ARRAY[{}]'.format(
+                        ','.join(str(int(i)) for i in iddatas)
+                    )
+
+
+                    self.layers['Atlas'].setSubsetString('iddata in ({})'.format(
+                        ','.join(str(int(i)) for i in iddatas)
+                    ))
+
+
+        else:
+            iddata_literal = 'NULL'
+        # --- 3) Armar queries usando la firma actual de los .sql ---
+        # IMPORTANTE: asumo que tus .sql tienen:
+        #   WITH params AS (
+        #       SELECT
+        #           {}::int   AS idcampania,
+        #           {}::int   AS idexplotacion,
+        #           {}::int[] AS idcultivo,
+        #           {}::int[] AS iddata_list
+        #   ),
+        # y que en uf_aportes/segmentos hay un último {} para inyectar el SELECT final.
+
         queries = {
-            'Ambientes': aGraeSQLTools().getSql('ambientes_layers_query.sql').format(self.idcampania, self.idexplotacion),
-            'Segmentos': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,segmento,ceap,st_asText(geom) as geom from segm_analitica;'''),
-            'Nitrogeno': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,n as valor,no3,nh4,lower(n_tipo) as tipo, n_inc as incremento, st_asText(geom) as geom from segm_analitica;'''),
-            'Fosforo': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,p as valor,lower(p_tipo) as tipo, p_inc as incremento,st_asText(geom) as geom from segm_analitica;'''),
-            'Potasio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,k as valor,lower(k_tipo) as tipo, k_inc as incremento,st_asText(geom) as geom from segm_analitica;'''),
-            'PH': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,ph as valor,lower(ph_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
-            'Conductividad Electrica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,ce/100 as ce ,st_asText(geom) as geom from segm_analitica;'''),
-            'Calcio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,ca as valor,lower(ca_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
-            'Magnesio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,mg as valor,lower(mg_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
-            'Sodio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,na as valor,lower(na_tipo) as tipo,st_asText(geom) as geom from segm_analitica;'''),
-            'Azufre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,s as valor,st_asText(geom) as geom from segm_analitica;'''),
-            'CIC': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''
-            select distinct idlote,nombre as lote,codigo as codigo_muestra,
-            (case when segmento = 1 then 'Rojo' when segmento = 2 then 'Verde' when segmento = 3 then 'Azul' end) as "SEGMENTO",
-            round(cic::numeric,1)::double precision as "CIC", 
-            round(round(ca::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "CA",
-            round(round(mg::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "MG",
-            round(round(k::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "K",
-            round(round(na::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "NA",
-            st_asText(st_union(geom)) as geom 
-            from segm_analitica
-            group by idlote,nombre,codigo,segmento,cic,ca,mg,k,na;'''),
-            'Hierro': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,fe,st_asText(geom) as geom from segm_analitica;'''),
-            'Manganeso': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,mn as valor,st_asText(geom) as geom from segm_analitica;'''),
-            'Aluminio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,al,st_asText(geom) as geom from segm_analitica;'''),
-            'Boro': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,b,st_asText(geom) as geom from segm_analitica;'''),
-            'Cinq': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,zn ,st_asText(geom) as geom from segm_analitica;'''),
-            'Cobre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,cu,st_asText(geom) as geom from segm_analitica;'''),
-            'Materia Organica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,organi ,st_asText(geom) as geom from segm_analitica;'''),
-            'Relacion CN': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(self.idcampania, self.idexplotacion, '''select distinct idlote,nombre as lote,codigo as codigo_muestra,rel_cn,st_asText(geom) as geom from segm_analitica;'''),
-            'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.idcampania, self.idexplotacion, 'select * from mapa_sig'),
-            # 'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.idcampania, self.idexplotacion, 'select iddata,uf,uf_etiqueta,st_asText(geom) as geom  from fert_intraparcelaria'),
-            
-            'Fert Variable Parcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.idcampania, self.idexplotacion, '''select * from fert_parcelaria'''),
-            'Ceap36 Textura': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.idcampania, self.idexplotacion),
-            'Ceap36 Infiltracion': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(self.idcampania, self.idexplotacion),
-            'Ceap90 Textura': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.idcampania, self.idexplotacion),
-            'Ceap90 Infiltracion': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(self.idcampania, self.idexplotacion),
-            # 'Rendimiento' : aGraeSQLTools().getSql('rindes_layer_query.sql').format(self.idcampania, self.idexplotacion)
-            # 'Mapa_SIG' : aGraeSQLTools().getSql('uf_aportes_query.sql').format(self.idcampania, self.idexplotacion,'select * from mapa_sig')
+            # AMBIENTES (sin SELECT final extra)
+            'Ambientes': aGraeSQLTools().getSql('ambientes_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal
+            ),
+
+            # SEGMENTOS + ANALÍTICA
+            'Segmentos': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          segmento,ceap,st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Nitrogeno': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          n as valor,no3,nh4,lower(n_tipo) as tipo,
+                          n_inc as incremento, st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Fosforo': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          p as valor,lower(p_tipo) as tipo,
+                          p_inc as incremento,st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Potasio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          k as valor,lower(k_tipo) as tipo,
+                          k_inc as incremento,st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'PH': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          ph as valor,lower(ph_tipo) as tipo,
+                          st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Conductividad Electrica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          ce/100 as ce ,st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Calcio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          ca as valor,lower(ca_tipo) as tipo,
+                          st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Magnesio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          mg as valor,lower(mg_tipo) as tipo,
+                          st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Sodio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          na as valor,lower(na_tipo) as tipo,
+                          st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Azufre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          s as valor,st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'CIC': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''
+                select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                       (case when segmento = 1 then 'Rojo'
+                             when segmento = 2 then 'Verde'
+                             when segmento = 3 then 'Azul' end) as "SEGMENTO",
+                       round(cic::numeric,1)::double precision as "CIC", 
+                       round(round(ca::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "CA",
+                       round(round(mg::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "MG",
+                       round(round(k::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "K",
+                       round(round(na::numeric,1) / (ca + mg + k + na)::numeric * 100,1)::double precision || '%' as "NA",
+                       st_asText(st_union(geom)) as geom 
+                from segm_analitica
+                group by idlote,nombre,codigo,segmento,cic,ca,mg,k,na;'''
+            ),
+            'Hierro': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          fe,st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Manganeso': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          mn as valor,st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Aluminio': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          al,st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Boro': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          b,st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Cinq': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          zn ,st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Cobre': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          cu,st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Materia Organica': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          organi ,st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+            'Relacion CN': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
+                          rel_cn,st_asText(geom) as geom
+                   from segm_analitica;'''
+            ),
+
+            # UF / APORTES
+            'Fert Variable Intraparcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                'select * from mapa_sig'
+            ),
+            'Fert Variable Parcelaria': aGraeSQLTools().getSql('uf_aportes_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal,
+                'select * from fert_parcelaria'
+            ),
+
+            # CEAP 36 / 90
+            'Ceap36 Textura': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal
+            ),
+            'Ceap36 Infiltracion': aGraeSQLTools().getSql('ceap36_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal
+            ),
+            'Ceap90 Textura': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal
+            ),
+            'Ceap90 Infiltracion': aGraeSQLTools().getSql('ceap90_layers_query.sql').format(
+                self.idcampania,
+                self.idexplotacion,
+                cultivo_literal,
+                iddata_literal
+            ),
         }
 
-        basic_mode = self.check_basicos.isChecked()
-
-        worker = LayerGeneratorWorker(queries, self.layers, basic_mode)
+        # --- 4) Iniciar el worker en un hilo separado ---
+        worker = LayerGeneratorWorker(queries, self.layers, self.check_basicos.isChecked())
         worker.signals.progress.connect(self.update_progress)
         worker.signals.finished.connect(self.on_layers_generated)
         worker.signals.error.connect(self.on_error)
-        worker.signals.current_layer.connect(self.update_current_layer_label)  # Connect the new signal
+        worker.signals.current_layer.connect(self.update_current_layer_label)
 
         self.threadpool.start(worker)
 

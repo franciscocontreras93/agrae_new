@@ -24,8 +24,32 @@ Requisitos:
 Autor: aGrae
 """
 
-from qgis.PyQt.QtWidgets import QComboBox, QCompleter
-from qgis.PyQt.QtCore import Qt, pyqtSignal, QThread, QStringListModel, QTimer, QDate
+from qgis.PyQt.QtWidgets import ( 
+    QComboBox, 
+    QCompleter, 
+    # NUEVO
+    QStyledItemDelegate 
+)
+from qgis.PyQt.QtCore import (
+    Qt,
+    pyqtSignal, 
+    QThread, 
+    QStringListModel, 
+    QTimer, 
+    QDate, 
+    # NUEVO
+    QEvent
+)
+
+
+from qgis.PyQt.QtGui import (
+    # NUEVO
+    QStandardItemModel,
+    QStandardItem,
+    QFontMetrics,
+    QPalette,
+)
+
 from qgis.core import QgsMessageLog, Qgis
 
 from ...tools import aGraeTools
@@ -739,31 +763,238 @@ class CultivosComboBox(CustomComboBox):
     """
     Combo para Cultivos:
     - Editable + autocompletado.
-    - Etiqueta formateada "Nombre".
-    - auto_enable_on_load=False por defecto: el dock controla su estado (modo edición).
+    - Modo normal (multi_select=False):
+        * Usa el comportamiento estándar de CustomComboBox:
+          "Seleccione una opción..." (first_item_text=True).
+        * 'allow_all' funciona como siempre (si True se agrega "Todos los cultivos...").
+    - Modo multi-select (multi_select=True):
+        * Solo agrega "Todos los cultivos..." + cultivos reales (sin "Seleccione una opción").
+        * "Todos los cultivos..." aparece como primer ítem y queda marcado por defecto.
+        * Al marcar cualquier otro cultivo, "Todos los cultivos..." se desmarca automáticamente.
     """
 
-    def __init__(self, endpoint: str = "/api/cultivos", auto_enable_on_load: bool = False, parent=None):
+    def __init__(
+        self,
+        endpoint: str = "/api/cultivos",
+        allow_all: bool = False,
+        all_text: str = "Todos los cultivos...",
+        auto_enable_on_load: bool = False,
+        parent=None,
+        *,
+        multi_select: bool = False,
+    ):
+        # flag interno
+        self._multi_select = bool(multi_select)
+
+        # Ajustamos el comportamiento base según sea multi o no:
+        # - multi_select=True  -> queremos SIEMPRE "Todos..." y NUNCA "Seleccione una opción..."
+        # - multi_select=False -> dejamos que 'allow_all' y first_item_text=True actúen como siempre
+        if self._multi_select:
+            effective_allow_all = True          # siempre hay "Todos los cultivos..."
+            effective_first_item = False        # no añadimos "Seleccione una opción..."
+        else:
+            effective_allow_all = allow_all     # respeta el parámetro
+            effective_first_item = True         # muestra "Seleccione una opción..."
+
         super().__init__(
             endpoint=endpoint,
             parent=parent,
             label_field="nombre",
             value_field="id",
-            allow_all=False,
+            allow_all=effective_allow_all,
+            all_text=all_text,
             editable=True,
             sort_key="nombre",
             sort_reverse=False,
             auto_enable_on_load=auto_enable_on_load,
-            first_item_text=True,
+            first_item_text=effective_first_item,
         )
 
-    # # --- Helpers de lectura de datos “puros” ---
-    # def get_current_id(self) -> int | None:
-    #     return self.get_current_id() or None
+        if self._multi_select:
+            self._init_multi_select_mode()
 
-    # def get_current_name(self) -> str | None:
-    #     """Devuelve el nombre del Cultivo."""
-    #     return self.get_current_label() or None
+    # ------------------------------------------------------------------
+    # API pública extra para multi-select
+    # ------------------------------------------------------------------
+    def is_multi_select_enabled(self) -> bool:
+        return self._multi_select
+
+    def get_selected_ids(self) -> list:
+        """
+        Devuelve la lista de IDs seleccionados cuando multi_select=True.
+        Si multi_select=False, devuelve [id_actual] o [] si no hay ID.
+
+        Nota:
+        - En modo multi, "Todos los cultivos..." tiene userData=None,
+          así que NO se incluye en la lista (equivale a "no filtrar").
+          
+        """
+        if not self._multi_select:
+            cid = self.get_current_id()
+            return [cid] if cid is not None else []
+
+        model = self.model()
+        selected: list = []
+        if isinstance(model, QStandardItemModel):
+            for row in range(model.rowCount()):
+                item = model.item(row)
+                if not isinstance(item, QStandardItem):
+                    continue
+                if item.checkState() == Qt.Checked:
+                    data = self.itemData(row)
+                    if data is not None:  # ignoramos el "Todos..." (userData=None)
+                        selected.append(data)
+        return selected
+
+    # ------------------------------------------------------------------
+    # Configuración del modo multi-select
+    # ------------------------------------------------------------------
+    def _init_multi_select_mode(self) -> None:
+        """
+        Configura el combo para trabajar en modo multi-select:
+        - la línea de edición es solo lectura
+        - las filas del modelo son checkables
+        - se interceptan clics en el popup para alternar check
+        """
+        self.setEditable(True)
+        if self.lineEdit() is not None:
+            self.lineEdit().setReadOnly(True)
+
+        # Cuando se cargan items desde el backend, configuramos checkboxes
+        self.items_loaded.connect(self._make_items_checkable)
+
+        # Actualizar el texto visible cuando cambien los checks
+        if self.model() is not None:
+            self.model().dataChanged.connect(self._update_display_text)
+
+        # Interceptar clics en el popup para alternar check sin cerrar
+        if self.view() is not None and self.view().viewport() is not None:
+            self.view().viewport().installEventFilter(self)
+
+        # Forzar un primer update del texto (por si ya hay datos)
+        self._update_display_text()
+
+    def _make_items_checkable(self, _items: object) -> None:
+        """
+        Marca todos los items como checkables (solo en modo multi-select).
+        En esta función también:
+        - marca "Todos los cultivos..." (fila 0) como Checked
+        - desmarca el resto
+        """
+        if not self._multi_select:
+            return
+
+        model = self.model()
+        if not isinstance(model, QStandardItemModel):
+            return
+
+        for row in range(model.rowCount()):
+            item = model.item(row)
+            if not isinstance(item, QStandardItem):
+                continue
+
+            # Hacemos el item checkable
+            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable)
+
+            if row == 0:
+                # Primera fila -> "Todos los cultivos..."
+                item.setData(Qt.Checked, Qt.CheckStateRole)
+            else:
+                item.setData(Qt.Unchecked, Qt.CheckStateRole)
+
+        # Tras hacerlos checkables, refrescamos el texto
+        self._update_display_text()
+
+    def _update_display_text(self) -> None:
+        """
+        Construye el texto que se muestra en la línea de edición
+        con los nombres de los cultivos seleccionados.
+        """
+        if not self._multi_select:
+            return
+
+        model = self.model()
+        if not isinstance(model, QStandardItemModel):
+            return
+
+        texts: list[str] = []
+        for row in range(model.rowCount()):
+            item = model.item(row)
+            if not isinstance(item, QStandardItem):
+                continue
+            if item.checkState() == Qt.Checked:
+                txt = item.text()
+                if txt:
+                    texts.append(txt)
+
+        full_text = ", ".join(texts)
+
+        if self.lineEdit() is not None:
+            metrics = QFontMetrics(self.lineEdit().font())
+            elided = metrics.elidedText(full_text, Qt.ElideRight, self.lineEdit().width())
+            self.lineEdit().setText(elided)
+
+    # ------------------------------------------------------------------
+    # Overrides suaves para integrar el eventFilter en modo multi-select
+    # ------------------------------------------------------------------
+    def eventFilter(self, obj, event):
+        """
+        Intercepta clics en el popup para marcar/desmarcar sin cerrar.
+        Lógica especial:
+        - Si se hace click en "Todos los cultivos..." (fila 0):
+            * se marca "Todos" y se desmarcan todos los demás.
+        - Si se hace click en cualquier otro cultivo:
+            * se alterna ese cultivo
+            * se desmarca "Todos los cultivos..." automáticamente.
+        """
+        if self._multi_select and self.view() is not None and obj == self.view().viewport():
+            if event.type() == QEvent.MouseButtonRelease:
+                index = self.view().indexAt(event.pos())
+                if not index.isValid():
+                    return False
+
+                model = self.model()
+                if not isinstance(model, QStandardItemModel):
+                    return False
+
+                item = model.itemFromIndex(index)
+                if not isinstance(item, QStandardItem):
+                    return False
+
+                row = index.row()
+
+                if row == 0:
+                    # Click sobre "Todos los cultivos..."
+                    for r in range(model.rowCount()):
+                        it = model.item(r)
+                        if not isinstance(it, QStandardItem):
+                            continue
+                        it.setCheckState(Qt.Checked if r == 0 else Qt.Unchecked)
+                else:
+                    # Click sobre un cultivo concreto
+                    current_state = item.checkState()
+                    new_state = Qt.Unchecked if current_state == Qt.Checked else Qt.Checked
+                    item.setCheckState(new_state)
+
+                    # Si se marca cualquiera de los otros, desmarcamos "Todos"
+                    first_item = model.item(0)
+                    if isinstance(first_item, QStandardItem):
+                        first_item.setCheckState(Qt.Unchecked)
+
+                self._update_display_text()
+                # Evitamos que cambie el currentIndex o cierre el popup
+                return True
+
+        return super().eventFilter(obj, event)
+
+    def resizeEvent(self, event):
+        """
+        Cuando cambia el tamaño, recalculamos el elided text.
+        """
+        if self._multi_select:
+            self._update_display_text()
+        super().resizeEvent(event)
+
     
 class RegimenComboBox(CustomComboBox):
     """
