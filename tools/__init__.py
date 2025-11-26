@@ -722,7 +722,7 @@ class aGraeTools():
             from fert_intraparcelaria  fi 
             join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf 
             order by lote,uf_etiqueta;'''
-        query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,q)
+        query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,'NULL','NULL',q)
         try: 
             with agraeDataBaseDriver().connection().cursor() as cursor:  
                 cursor.execute(query) 
