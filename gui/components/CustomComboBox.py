@@ -591,6 +591,7 @@ class CampaniasComboBox(CustomComboBox):
         s_fd, s_fh = self.get_current_campaign_date_strings()
         qd = QDate.fromString(s_fd, "yyyy-MM-dd") if s_fd else QDate()
         qh = QDate.fromString(s_fh, "yyyy-MM-dd") if s_fh else QDate()
+
         return (qd if qd.isValid() else None, qh if qh.isValid() else None)
 
 

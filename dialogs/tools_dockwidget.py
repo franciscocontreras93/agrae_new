@@ -6,6 +6,7 @@ import psycopg2
 
 
 from psycopg2 import extras
+from sympy import group
 
 
 from qgis.PyQt import QtWidgets #type: ignore
@@ -215,9 +216,25 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.line_produccion_2.setSuffix(" Kg/Ha")
         self.line_produccion_2.setMaximum(500000) # Max 200 Ton/Ha
         self.date_siembra_2 = QtWidgets.QDateEdit()
+        self.date_siembra_2.setDate(QDate.currentDate())
+
+        # self.date_siembra_2.setMinimumDate(self.combo_campania.get_current_campaign_qdates()[0])
+        # self.date_siembra_2.setMaximumDate(self.combo_campania.get_current_campaign_qdates()[1])
+
+        print("label:", self.combo_campania.currentText())
+        print("data:", self.combo_campania.currentData())
+        print("item:", self.combo_campania.get_current_item())
         self.date_siembra_2.setCalendarPopup(True)
         self.date_siembra_2.setEnabled(False) # TODO ACTIVAR CUANDO SE INTEGRE LA DATA COMPLETA A LA API DE AGRAE.
+
+        self.date_cosecha_2 = QtWidgets.QDateEdit()
+        self.date_cosecha_2.setCalendarPopup(True)
+        self.date_cosecha_2.setEnabled(False) # TODO ACTIVAR CUANDO SE INTEGRE LA DATA COMPLETA A LA API DE AGRAE.
+
+
         self.btn_save_cultivo_exp = QtWidgets.QPushButton("Guardar")
+
+        self.btn_save_cultivo_date_exp = QtWidgets.QPushButton("Guardar")
 
 
 
@@ -448,6 +465,22 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Fecha Siembra:"), self.date_siembra_2)
         form_layout_in_group_act_cult.addRow(self.btn_save_cultivo_exp)
         self.tab_widget_fertilizacion.addTab(widget_act_cult_exp, "Actualizar Cultivos")
+
+
+        # Gruop: Actualziar Fecha Siembra y Cosecha de Lotes
+        widget_act_cult_dates_exp = QtWidgets.QWidget() # Widget to hold the groupbox for the tab
+        group_act_cult_dates_exp = QtWidgets.QGroupBox("Actualizar Fechas de Siembra y Cosecha de Lotes")
+        layout_act_cult_dates_exp = QtWidgets.QFormLayout(widget_act_cult_dates_exp) # Layout for the tab content
+        layout_act_cult_dates_exp.addWidget(group_act_cult_dates_exp) # Add the groupbox to the tab's layout
+        # Populate the groupbox (original QFormLayout for group_act_cult_exp)
+        form_layout_in_group_act_cult_dates = QtWidgets.QFormLayout(group_act_cult_dates_exp)
+        # form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Cultivo:"), self.combo_cultivo_2)
+        form_layout_in_group_act_cult_dates.addRow(QtWidgets.QLabel("Fecha Siembra:"), self.date_siembra_2)
+        form_layout_in_group_act_cult_dates.addRow(QtWidgets.QLabel("Fecha Cosecha:"), self.date_cosecha_2)
+        form_layout_in_group_act_cult_dates.addRow(self.btn_save_cultivo_date_exp)
+        self.tab_widget_fertilizacion.addTab(widget_act_cult_dates_exp, "Actualizar Fechas")
+
+
 
         page_fertilizacion_layout.addStretch() 
         self.toolBox.addItem(self.page_fertilizacion_cultivos, "Datos de Fertilización y Cultivo")
