@@ -233,6 +233,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
 
         self.btn_save_cultivo_exp = QtWidgets.QPushButton("Guardar")
+        self.btn_save_cultivo_exp.setEnabled(False)
 
         self.btn_save_cultivo_date_exp = QtWidgets.QPushButton("Guardar")
 
@@ -478,7 +479,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         form_layout_in_group_act_cult_dates.addRow(QtWidgets.QLabel("Fecha Siembra:"), self.date_siembra_2)
         form_layout_in_group_act_cult_dates.addRow(QtWidgets.QLabel("Fecha Cosecha:"), self.date_cosecha_2)
         form_layout_in_group_act_cult_dates.addRow(self.btn_save_cultivo_date_exp)
-        self.tab_widget_fertilizacion.addTab(widget_act_cult_dates_exp, "Actualizar Fechas")
+        self.tab_widget_fertilizacion.addTab(widget_act_cult_dates_exp, "Actualizar Fechas Siembra | Cosecha")
 
 
 
@@ -1315,8 +1316,7 @@ FROM
         self.combo_explotacion.refresh()
         # self.combo_regimen_2.refresh()
 
-    
- 
+
     def checkData(self,condition,label,value,widget):
         styleNormal = "QLabel { background-color : transparent; color : black; font-weight : normal }"
         styleBackgroudRed = "QLabel { background-color : red; color : white; font-weight : bold }"
