@@ -41,8 +41,8 @@ class aGraeTools():
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        self.backend_endpoint = 'http://142.93.41.109:8000'
-        # self.backend_endpoint = 'http://localhost:8000'
+        # self.backend_endpoint = 'http://142.93.41.109:8000'
+        self.backend_endpoint = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
@@ -1079,6 +1079,29 @@ class aGraeTools():
                 self.messages('aGrae GIS','Ocurrio un error al actualizar los lotes.\n {}'.format(response.text),2,alert=True)
         except Exception as ex:
             self.messages('aGrae GIS','Ocurrio un error al actualizar los lotes.\n {}'.format(ex),2,alert=True)
+            print(ex)
+
+    def updateFechaSiembraLotes(self,idcampania:int,idexplotacion:int,idcultivo:int,fecha_siembra:str, fecha_cosecha:str | None = None):
+        """ Actualiza la fecha de siembra de múltiples lotes mediante una solicitud PATCH al backend. """
+
+        payload = {
+            "idcampania": idcampania,
+            "idexplotacion": idexplotacion,
+            "idcultivo": idcultivo,
+            "fechasiembra": fecha_siembra
+        }
+        if fecha_cosecha:
+            payload["fechacosecha"] = fecha_cosecha
+
+        endpoint = self.backend_endpoint + '/gis/lotes/update/dates'
+        try:
+            response = requests.patch(endpoint,json=payload,timeout=300)
+            if response.status_code == 200:
+                self.messages('aGrae GIS','Fechas de Siembra Actualizadas Correctamente',3,alert=True)
+            else:
+                self.messages('aGrae GIS','Ocurrio un error al actualizar las fechas de siembra.\n {}'.format(response.text),2,alert=True)
+        except Exception as ex:
+            self.messages('aGrae GIS','Ocurrio un error al actualizar las fechas de siembra.\n {}'.format(ex),2,alert=True)
             print(ex)
 
 

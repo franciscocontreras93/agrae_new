@@ -63,7 +63,6 @@ class aGraeResamplearMuestras():
                 if len(derivates) > 0:
                     adjust_coefficient = {row['COD'] : 
                                         {'ceap' : (((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200, 
-
                                         'min':  ((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) * 0.75 if ((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) != 100  else 100,
                                         'max': (((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) * 0.75) * 1.25 if ((((row['ceap']-scope) / scope + 1) * 100) if (((row['ceap']-scope) / scope + 1) * 100) < 200 else 200) != 100  else 100 
                                         } 

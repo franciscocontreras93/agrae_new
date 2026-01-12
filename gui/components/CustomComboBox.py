@@ -1005,7 +1005,7 @@ class RegimenComboBox(CustomComboBox):
     - auto_enable_on_load=False por defecto: el dock controla su estado (modo edición).
     """
 
-    def __init__(self, endpoint: str = "/api/regimen", auto_enable_on_load: bool = False, parent=None):
+    def __init__(self, endpoint: str = "/gis/regimen/data_combo/", auto_enable_on_load: bool = False, parent=None):
         super().__init__(
             endpoint=endpoint,
             parent=parent,

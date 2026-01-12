@@ -21,6 +21,7 @@ from ..tools.analisis_tools import aGraeResamplearMuestras
 from ..tools.agrae_csv_tools import aGraeCSVTools
 from ..tools.gee import NDVIProcessor
 from ..tools.agraeIdentifyTool import aGraeSelectTool
+from ..tools.agraeCopiarAnaliticaSelectTool import aGraeCopiarAnaliticaSelectTool
 
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
@@ -221,11 +222,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         # self.date_siembra_2.setMinimumDate(self.combo_campania.get_current_campaign_qdates()[0])
         # self.date_siembra_2.setMaximumDate(self.combo_campania.get_current_campaign_qdates()[1])
 
-        print("label:", self.combo_campania.currentText())
-        print("data:", self.combo_campania.currentData())
-        print("item:", self.combo_campania.get_current_item())
         self.date_siembra_2.setCalendarPopup(True)
-        self.date_siembra_2.setEnabled(False) # TODO ACTIVAR CUANDO SE INTEGRE LA DATA COMPLETA A LA API DE AGRAE.
+        self.date_siembra_2.setEnabled(True) # TODO ACTIVAR CUANDO SE INTEGRE LA DATA COMPLETA A LA API DE AGRAE.
 
         self.date_cosecha_2 = QtWidgets.QDateEdit()
         self.date_cosecha_2.setCalendarPopup(True)
@@ -463,21 +461,21 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         # form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Cultivo:"), self.combo_cultivo_2)
         form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Régimen:"), self.combo_regimen_2)
         form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Producción Esperada (Kg/Ha):"), self.line_produccion_2)
-        form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Fecha Siembra:"), self.date_siembra_2)
+        # form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Fecha Siembra:"), self.date_siembra_2)
         form_layout_in_group_act_cult.addRow(self.btn_save_cultivo_exp)
-        self.tab_widget_fertilizacion.addTab(widget_act_cult_exp, "Actualizar Cultivos")
+        self.tab_widget_fertilizacion.addTab(widget_act_cult_exp, "Actualizar Produccion")
 
 
         # Gruop: Actualziar Fecha Siembra y Cosecha de Lotes
         widget_act_cult_dates_exp = QtWidgets.QWidget() # Widget to hold the groupbox for the tab
-        group_act_cult_dates_exp = QtWidgets.QGroupBox("Actualizar Fechas de Siembra y Cosecha de Lotes")
+        group_act_cult_dates_exp = QtWidgets.QGroupBox("Actualizar Fechas de Siembra")
         layout_act_cult_dates_exp = QtWidgets.QFormLayout(widget_act_cult_dates_exp) # Layout for the tab content
         layout_act_cult_dates_exp.addWidget(group_act_cult_dates_exp) # Add the groupbox to the tab's layout
         # Populate the groupbox (original QFormLayout for group_act_cult_exp)
         form_layout_in_group_act_cult_dates = QtWidgets.QFormLayout(group_act_cult_dates_exp)
         # form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Cultivo:"), self.combo_cultivo_2)
         form_layout_in_group_act_cult_dates.addRow(QtWidgets.QLabel("Fecha Siembra:"), self.date_siembra_2)
-        form_layout_in_group_act_cult_dates.addRow(QtWidgets.QLabel("Fecha Cosecha:"), self.date_cosecha_2)
+        # form_layout_in_group_act_cult_dates.addRow(QtWidgets.QLabel("Fecha Cosecha:"), self.date_cosecha_2)
         form_layout_in_group_act_cult_dates.addRow(self.btn_save_cultivo_date_exp)
         self.tab_widget_fertilizacion.addTab(widget_act_cult_dates_exp, "Actualizar Fechas Siembra | Cosecha")
 
@@ -491,7 +489,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         # self.page_facturacion.setLayout(page_facturacion_layout)
         # self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
 
-        self.toolBox.addItem(self.page_gee_module, "Modulo de Google Earth Engine")
+        # self.toolBox.addItem(self.page_gee_module, "Modulo de Google Earth Engine")
 
 
         # Set initial properties and connections
@@ -500,7 +498,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.toolBox.setCurrentIndex(0)
         self.toolBox.setItemIcon(0,agraeGUI().getIcon('info'))
         self.toolBox.setItemIcon(1,agraeGUI().getIcon('tractor')) # Icono para la segunda pestaña
-        self.toolBox.setItemIcon(2,agraeGUI().getIcon('satelite')) # Icono para la segunda pestaña
+        # self.toolBox.setItemIcon(2,agraeGUI().getIcon('satelite')) # Icono para la segunda pestaña
         self.toolBox.currentChanged.connect(self.infoLote)
         
         # for c in [self.combo_cultivo]:
@@ -519,6 +517,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
         self.combo_aplicacion.currentIndexChanged.connect(self.getCultivosCampaniaData)
         self.btn_save_cultivo_exp.clicked.connect(self.actualizarDataCultivo)
+        self.btn_save_cultivo_date_exp.clicked.connect(self.actualizarDataCultivoFechas)
 
         # Set object names for stylesheets or direct access if needed (optional but good practice)
         self.toolBox.setObjectName("toolBox")
@@ -596,8 +595,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.ImportarArchivoAnalisis.triggered.connect(self.cargarAnalitica)
         self.DerivarDatosAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Derivar datos de Analitica',self)
         self.DerivarDatosAnalisis.triggered.connect(self.DerivarAnalitica)
+        self.CopiarDatosAnaliticos = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Copiar Datos de Analiticas',self)
+        # self.CopiarDatosAnaliticos.triggered.connect(self.copiarDatosAnaliticos)
 
-        actions_lab = [self.GestionarMuestras,self.GenerarPuntosMuestreo,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis,self.DerivarDatosAnalisis]
+        actions_lab = [self.GestionarMuestras,self.GenerarPuntosMuestreo,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis,self.DerivarDatosAnalisis,self.CopiarDatosAnaliticos]
         self.tools.settingsToolsButtons(self.tool_lab,actions_lab,icon=agraeGUI().getIcon('matraz'),setMainIcon=True)
         
         # TOOL_DATA
@@ -876,6 +877,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.identifyTool = aGraeSelectTool(self.layer)
         self.identifyTool.featureSelected.connect(self.fillDataLote)
         iface.mapCanvas().setMapTool(self.identifyTool)
+
+    def copyrDatosAnaliticos(self):
+        self.copyTool = agraeCopiarAnaliticaSelectTool(self.layer)
+        # self.copyTool.featureSelected.connect(self.copiarDatosAnaliticosDialog)
 
     def getData(self,query_name:str,check:bool=False) -> list:
         with agraeDataBaseDriver().connection().cursor() as cursor:
@@ -1766,8 +1771,15 @@ FROM
                 self.tools.actualizarDataCultivo(idRegimen,produccion,idcampania,idexplotacion,idCultivo)
 
 
-    
-    
+    def actualizarDataCultivoFechas(self):
+        self.tools.updateFechaSiembraLotes(
+            self.combo_campania.currentData(),
+            self.combo_explotacion.currentData(),
+            self.combo_cultivo_2.currentData(),
+            self.date_siembra_2.date().toString('yyyy-MM-dd'))
+
+
+
     #* DESACTIVADA
     def populateContextMenu(self,menu: QtWidgets.QMenu, event: QgsMapMouseEvent):
         self.subMenu = menu.addMenu('aGrae')
