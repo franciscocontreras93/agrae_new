@@ -763,39 +763,49 @@ class ExplotacionesComboBox(CustomComboBox):
 class CultivosComboBox(CustomComboBox):
     """
     Combo para Cultivos:
-    - Editable + autocompletado.
-    - Modo normal (multi_select=False):
-        * Usa el comportamiento estándar de CustomComboBox:
-          "Seleccione una opción..." (first_item_text=True).
-        * 'allow_all' funciona como siempre (si True se agrega "Todos los cultivos...").
-    - Modo multi-select (multi_select=True):
-        * Solo agrega "Todos los cultivos..." + cultivos reales (sin "Seleccione una opción").
-        * "Todos los cultivos..." aparece como primer ítem y queda marcado por defecto.
-        * Al marcar cualquier otro cultivo, "Todos los cultivos..." se desmarca automáticamente.
+    - Soporta editable True/False desde init.
+    - Soporta filtro opcional por (idcampania, idexplotacion).
+    - Modo multi_select mantiene su lógica actual (checkboxes).
     """
 
     def __init__(
         self,
-        endpoint: str = "/api/cultivos",
+        endpoint: str = "/gis/cultivos/data_combo/",
         allow_all: bool = False,
         all_text: str = "Todos los cultivos...",
         auto_enable_on_load: bool = False,
         parent=None,
         *,
         multi_select: bool = False,
+        editable: bool = True,
+        filter_enabled: bool = False,
     ):
-        # flag interno
+        # ---- flags internos (multi-select) ----
         self._multi_select = bool(multi_select)
 
-        # Ajustamos el comportamiento base según sea multi o no:
-        # - multi_select=True  -> queremos SIEMPRE "Todos..." y NUNCA "Seleccione una opción..."
-        # - multi_select=False -> dejamos que 'allow_all' y first_item_text=True actúen como siempre
+        # ---- estado filtros ----
+        self._filter_enabled: bool = bool(filter_enabled)
+        self._filter_idcampania: int | None = None
+        self._filter_idexplotacion: int | None = None
+
+        # si falta contexto (campaña/exp) y filtro está ON:
+        self._require_filter_context: bool = True
+        # si require_filter_context=False y faltan ids:
+        self._load_without_filter_if_missing: bool = False
+
+        # combos bindeados (opcionales)
+        self._bound_campaign_combo: CampaniasComboBox | None = None
+        self._bound_explotacion_combo: ExplotacionesComboBox | None = None
+
+        # comportamiento base (tu lógica actual)
         if self._multi_select:
-            effective_allow_all = True          # siempre hay "Todos los cultivos..."
-            effective_first_item = False        # no añadimos "Seleccione una opción..."
+            effective_allow_all = True
+            effective_first_item = False
+            effective_editable = True  # multi-select requiere editable para mostrar lineEdit
         else:
-            effective_allow_all = allow_all     # respeta el parámetro
-            effective_first_item = True         # muestra "Seleccione una opción..."
+            effective_allow_all = allow_all
+            effective_first_item = True
+            effective_editable = bool(editable)
 
         super().__init__(
             endpoint=endpoint,
@@ -804,16 +814,137 @@ class CultivosComboBox(CustomComboBox):
             value_field="id",
             allow_all=effective_allow_all,
             all_text=all_text,
-            editable=True,
+            editable=effective_editable,
             sort_key="nombre",
             sort_reverse=False,
             auto_enable_on_load=auto_enable_on_load,
             first_item_text=effective_first_item,
+            param_provider=self._params,  # <- clave: params dinámicos
         )
 
         if self._multi_select:
             self._init_multi_select_mode()
 
+        self._kickstart_filtering()
+
+    # ------------------- API pública: filtros -------------------
+    def set_filtering_enabled(self, enabled: bool, *, refresh: bool = True) -> None:
+        self._filter_enabled = bool(enabled)
+        if refresh:
+            self._kickstart_filtering()
+
+    def set_filter_context(
+        self,
+        *,
+        idcampania: int | None = None,
+        idexplotacion: int | None = None,
+        require_context: bool | None = None,
+        load_without_filter_if_missing: bool | None = None,
+        refresh: bool = True,
+    ) -> None:
+        """Setea filtros sin bindear combos."""
+        self._bound_campaign_combo = None
+        self._bound_explotacion_combo = None
+        self._filter_idcampania = idcampania
+        self._filter_idexplotacion = idexplotacion
+
+        if require_context is not None:
+            self._require_filter_context = bool(require_context)
+        if load_without_filter_if_missing is not None:
+            self._load_without_filter_if_missing = bool(load_without_filter_if_missing)
+
+        if refresh:
+            self._kickstart_filtering()
+
+    def bind_filters(
+        self,
+        campaign_combo: "CampaniasComboBox",
+        explotacion_combo: "ExplotacionesComboBox",
+        *,
+        enabled: bool = True,
+        require_context: bool = True,
+        load_without_filter_if_missing: bool = False,
+    ) -> None:
+        """Se engancha a campaña+explotación y recarga en cascada."""
+        self._bound_campaign_combo = campaign_combo
+        self._bound_explotacion_combo = explotacion_combo
+        self._filter_enabled = bool(enabled)
+        self._require_filter_context = bool(require_context)
+        self._load_without_filter_if_missing = bool(load_without_filter_if_missing)
+
+        campaign_combo.current_value_changed.connect(self._on_context_changed, type=Qt.QueuedConnection)
+        explotacion_combo.current_value_changed.connect(self._on_context_changed, type=Qt.QueuedConnection)
+
+        campaign_combo.items_loaded.connect(self._kickstart_filtering, type=Qt.QueuedConnection)
+        explotacion_combo.items_loaded.connect(self._kickstart_filtering, type=Qt.QueuedConnection)
+
+        try:
+            campaign_combo.campaigns_loaded.connect(self._kickstart_filtering, type=Qt.QueuedConnection)
+        except Exception:
+            pass
+
+        QTimer.singleShot(0, self._kickstart_filtering)
+
+    def unbind_filters(self, *, refresh: bool = True) -> None:
+        self._bound_campaign_combo = None
+        self._bound_explotacion_combo = None
+        if refresh:
+            self._kickstart_filtering()
+
+    # ------------------- internals -------------------
+    def _params(self) -> dict[str, Any]:
+        """Param provider para el endpoint."""
+        if not self._filter_enabled:
+            return {}
+
+        if self._bound_campaign_combo is not None:
+            self._filter_idcampania = self._bound_campaign_combo.get_current_campaign_id()
+        if self._bound_explotacion_combo is not None:
+            self._filter_idexplotacion = self._bound_explotacion_combo.get_current_explotacion_id()
+
+        if self._filter_idcampania is None or self._filter_idexplotacion is None:
+            return {}
+
+        return {"idcampania": self._filter_idcampania, "idexplotacion": self._filter_idexplotacion}
+
+    def _on_context_changed(self, _val: object) -> None:
+        self._kickstart_filtering()
+
+    def _kickstart_filtering(self) -> None:
+        """Decide si carga filtrado, libre o vacío."""
+        if not self._filter_enabled:
+            self.refresh()
+            return
+
+        params = self._params()
+        if params:
+            self.refresh()
+            return
+
+        # filtro activo pero falta contexto
+        if self._require_filter_context:
+            self._clear_items_safe()
+            return
+
+        if self._load_without_filter_if_missing:
+            self._temporarily_use_default_params_and_refresh()
+            return
+
+        self._clear_items_safe()
+
+    def _temporarily_use_default_params_and_refresh(self) -> None:
+        original_provider = getattr(self, "param_provider", None)
+        self.set_param_provider(lambda: {})
+        try:
+            self.refresh()
+        finally:
+            self.set_param_provider(original_provider if callable(original_provider) else lambda: {})
+
+    def _clear_items_safe(self) -> None:
+        try:
+            self.clear()
+        except Exception:
+            pass
     # ------------------------------------------------------------------
     # API pública extra para multi-select
     # ------------------------------------------------------------------
@@ -999,30 +1130,185 @@ class CultivosComboBox(CustomComboBox):
     
 class RegimenComboBox(CustomComboBox):
     """
-    Combo para Regimen:
-    - Editable + autocompletado.
-    - Etiqueta formateada "Nombre".
-    - auto_enable_on_load=False por defecto: el dock controla su estado (modo edición).
+    Combo para Régimen:
+    - editable True/False desde init
+    - filtro opcional por (idcampania, idexplotacion, idcultivo)
     """
 
-    def __init__(self, endpoint: str = "/gis/regimen/data_combo/", auto_enable_on_load: bool = False, parent=None):
+    def __init__(
+        self,
+        endpoint: str = "/gis/regimen/data_combo/",
+        auto_enable_on_load: bool = False,
+        parent=None,
+        *,
+        editable: bool = True,
+        filter_enabled: bool = False,
+    ):
+        # ---- estado filtros ----
+        self._filter_enabled: bool = bool(filter_enabled)
+        self._filter_idcampania: int | None = None
+        self._filter_idexplotacion: int | None = None
+        self._filter_idcultivo: int | None = None
+
+        self._require_filter_context: bool = True
+        self._load_without_filter_if_missing: bool = False
+
+        self._bound_campaign_combo: CampaniasComboBox | None = None
+        self._bound_explotacion_combo: ExplotacionesComboBox | None = None
+        self._bound_cultivo_combo: CultivosComboBox | None = None
+
         super().__init__(
             endpoint=endpoint,
             parent=parent,
             label_field="nombre",
             value_field="id",
             allow_all=False,
-            editable=True,
+            editable=bool(editable),
             sort_key="nombre",
             sort_reverse=False,
             auto_enable_on_load=auto_enable_on_load,
-             first_item_text=True,
+            first_item_text=True,
+            param_provider=self._params,
         )
 
-    # # --- Helpers de lectura de datos “puros” ---
-    # def get_current_id(self) -> int | None:
-    #     return self.get_current_id() or None
+        self._kickstart_filtering()
 
-    # def get_current_name(self) -> str | None:
-    #     """Devuelve el nombre del Cultivo."""
-    #     return self.get_current_label() or None
+    # ------------------- API pública: filtros -------------------
+    def set_filtering_enabled(self, enabled: bool, *, refresh: bool = True) -> None:
+        self._filter_enabled = bool(enabled)
+        if refresh:
+            self._kickstart_filtering()
+
+    def set_filter_context(
+        self,
+        *,
+        idcampania: int | None = None,
+        idexplotacion: int | None = None,
+        idcultivo: int | None = None,
+        require_context: bool | None = None,
+        load_without_filter_if_missing: bool | None = None,
+        refresh: bool = True,
+    ) -> None:
+        self._bound_campaign_combo = None
+        self._bound_explotacion_combo = None
+        self._bound_cultivo_combo = None
+
+        self._filter_idcampania = idcampania
+        self._filter_idexplotacion = idexplotacion
+        self._filter_idcultivo = idcultivo
+
+        if require_context is not None:
+            self._require_filter_context = bool(require_context)
+        if load_without_filter_if_missing is not None:
+            self._load_without_filter_if_missing = bool(load_without_filter_if_missing)
+
+        if refresh:
+            self._kickstart_filtering()
+
+    def bind_filters(
+        self,
+        campaign_combo: "CampaniasComboBox",
+        explotacion_combo: "ExplotacionesComboBox",
+        cultivo_combo: "CultivosComboBox",
+        *,
+        enabled: bool = True,
+        require_context: bool = True,
+        load_without_filter_if_missing: bool = False,
+    ) -> None:
+        self._bound_campaign_combo = campaign_combo
+        self._bound_explotacion_combo = explotacion_combo
+        self._bound_cultivo_combo = cultivo_combo
+
+        self._filter_enabled = bool(enabled)
+        self._require_filter_context = bool(require_context)
+        self._load_without_filter_if_missing = bool(load_without_filter_if_missing)
+
+        campaign_combo.current_value_changed.connect(self._on_context_changed, type=Qt.QueuedConnection)
+        explotacion_combo.current_value_changed.connect(self._on_context_changed, type=Qt.QueuedConnection)
+        cultivo_combo.current_value_changed.connect(self._on_context_changed, type=Qt.QueuedConnection)
+
+        campaign_combo.items_loaded.connect(self._kickstart_filtering, type=Qt.QueuedConnection)
+        explotacion_combo.items_loaded.connect(self._kickstart_filtering, type=Qt.QueuedConnection)
+        cultivo_combo.items_loaded.connect(self._kickstart_filtering, type=Qt.QueuedConnection)
+
+        try:
+            campaign_combo.campaigns_loaded.connect(self._kickstart_filtering, type=Qt.QueuedConnection)
+        except Exception:
+            pass
+
+        QTimer.singleShot(0, self._kickstart_filtering)
+
+    def unbind_filters(self, *, refresh: bool = True) -> None:
+        self._bound_campaign_combo = None
+        self._bound_explotacion_combo = None
+        self._bound_cultivo_combo = None
+        if refresh:
+            self._kickstart_filtering()
+
+    # ------------------- internals -------------------
+    def _params(self) -> dict[str, Any]:
+        if not self._filter_enabled:
+            return {}
+
+        if self._bound_campaign_combo is not None:
+            self._filter_idcampania = self._bound_campaign_combo.get_current_campaign_id()
+        if self._bound_explotacion_combo is not None:
+            self._filter_idexplotacion = self._bound_explotacion_combo.get_current_explotacion_id()
+        if self._bound_cultivo_combo is not None:
+            self._filter_idcultivo = self._bound_cultivo_combo.get_current_id()
+
+        if (
+            self._filter_idcampania is None
+            or self._filter_idexplotacion is None
+            or self._filter_idcultivo is None
+        ):
+            return {}
+
+        return {
+            "idcampania": self._filter_idcampania,
+            "idexplotacion": self._filter_idexplotacion,
+            "idcultivo": self._filter_idcultivo,
+        }
+
+    def _on_context_changed(self, _val: object) -> None:
+        self._kickstart_filtering()
+
+    def _kickstart_filtering(self) -> None:
+        if not self._filter_enabled:
+            self.refresh()
+            return
+
+        params = self._params()
+        if params:
+            self.refresh()
+            return
+
+        if self._require_filter_context:
+            self._clear_items_safe()
+            return
+
+        if self._load_without_filter_if_missing:
+            self._temporarily_use_default_params_and_refresh()
+            return
+
+        self._clear_items_safe()
+
+    def _temporarily_use_default_params_and_refresh(self) -> None:
+        original_provider = getattr(self, "param_provider", None)
+        self.set_param_provider(lambda: {})
+        try:
+            self.refresh()
+        finally:
+            self.set_param_provider(original_provider if callable(original_provider) else lambda: {})
+
+    def _clear_items_safe(self) -> None:
+        try:
+            self.clear()
+        except Exception:
+            pass
+    """
+    Combo para Regimen:
+    - Editable + autocompletado.
+    - Etiqueta formateada "Nombre".
+    - auto_enable_on_load=False por defecto: el dock controla su estado (modo edición).
+    """

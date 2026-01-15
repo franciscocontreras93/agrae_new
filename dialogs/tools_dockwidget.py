@@ -1,5 +1,7 @@
 #type: ignore
 
+from email.policy import default
+from enum import auto
 import os
 
 import psycopg2
@@ -99,7 +101,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         
 
         # self.combo_campania.refresh()  # backend-driven combo loads itself
-        self.getCultivosData()
+        # self.getCultivosData()
         self.getRegimenData()
 
         
@@ -209,9 +211,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
 
 
+        self.combo_cultivo_2 = CultivosComboBox(editable=False, filter_enabled=True, auto_enable_on_load=True)
+        self.combo_regimen_2 = RegimenComboBox(editable=False, filter_enabled=True, auto_enable_on_load=True)
 
-        self.combo_cultivo_2 = QtWidgets.QComboBox()
-        self.combo_regimen_2 = QtWidgets.QComboBox()
+        self.combo_cultivo_2.bind_filters(self.combo_campania, self.combo_explotacion, enabled=True)
+        self.combo_regimen_2.bind_filters(self.combo_campania, self.combo_explotacion, self.combo_cultivo_2, enabled=True)
+
         self.line_produccion_2 = QtWidgets.QSpinBox()
         self.line_produccion_2.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
         self.line_produccion_2.setSuffix(" Kg/Ha")
@@ -230,8 +235,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.date_cosecha_2.setEnabled(False) # TODO ACTIVAR CUANDO SE INTEGRE LA DATA COMPLETA A LA API DE AGRAE.
 
 
-        self.btn_save_cultivo_exp = QtWidgets.QPushButton("Guardar")
-        self.btn_save_cultivo_exp.setEnabled(False)
+        self.btn_save_cultivo_prod_exp = QtWidgets.QPushButton("Guardar")
+        self.btn_save_cultivo_prod_exp.setEnabled(True)
 
         self.btn_save_cultivo_date_exp = QtWidgets.QPushButton("Guardar")
 
@@ -462,7 +467,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Régimen:"), self.combo_regimen_2)
         form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Producción Esperada (Kg/Ha):"), self.line_produccion_2)
         # form_layout_in_group_act_cult.addRow(QtWidgets.QLabel("Fecha Siembra:"), self.date_siembra_2)
-        form_layout_in_group_act_cult.addRow(self.btn_save_cultivo_exp)
+        form_layout_in_group_act_cult.addRow(self.btn_save_cultivo_prod_exp)
         self.tab_widget_fertilizacion.addTab(widget_act_cult_exp, "Actualizar Produccion")
 
 
@@ -516,7 +521,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.check_cosecha.stateChanged.connect(lambda e: self.check_status(e,self.fechaCosecha,self.date_cosecha))
 
         self.combo_aplicacion.currentIndexChanged.connect(self.getCultivosCampaniaData)
-        self.btn_save_cultivo_exp.clicked.connect(self.actualizarDataCultivo)
+        self.btn_save_cultivo_prod_exp.clicked.connect(self.actualizarProduccionCultivo)
         self.btn_save_cultivo_date_exp.clicked.connect(self.actualizarDataCultivoFechas)
 
         # Set object names for stylesheets or direct access if needed (optional but good practice)
@@ -559,6 +564,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.GenerarMapaSig.triggered.connect(self.getMapaSig)
         self.GenerarMapaRindes = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar Mapa de Rendimiento',self)
         self.GenerarMapaRindes.triggered.connect(self.getMapaRindes)
+        self.GenerarIntegralTermica = QtWidgets.QAction(agraeGUI().getIcon('weather'),'Integral Termica',self)
+        self.GenerarIntegralTermica.triggered.connect(self.getIntegralTermicaLayer)
+
         self.GenerarUnidadesFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('tractor'),'Exportar SHP de Preescripcion',self)
         self.GenerarUnidadesFertilizacion.triggered.connect(self.exportarUFS)
         self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Preescripcion',self)
@@ -576,6 +584,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
             self.CargarCapasExplotacion,
             self.GenerarReporteFertilizacion,
             self.GenerarMapaSig,
+            self.GenerarIntegralTermica,
             self.GenerarUnidadesFertilizacion,
             self.GenerarResumenFertilizacion,
             self.GenerarAmbientes,
@@ -1291,6 +1300,7 @@ FROM
         self.getLotesExplotacionLayer()
             
     def getCultivosData(self):
+        """[DEPRECATED]"""
         with agraeDataBaseDriver().connection().cursor() as cursor:
             try:
                 cursor.execute('SELECT DISTINCT UPPER(nombre), idcultivo  FROM agrae.cultivo ORDER BY UPPER(nombre)')
@@ -1303,6 +1313,7 @@ FROM
                 print(ex)
     
     def getRegimenData(self):
+        """[DEPRECATED]"""
         with agraeDataBaseDriver().connection().cursor() as cursor:
             try:
                 cursor.execute('SELECT DISTINCT UPPER(nombre), id  FROM analytic.regimen ORDER BY id')
@@ -1723,6 +1734,12 @@ FROM
         layer = self.tools.getDataBaseLayer(query,name,styleName='Rendimiento',debug=True)
         QgsProject.instance().addMapLayer(layer)
 
+    def getIntegralTermicaLayer(self):
+        query = aGraeSQLTools().getSql('integral_termica_query.sql').format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
+        name = '{}_{}_Integral_Termica'.format(self.combo_campania.get_current_campaign_name(),self.combo_explotacion.get_current_explotacion_name())
+        layer = self.tools.getDataBaseLayer(query,name,styleName='integral_termica',memory=True,debug=True)
+        QgsProject.instance().addMapLayer(layer)
+
     def exportarUFS(self):
         idcampania = self.combo_campania.currentData()
         idexplotacion = self.combo_explotacion.currentData()
@@ -1759,16 +1776,16 @@ FROM
         self.tools.exportarResumenFertilizacion(idcampania,idexplotacion,nameExp)
 
     
-    def actualizarDataCultivo(self):
+    def actualizarProduccionCultivo(self):
         idcampania = self.combo_campania.currentData()
         idexplotacion = self.combo_explotacion.currentData()
         idCultivo = self.combo_cultivo_2.currentData()
         idRegimen = self.combo_regimen_2.currentData()
         produccion = self.line_produccion_2.value()
-        if self.combo_regimen_2.currentData() != None:
+        if self.combo_cultivo_2.currentData() != None and self.combo_regimen_2.currentData() != None:
             reply = QtWidgets.QMessageBox.question(self,'aGrae Toolbox','Quieres Actualizar la data para todos los cultivos: {}.\nDe la explotacion {}?'.format(self.combo_cultivo_2.currentText() , self.combo_explotacion.currentText()),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
             if reply == QtWidgets.QMessageBox.Yes:
-                self.tools.actualizarDataCultivo(idRegimen,produccion,idcampania,idexplotacion,idCultivo)
+                self.tools.actualizarProduccionCultivo(idRegimen,produccion,idcampania,idexplotacion,idCultivo)
 
 
     def actualizarDataCultivoFechas(self):

@@ -111,6 +111,7 @@ class aGraeSelectTool(QgsMapToolIdentify):
         menu = QMenu(self.canvas)
 
         act_select_lote = QAction("Seleccionar Lote", menu)
+        act_zoom_lote = QAction("Zoom al lote", menu)
         act_select_lote.triggered.connect(lambda _, f=feature: self._toggle_native_selection(f))
 
         menu.addAction(act_select_lote)
@@ -120,7 +121,7 @@ class aGraeSelectTool(QgsMapToolIdentify):
         menu_basicas = menu.addMenu("aGrae")
 
         # # Opción 1: crear QAction y conectarla
-        act_zoom_lote = QAction("Zoom al lote", menu_basicas)
+        act_zoom_lote = QAction("Detalle Integral Térmica", menu_basicas)
         # # triggered(bool) -> capturamos el bool con "_" y fijamos 'feature' en el closure
         act_zoom_lote.triggered.connect(lambda _, f=feature: self._zoom_to_feature(f))
         act_pan_lote = QAction("Centrar en lote", menu_basicas)

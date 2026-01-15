@@ -41,8 +41,8 @@ class aGraeTools():
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        self.backend_endpoint = 'http://142.93.41.109:8000'
-        # self.backend_endpoint = 'http://localhost:8000'
+        # self.backend_endpoint = 'http://142.93.41.109:8000'
+        self.backend_endpoint = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
@@ -547,9 +547,10 @@ class aGraeTools():
                     data = cursor.fetchall()
                     if debug:
                         # print(sql)
-                        # print(data)
+                        print(data)
                         print(coldesc)
                         print(set([c[1] for c in coldesc]))
+                        pass
                     # QgsMessageLog.logMessage('{}'.format(sql), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
                     # QgsMessageLog.logMessage('{}'.format(coldesc), '{} Debug'.format(self.plugin_name), level=Qgis.Warning) #! DEBUG
                     fields = [QgsField(c[0],col_types[c[1]]) for c in coldesc]
@@ -902,22 +903,25 @@ class aGraeTools():
                 self.messages('aGrae Tools','No se pudieron asignar los cultivos.\n {}'.format(ex),2,alert=True)
                 raise Exception(ex)
     
-    def actualizarDataCultivo(self,regimen,produccion,idcampania,idexplotacion,idcultivo):
-        sql = '''UPDATE campaign.data
-        SET 
-        idregimen = {},
-        prod_esperada = {}
-        WHERE idcampania = {} and idexplotacion = {} and idcultivo = {}'''.format(regimen,produccion,idcampania,idexplotacion,idcultivo)
-        with self.conn.cursor() as cursor:
-            try:
-                cursor.execute(sql)
-                self.conn.commit()
-
-                self.messages('aGrae Tools','Se actualizo la informacion de los cultivos Correctamente',3)
-            
-            except Exception as ex:
-                self.messages('aGrae Tools','No se pudieron actualizar la informacion de los cultivos.\n {}'.format(ex),2,alert=True)
-                raise Exception(ex)
+    def actualizarProduccionCultivo(self,idregimen,produccion,idcampania,idexplotacion,idcultivo):
+        payload = {
+            "idcampania": idcampania,
+            "idexplotacion": idexplotacion,
+            "idregimen": idregimen,
+            "prod_esperada": produccion,
+            "idcultivo": idcultivo,
+        }
+        
+        endpoint = self.backend_endpoint + '/gis/lotes/update/prod_esperada'
+        try:
+            response = requests.patch(endpoint,json=payload,timeout=300)
+            if response.status_code == 200:
+                self.messages('aGrae GIS','Producción Esperada Actualizada Correctamente',3,alert=True)
+            else:
+                self.messages('aGrae GIS','Ocurrio un error al actualizar las fechas de siembra.\n {}'.format(response.text),2,alert=True)
+        except Exception as ex:
+            self.messages('aGrae GIS','Ocurrio un error al actualizar las fechas de siembra.\n {}'.format(ex),2,alert=True)
+            print(ex)
 
     async def _post_json(self, endpoint: str, payload: dict[str, Any], *, timeout_sec: int = 300) -> dict[str, Any]:
         """
