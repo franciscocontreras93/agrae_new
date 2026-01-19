@@ -564,7 +564,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.GenerarMapaSig.triggered.connect(self.getMapaSig)
         self.GenerarMapaRindes = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar Mapa de Rendimiento',self)
         self.GenerarMapaRindes.triggered.connect(self.getMapaRindes)
-        self.GenerarIntegralTermica = QtWidgets.QAction(agraeGUI().getIcon('weather'),'Integral Termica',self)
+        self.GenerarIntegralTermica = QtWidgets.QAction(agraeGUI().getIcon('weather'),'Generar Mapa de Integral Termica',self)
         self.GenerarIntegralTermica.triggered.connect(self.getIntegralTermicaLayer)
 
         self.GenerarUnidadesFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('tractor'),'Exportar SHP de Preescripcion',self)

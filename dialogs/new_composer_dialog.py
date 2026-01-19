@@ -445,7 +445,7 @@ class new_Composer(QDialog):
                 cultivo_literal,
                 iddata_literal,
                 '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
-                          organi ,st_asText(geom) as geom
+                          round((organi/100)::numeric,2)::double precision as organi,st_asText(geom) as geom
                    from segm_analitica;'''
             ),
             'Relacion CN': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(

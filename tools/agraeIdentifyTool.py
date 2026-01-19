@@ -9,6 +9,7 @@ from qgis.core import QgsProject, QgsFeature
 from qgis.utils import iface
 
 from ..dialogs import aGraeGEEDialog
+from ..dialogs.integral_termica_detail_dialog import IntegralTermicaDialog
 
 
 class aGraeSelectTool(QgsMapToolIdentify):
@@ -111,7 +112,7 @@ class aGraeSelectTool(QgsMapToolIdentify):
         menu = QMenu(self.canvas)
 
         act_select_lote = QAction("Seleccionar Lote", menu)
-        act_zoom_lote = QAction("Zoom al lote", menu)
+        act_it_dialog = QAction("Zoom al lote", menu)
         act_select_lote.triggered.connect(lambda _, f=feature: self._toggle_native_selection(f))
 
         menu.addAction(act_select_lote)
@@ -121,14 +122,14 @@ class aGraeSelectTool(QgsMapToolIdentify):
         menu_basicas = menu.addMenu("aGrae")
 
         # # Opción 1: crear QAction y conectarla
-        act_zoom_lote = QAction("Detalle Integral Térmica", menu_basicas)
+        act_it_dialog = QAction("Detalle Integral Térmica", menu_basicas)
         # # triggered(bool) -> capturamos el bool con "_" y fijamos 'feature' en el closure
-        act_zoom_lote.triggered.connect(lambda _, f=feature: self._zoom_to_feature(f))
+        act_it_dialog.triggered.connect(lambda _, f=feature: self._open_integral_termica_dialog(f.id()))
         act_pan_lote = QAction("Centrar en lote", menu_basicas)
         act_pan_lote.triggered.connect(lambda _, f=feature: self._pan_to_feature(f))
 
 
-        menu_basicas.addAction(act_zoom_lote)
+        menu_basicas.addAction(act_it_dialog)
 
         # IMPORTANTE: añadir el submenú al menú principal (ya lo hicimos con addMenu arriba)
         # NO añadas la acción al menú raíz con menu.addAction(act_zoom_lote),
@@ -287,6 +288,11 @@ class aGraeSelectTool(QgsMapToolIdentify):
     def _open_gee_dialog(self):
         dlg = aGraeGEEDialog()
         dlg.exec()
+
+    def _open_integral_termica_dialog(self, iddata):
+        # print(iddata)
+        dlg = IntegralTermicaDialog(iddata=iddata)
+        dlg.exec()
     # ----------------- Hooks proyecto/capa -----------------
     def _on_project_change(self, *args, **kwargs):
         self.clearCustomSelection()
@@ -305,3 +311,5 @@ class aGraeSelectTool(QgsMapToolIdentify):
     # opcional: leer ids resaltados por la herramienta
     def customSelectedIds(self):
         return list(self._custom_ids)
+    
+    
