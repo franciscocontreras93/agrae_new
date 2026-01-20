@@ -15,6 +15,7 @@ data AS (
         d.idcultivo,
         c.nombre AS cultivo,
         d.idregimen,
+        reg.nombre as regimen,
         d.fertilizantefondoformula,
         d.fertilizantefondoajustado,
         d.fertilizantecob1formula,
@@ -39,6 +40,7 @@ data AS (
     FROM campaign.data d 
     LEFT JOIN agrae.cultivo c   ON c.idcultivo = d.idcultivo
     JOIN agrae.explotacion ex   ON d.idexplotacion = ex.idexplotacion
+    join analytic.regimen reg on d.idregimen = reg.id
     JOIN params p               ON true
     WHERE
         (
@@ -62,7 +64,8 @@ lotes as (select l.idlote, l.nombre, st_transform(st_buffer(st_transform(l.geom,
 	d.idcultivo,
 	d.explotacion,
 	d.cultivo,
-	d.idregimen as regimen,
+	d.idregimen,
+	d.regimen,
 	d.ms_cosecha,
 	d.extraccioncosechan,
 	d.extraccioncosechap,
@@ -89,6 +92,7 @@ segm_analitica as (select distinct
 	m.codigo,
 	d.idlote,
 	d.nombre,
+	d.regimen,
 	s.idsegmento,
 	s.segmento,
 	txt.grupo_label suelo,
@@ -471,6 +475,7 @@ join data d using (iddata)
 uf_final as (select 
 l.explotacion,
 l.cultivo,
+l.regimen,
 l.prod_esperada,
 a.prod_ponderada,
 l.nombre as lote,
@@ -501,6 +506,7 @@ l.iddata,
 l.nombre,
 l.explotacion,
 l.cultivo,
+l.regimen,
 l.prod_esperada,
 a.prod_ponderada,
 a.codigo,
@@ -527,6 +533,7 @@ uf.iddata::varchar||uf.uf::varchar as iddata,
 uf.explotacion,
 uf.lote,
 uf.cultivo,
+uf.regimen,
 uf.prod_esperada,
 uf.prod_ponderada,
 uf.codigo,
@@ -644,7 +651,5 @@ st_asText(st_union(geom)) as geom
 from fert_intraparcelaria
 group by iddata,lote,f_fondo,f_cob1,f_cob2,f_cob3),
 mapa_sig as (select distinct fp.*,st_asText(fi.geom) as geom from fert_intraparcelaria  fi join fert_report fp on  fp.iddata = fi.iddata )
--- select * from mapa_sig
+-- select * from data;
 {}
-
-

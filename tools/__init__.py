@@ -41,8 +41,8 @@ class aGraeTools():
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        # self.backend_endpoint = 'http://142.93.41.109:8000'
-        self.backend_endpoint = 'http://localhost:8000'
+        self.backend_endpoint = 'http://142.93.41.109:8000'
+        # self.backend_endpoint = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
@@ -720,7 +720,8 @@ class aGraeTools():
             round(((((fp.densidad   * 10000 * 0.3) * fp.no3) /1000 * 14/62 ))::numeric,2) as no3_kg_ha, 
             round(((((fp.densidad  * 10000 * 0.3) * fp.nh4) /1000 * 14/18 ))::numeric,2) as nh4_kg_ha,
             round(((((fp.densidad   * 10000 * 0.3) * fp.no3) /1000 * 14/62 ))::numeric,2) + round(((((fp.densidad  * 10000 * 0.3) * fp.nh4) /1000 * 14/18 ))::numeric,2) as n_mineral_kg_ha,
-            fi.prod_ponderada as rinde 
+            fi.prod_ponderada as rinde,
+            fi.regimen
             from fert_intraparcelaria  fi 
             join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf 
             order by lote,uf_etiqueta;'''

@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
+import agrae
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QSizePolicy, QWidget
@@ -18,6 +19,9 @@ from matplotlib.figure import Figure
 import matplotlib.dates as mdates
 import matplotlib.cm as cm
 import matplotlib.patches as mpatches
+
+
+from ..tools import aGraeTools
 
 
 # -----------------------------
@@ -53,20 +57,101 @@ def _group_consecutive_ranges(rows: List[Dict[str, Any]], key: str) -> List[Tupl
     return ranges
 
 
+def _range_midpoint_date(dates: List[datetime], i0: int, i1: int) -> datetime:
+    """
+    Midpoint temporal del rango [i0..i1] considerando el gráfico con step='post',
+    por lo que el rango realmente termina en (date[i1] + 1 día).
+    """
+    start = dates[i0]
+    end_edge = dates[i1] + timedelta(days=1)
+    return start + (end_edge - start) / 2
+
+
+def _build_manejo_spans(
+    rows: List[Dict[str, Any]],
+    dates: List[datetime],
+    phase_key: str,
+) -> List[Dict[str, Any]]:
+    """
+    Para cada is_manejo_hito=True:
+      - busca el rango de etapa (por phase_key) donde cae la fecha del manejo
+      - calcula mid_prev (mitad de etapa anterior) y mid_next (mitad de etapa siguiente)
+      - devuelve spans [{start, end, code, name, i_manejo}]
+    """
+    if not rows:
+        return []
+
+    # rangos por etapa
+    ranges = _group_consecutive_ranges(rows, phase_key)  # [(etapa, i0, i1), ...]
+    if not ranges:
+        return []
+
+    # para buscar rápido a qué rango pertenece un índice i
+    # (como ranges son consecutivos, basta con iterar)
+    def range_index_for_i(i: int) -> int:
+        for k, (_, a, b) in enumerate(ranges):
+            if a <= i <= b:
+                return k
+        return 0
+
+    spans: List[Dict[str, Any]] = []
+
+    for i, r in enumerate(rows):
+        if not r.get("is_manejo_hito"):
+            continue
+
+        k = range_index_for_i(i)
+
+        # etapa anterior / siguiente
+        k_prev = k - 1 if k > 0 else None
+        k_next = k + 1 if k < len(ranges) - 1 else None
+
+        # midpoint anterior/siguiente (si no existe, usamos borde disponible)
+        if k_prev is not None:
+            _, a0, a1 = ranges[k_prev]
+            mid_prev = _range_midpoint_date(dates, a0, a1)
+        else:
+            # si no hay anterior, tomamos el inicio del rango actual
+            _, a0, _ = ranges[k]
+            mid_prev = dates[a0]
+
+        if k_next is not None:
+            _, b0, b1 = ranges[k_next]
+            mid_next = _range_midpoint_date(dates, b0, b1)
+        else:
+            # si no hay siguiente, tomamos el fin del rango actual (+1 día como edge)
+            _, _, b1 = ranges[k]
+            mid_next = dates[b1] + timedelta(days=1)
+
+        # asegurar orden
+        if mid_next < mid_prev:
+            mid_prev, mid_next = mid_next, mid_prev
+
+        spans.append({
+            "start": mid_prev,
+            "end": mid_next,
+            "code": r.get("manejo_hito"),
+            "name": r.get("manejo_hito_nombre"),
+            "i_manejo": i,
+        })
+
+    return spans
+
+
 # -----------------------------
 # Background task
 # -----------------------------
 class FetchGDDDetailTask(QgsTask):
-    def __init__(self, url: str, params: Optional[dict] = None):
+    def __init__(self, iddata: int):
         super().__init__("Cargando integral térmica", QgsTask.CanCancel)
-        self.url = url
-        self.params = params or {}
+        self.url_base = aGraeTools().backend_endpoint
+        self.url = f"{self.url_base}/gis/integral_termica/gdd_detail/{iddata}"
         self.result_data: Optional[List[Dict[str, Any]]] = None
         self.error: Optional[str] = None
 
     def run(self) -> bool:
         try:
-            r = requests.get(self.url, params=self.params, timeout=60)
+            r = requests.get(self.url, timeout=60)
             r.raise_for_status()
             data = r.json()
             if not isinstance(data, list):
@@ -84,28 +169,33 @@ class FetchGDDDetailTask(QgsTask):
 class IntegralTermicaDialog(QDialog):
     """
     Endpoint: /gis/integral_termica/gdd_detail/{iddata}
+
+    Cambios NUEVOS:
+      - Dibuja rangos de MANEJO (is_manejo_hito) desde la mitad de la etapa anterior
+        hasta la mitad de la etapa siguiente (por phase_key).
     """
 
     def __init__(
         self,
         parent=None,
-        base_url: str = "http://127.0.0.1:8000",
         iddata: Optional[int] = None,
-        params: Optional[dict] = None,
         phase_key: str = "etapa_actual",  # o "tramo"
         phase_alpha: float = 0.22,
-        draw_hito_vlines: bool = True,   # líneas negras (sin puntos/labels)
+        draw_hito_vlines: bool = True,    # líneas negras (sin puntos/labels)
+        draw_manejo_spans: bool = True,   # NUEVO
+        manejo_alpha: float = 0.18,       # NUEVO
     ):
         super().__init__(parent)
-        self.setWindowTitle("Detalle Integral Térmica (GDD)")
+        self.setWindowTitle("aGrae | Integral térmica detalle")
         self.resize(1200, 680)
 
-        self.base_url = base_url.rstrip("/")
         self.iddata = iddata
-        self.params = params or {}
         self.phase_key = phase_key
         self.phase_alpha = phase_alpha
         self.draw_hito_vlines = draw_hito_vlines
+
+        self.draw_manejo_spans = draw_manejo_spans
+        self.manejo_alpha = manejo_alpha
 
         self.rows: List[Dict[str, Any]] = []
         self.dates: List[datetime] = []
@@ -188,8 +278,7 @@ class IntegralTermicaDialog(QDialog):
             return
 
         self._set_loading(True)
-        url = f"{self.base_url}/gis/integral_termica/gdd_detail/{int(self.iddata)}"
-        task = FetchGDDDetailTask(url, self.params)
+        task = FetchGDDDetailTask(self.iddata)
 
         def _done():
             self._set_loading(False)
@@ -211,7 +300,7 @@ class IntegralTermicaDialog(QDialog):
             self._build_series()
             self._draw()
 
-            self.lbl_title.setText(f"GDD detail (iddata={self.iddata}) — {len(rows)} días")
+            self.lbl_title.setText(f"GDD detail (iddata={self.iddata})")
 
         task.taskCompleted.connect(_done)
         task.taskTerminated.connect(_done)
@@ -238,12 +327,22 @@ class IntegralTermicaDialog(QDialog):
         # Relleno por etapas hasta la curva + leyenda
         phase_patches = self._draw_phase_fill_to_curve_and_legend()
 
+        # NUEVO: spans de manejo desde mitad etapa anterior hasta mitad etapa siguiente
+        manejo_patches = []
+        if self.draw_manejo_spans:
+            manejo_patches = self._draw_manejo_spans_prevnext_midpoints()
+
         # Curva principal
         self.ax.plot(self.dates, self.gdd_acum, lw=2, label="GDD acumulada", zorder=10)
 
         # Líneas negras (opcional) en hitos, SIN puntos ni etiquetas
         if self.draw_hito_vlines:
             self._draw_hito_vlines_to_curve()
+
+
+        # HOY (línea verde)
+        self._draw_today_vline_to_curve()
+
 
         # Formato
         self.ax.set_ylabel("GDD acumulada")
@@ -257,12 +356,19 @@ class IntegralTermicaDialog(QDialog):
             ymax = 1.0
         self.ax.set_ylim(0, ymax * 1.10)
 
-        # Leyendas: serie arriba-izq, etapas a la derecha
+        # Leyendas: serie arriba-izq, etapas+manejo a la derecha
         leg1 = self.ax.legend(loc="upper left", fontsize=9)
+        handles_right = []
         if phase_patches:
-            leg2 = self.ax.legend(
-                handles=phase_patches,
-                title=self.phase_key,
+            handles_right.extend(phase_patches)
+        if manejo_patches:
+            handles_right.append(mpatches.Patch(color="none", label=""))  # separador
+            handles_right.extend(manejo_patches)
+
+        if handles_right:
+            self.ax.legend(
+                handles=handles_right,
+                title=f"{self.phase_key} / manejo",
                 loc="upper left",
                 bbox_to_anchor=(1.01, 1.0),
                 borderaxespad=0.0,
@@ -307,12 +413,10 @@ class IntegralTermicaDialog(QDialog):
 
             c = color_map.get(v, (0.8, 0.9, 1.0, 1.0))
 
-            # segmento base
             x_seg = self.dates[i0:i1 + 1]
             y_seg = self.gdd_acum[i0:i1 + 1]
 
             # extender al día siguiente para NO dejar huecos
-            # (cierra el último rectángulo del tramo)
             last_x = self.dates[i1]
             last_y = self.gdd_acum[i1]
             x_seg = x_seg + [last_x + timedelta(days=1)]
@@ -322,18 +426,95 @@ class IntegralTermicaDialog(QDialog):
                 x_seg,
                 0,
                 y_seg,
-                step="post",           # clave para que no queden gaps en cambios
+                step="post",
                 color=c,
                 alpha=self.phase_alpha,
                 linewidth=0.0,
                 zorder=1
             )
 
-        # patches de leyenda (una por etapa)
         patches: List[mpatches.Patch] = []
         for v in unique_vals:
             label = v if v else "(vacío)"
             patches.append(mpatches.Patch(color=color_map[v], alpha=self.phase_alpha, label=label))
+        return patches
+
+    def _draw_manejo_spans_prevnext_midpoints(self) -> List[mpatches.Patch]:
+        spans = _build_manejo_spans(self.rows, self.dates, self.phase_key)
+        if not spans:
+            return []
+
+        import numpy as np
+        cmap = cm.get_cmap("tab10")
+
+        # color por código de manejo (C1, C2, F, ...)
+        codes: List[str] = []
+        for s in spans:
+            code = str(s.get("code") or "M")
+            if code not in codes:
+                codes.append(code)
+        code_color = {code: cmap(i % 10) for i, code in enumerate(codes)}
+
+        # preparar arrays numéricos para interpolar sobre la curva
+        x_num = mdates.date2num(self.dates)
+        y_arr = np.array(self.gdd_acum, dtype=float)
+
+        def y_at(dt):
+            """Interpolación lineal de y sobre la curva para un datetime dt."""
+            return float(np.interp(mdates.date2num(dt), x_num, y_arr))
+
+        def fill_span_to_curve(start_dt, end_dt, color_rgba):
+            # puntos internos (días existentes) dentro del rango
+            idx = [i for i, d in enumerate(self.dates) if start_dt <= d <= end_dt]
+
+            # construir segmentos x/y incluyendo bordes exactos start/end
+            xs = [start_dt]
+            ys = [y_at(start_dt)]
+
+            for i in idx:
+                xs.append(self.dates[i])
+                ys.append(self.gdd_acum[i])
+
+            xs.append(end_dt)
+            ys.append(y_at(end_dt))
+
+            # asegurar orden temporal
+            xs, ys = zip(*sorted(zip(xs, ys), key=lambda t: t[0]))
+
+            # límite superior del gráfico (dinámico)
+            y_top = self.ax.get_ylim()[1]
+
+            self.ax.fill_between(
+                list(xs),
+                list(ys),
+                [y_top] * len(ys),
+                step="post",
+                color=color_rgba,
+                alpha=self.manejo_alpha,
+                linewidth=0.0,
+                zorder=2
+            )
+
+        # dibujar spans recortados con la curva
+        for s in spans:
+            start = s["start"]
+            end = s["end"]
+            code = str(s.get("code") or "M")
+            c = code_color.get(code, (0.2, 0.2, 0.2, 1.0))
+
+            fill_span_to_curve(start, end, c)
+
+        # leyenda
+        patches: List[mpatches.Patch] = []
+        for code in codes:
+            name = None
+            for s in spans:
+                if str(s.get("code") or "M") == code and s.get("name"):
+                    name = s.get("name")
+                    break
+            label = f"{code} - {name}" if name else code
+            patches.append(mpatches.Patch(color=code_color[code], alpha=self.manejo_alpha, label=label))
+
         return patches
 
     def _draw_hito_vlines_to_curve(self):
@@ -344,6 +525,77 @@ class IntegralTermicaDialog(QDialog):
             dt = self.dates[i]
             y = self.gdd_acum[i]
             self.ax.vlines(dt, 0, y, colors="black", linewidth=1.1, alpha=0.70, zorder=9)
+    
+    def _draw_today_vline_to_curve(self):
+        """
+        Dibuja una línea vertical para HOY (fecha local), similar a un hito.
+        - Si HOY está fuera del rango de fechas del gráfico, no dibuja nada.
+        - Corta la línea en la curva usando interpolación lineal simple entre puntos.
+        """
+        if not self.dates or not self.gdd_acum:
+            return
+
+        today = datetime.now().date()
+
+        # rango visible de datos (por fecha)
+        d0 = self.dates[0].date()
+        d1 = self.dates[-1].date()
+        if today < d0 or today > d1:
+            return
+
+        # buscar segmento donde cae "today" para interpolar y
+        # (asumimos self.dates ordenado)
+        y_today = None
+        for i in range(len(self.dates) - 1):
+            a = self.dates[i].date()
+            b = self.dates[i + 1].date()
+            if a <= today <= b:
+                ya = self.gdd_acum[i]
+                yb = self.gdd_acum[i + 1]
+
+                if a == b:
+                    y_today = ya
+                else:
+                    # interpolación por fracción de días (date -> ordinal)
+                    ta = datetime.combine(a, datetime.min.time()).toordinal()
+                    tb = datetime.combine(b, datetime.min.time()).toordinal()
+                    tt = datetime.combine(today, datetime.min.time()).toordinal()
+                    t = (tt - ta) / (tb - ta)
+                    y_today = ya + (yb - ya) * t
+                break
+
+        if y_today is None:
+            # por si coincide exactamente con el último punto
+            if today == self.dates[-1].date():
+                y_today = self.gdd_acum[-1]
+            else:
+                return
+
+        x_today = datetime.combine(today, datetime.min.time())
+
+        # Línea tipo "hito", pero diferente: verde + punteada (puedes cambiarlo)
+        self.ax.vlines(
+            x_today, 0, y_today,
+            colors="#16a34a",           # verde
+            linewidth=1.8,
+            linestyles="--",
+            alpha=0.95,
+            zorder=11
+        )
+
+        # Opcional: etiqueta pequeñita arriba
+        self.ax.annotate(
+            "HOY",
+            xy=(x_today, y_today),
+            xytext=(0, 6),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+            color="#16a34a",
+            zorder=12
+        )
+
 
     # ---------------- Hover / tooltip
     def _reset_hover_artists(self):
@@ -428,13 +680,25 @@ class IntegralTermicaDialog(QDialog):
         gdd_a = _safe_float(r.get("gdd_acum"), 0.0)
         tmean = r.get("tmean_corr", "")
 
+        # manejo
+        is_m = "🧪" if r.get("is_manejo_hito") else ""
+        mh = r.get("manejo_hito")
+        mh_n = r.get("manejo_hito_nombre")
+        mh_u = r.get("manejo_hito_umbral")
+        gdd_m = r.get("gdd_acum_en_manejo")
+
+        manejo_line = ""
+        if r.get("is_manejo_hito"):
+            manejo_line = f"\nManejo: {mh} ({mh_n}) umbral={mh_u} gdd={gdd_m}"
+
         return (
-            f"{dt.strftime('%d/%m/%Y')} {is_hito}\n"
+            f"{dt.strftime('%d/%m/%Y')} {is_hito}{is_m}\n"
             f"Tramo: {tramo}\n"
             f"Etapa: {etapa}  Umbral: {umbral}\n"
             f"Tmean corr: {tmean}\n"
             f"GDD día: {gdd_d:.2f}\n"
             f"GDD acum: {gdd_a:.2f}"
+            f"{manejo_line}"
         )
 
 
@@ -444,8 +708,8 @@ class IntegralTermicaDialog(QDialog):
 # dlg = IntegralTermicaDialog(
 #     parent=iface.mainWindow(),
 #     base_url="http://TU_SERVIDOR:8000",
-#     iddata=12345,
-#     phase_key="etapa_actual",   # o "tramo"
-#     draw_hito_vlines=True
+#     iddata=6430,
+#     phase_key="etapa_actual",
+#     draw_manejo_spans=True,
 # )
 # dlg.exec_()
