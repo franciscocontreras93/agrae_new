@@ -43,8 +43,8 @@ class aGraeTools():
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        # self.backend_endpoint = 'http://142.93.41.109:8000'
-        self.backend_endpoint = 'http://localhost:8000'
+        self.backend_endpoint = 'http://142.93.41.109:8000'
+        # self.backend_endpoint = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
@@ -722,7 +722,6 @@ class aGraeTools():
             "idexplotacion": idexplotacion
 
             }
-    
         try:
             r = requests.post('{}/gis/utils/report_export/'.format(self.backend_endpoint), json=payload, timeout=3000)
             r.raise_for_status()
