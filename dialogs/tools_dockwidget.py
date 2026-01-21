@@ -1,14 +1,10 @@
 #type: ignore
 
-from email.policy import default
-from enum import auto
 import os
 
 import psycopg2
 
 
-from psycopg2 import extras
-from sympy import group
 
 
 from qgis.PyQt import QtWidgets #type: ignore

@@ -348,7 +348,7 @@ class IntegralTermicaDialog(QDialog):
         self.ax.set_ylabel("GDD acumulada")
         self.ax.set_xlabel("Fecha")
         self.ax.grid(True, alpha=0.25)
-        self.ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m"))
+        self.ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m/%Y"))
         self.fig.autofmt_xdate()
 
         ymax = max(self.gdd_acum) if self.gdd_acum else 1.0
@@ -672,7 +672,7 @@ class IntegralTermicaDialog(QDialog):
         self.canvas.draw_idle()
 
     def _format_tooltip(self, dt: datetime, r: Dict[str, Any]) -> str:
-        is_hito = "✅" if r.get("is_hito") else ""
+    
         tramo = r.get("tramo", "")
         etapa = r.get("etapa_actual", "")
         umbral = r.get("umbral_etapa_actual", "")
@@ -692,8 +692,7 @@ class IntegralTermicaDialog(QDialog):
             manejo_line = f"\nManejo: {mh} ({mh_n}) umbral={mh_u} gdd={gdd_m}"
 
         return (
-            f"{dt.strftime('%d/%m/%Y')} {is_hito}{is_m}\n"
-            f"Tramo: {tramo}\n"
+            f"{dt.strftime('%d/%m/%Y')}\n"
             f"Etapa: {etapa}  Umbral: {umbral}\n"
             f"Tmean corr: {tmean}\n"
             f"GDD día: {gdd_d:.2f}\n"
