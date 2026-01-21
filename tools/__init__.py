@@ -1,4 +1,6 @@
 import os, csv
+import time
+from urllib import request
 import aiohttp
 import asyncio
 import json
@@ -41,8 +43,8 @@ class aGraeTools():
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        self.backend_endpoint = 'http://142.93.41.109:8000'
-        # self.backend_endpoint = 'http://localhost:8000'
+        # self.backend_endpoint = 'http://142.93.41.109:8000'
+        self.backend_endpoint = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
@@ -711,46 +713,32 @@ class aGraeTools():
             print(ex)
 
     def exportarResumenFertilizacion(self,idcampania:int,idexplotacion:int,nameExp:str):
+
         s = QSettings('agrae','dbConnection')
         path = s.value('reporte_path')
-        q = '''select distinct 0 as wkt_geom, 
-            row_number() over () as fid, 
-            row_number() over () as _uid_, 
-            fp.*, 
-            round(((((fp.densidad   * 10000 * 0.3) * fp.no3) /1000 * 14/62 ))::numeric,2) as no3_kg_ha, 
-            round(((((fp.densidad  * 10000 * 0.3) * fp.nh4) /1000 * 14/18 ))::numeric,2) as nh4_kg_ha,
-            round(((((fp.densidad   * 10000 * 0.3) * fp.no3) /1000 * 14/62 ))::numeric,2) + round(((((fp.densidad  * 10000 * 0.3) * fp.nh4) /1000 * 14/18 ))::numeric,2) as n_mineral_kg_ha,
-            fi.prod_ponderada as rinde,
-            fi.regimen
-            from fert_intraparcelaria  fi 
-            join fert_report fp on fp.codigo = fi.codigo and fp.uf = fi.uf 
-            order by lote,uf_etiqueta;'''
-        query  = aGraeSQLTools().getSql('uf_aportes_query.sql').format(idcampania,idexplotacion,'NULL','NULL',q)
-        try: 
-            with agraeDataBaseDriver().connection().cursor() as cursor:  
-                cursor.execute(query) 
-                data = [r for r in list(cursor.fetchall())]
-                # print(data)
-                # expName = list(set([r[0] for r in data]))
-                # print(expName[0])
-                try: 
-                    with open(os.path.join(os.path.dirname(__file__), 'extras/resumen.csv'),'r',newline='') as base:
-                        csv_reader = csv.reader(base,delimiter=';')
-                        header = next(csv_reader)
-                    with open(os.path.join(path, 'resumen_{}_{}.csv'.format(nameExp,QDateTime.currentDateTime().toString('yyyyMMdd'))),'w',newline='') as file:
-                            csv_writer = csv.writer(file,delimiter=';')          
-                            csv_writer.writerow(header)
-                            csv_writer.writerows(data)
-                    
-                    self.messages('aGrae GIS','Se ha generado el archivo de Resumen correctamente.',3,alert=True)
-                except Exception as ex: self.messages('aGrae GIS',ex,1,alert=False)
-        except Exception as ex: self.messages('aGrae GIS',ex,1,alert=False)
 
-        
+        payload = {
+            "idcampania": idcampania,
+            "idexplotacion": idexplotacion
 
+            }
+    
+        try:
+            r = requests.post('{}/gis/utils/report_export/'.format(self.backend_endpoint), json=payload, timeout=3000)
+            r.raise_for_status()
 
+            out_name = f"resumen_{nameExp}_{QDateTime.currentDateTime().toString('yyyyMMdd')}.csv"
+            out_path = os.path.join(path, out_name)
 
-        pass
+            with open(out_path, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+
+            self.messages('aGrae GIS', 'Se ha generado el archivo de Resumen correctamente.', 3, alert=True)
+
+        except Exception as ex:
+            self.messages('aGrae GIS', str(ex), 1, alert=False)
     
     def styleSheetPlotDialog(self) -> str:
         style = '''QTabBar::tab:selected {background : green ; color : white ; border-color : white }

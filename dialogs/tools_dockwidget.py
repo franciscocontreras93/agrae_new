@@ -4,9 +4,6 @@ import os
 
 import psycopg2
 
-
-
-
 from qgis.PyQt import QtWidgets #type: ignore
 from qgis.PyQt.QtCore import pyqtSignal, Qt,QDate,QSize,QSettings #type: ignore
 from qgis.PyQt.QtGui import QIcon,QColor #type: ignore
@@ -196,16 +193,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.combo_ajuste.addItem("PK")
         self.label_status_fertilizacion = QtWidgets.QLabel("Estado Fertilización: -")
         self.tool_fert = QtWidgets.QToolButton()
-
-        
-
-
-       
-
-
-
-
-
 
         self.combo_cultivo_2 = CultivosComboBox(editable=False, filter_enabled=True, auto_enable_on_load=True)
         self.combo_regimen_2 = RegimenComboBox(editable=False, filter_enabled=True, auto_enable_on_load=True)

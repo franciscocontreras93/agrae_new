@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
-import agrae
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QSizePolicy, QWidget
