@@ -197,6 +197,7 @@ class CrearLotesDialog(QDialog):
             with self.conn.cursor() as cursor:
                 for f in features: 
                     nombre = str(f[self.combo_nombre.currentField()])
+                    elev = f['elev'] if 'elev' in f.fields().names() else 0
                     for e in ['/','-']:
                         nombre.replace(e,'_')
                         
@@ -204,7 +205,7 @@ class CrearLotesDialog(QDialog):
                     if sourceCrs != crsBase:
                         geom.transform(tr)
 
-                    query = sql.format(nombre,geom.asWkt(),self.combo_campania.get_current_campaign_id(),self.combo_explotacion.get_current_explotacion_id())
+                    query = sql.format(nombre,round(elev,2),geom.asWkt(),self.combo_campania.get_current_campaign_id(),self.combo_explotacion.get_current_explotacion_id())
 
                     # if self.select_explotacion.isChecked():
                     #     query = sql.format(nombre,geom.asWkt(),self.combo_campania.get_current_campaign_id(),self.combo_explotacion.get_current_explotacion_id())
