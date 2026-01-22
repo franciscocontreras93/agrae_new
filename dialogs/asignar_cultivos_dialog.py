@@ -97,10 +97,10 @@ class AsignarCultivosDialog(QDialog):
         group_layout.addWidget(self.combo_regimen, 1, 1)
         group_layout.addWidget(QLabel("Producción esperada"), 2, 0)
         group_layout.addWidget(self.ln_prod, 2, 1)
-        group_layout.addWidget(self.check_siembra, 3, 0)
-        group_layout.addWidget(self.fecha_siembra, 3, 1)
-        group_layout.addWidget(self.check_cosecha, 4, 0)
-        group_layout.addWidget(self.fecha_cosecha, 4, 1)
+        # group_layout.addWidget(self.check_siembra, 3, 0)
+        # group_layout.addWidget(self.fecha_siembra, 3, 1)
+        # group_layout.addWidget(self.check_cosecha, 4, 0)
+        # group_layout.addWidget(self.fecha_cosecha, 4, 1)
 
         group_box.setLayout(group_layout)
         main_layout.addWidget(group_box)
@@ -204,8 +204,6 @@ class AsignarCultivosDialog(QDialog):
             "idcultivo": idcultivo,
             "idregimen": idregimen,
             "prod_esperada": prod_esperada,
-            "fechasiembra": None,
-            "fechacosecha": None
         }
         # Si más adelante agregas fechas opcionales aquí, solo añade las claves si existen (o usa None para borrar).
 

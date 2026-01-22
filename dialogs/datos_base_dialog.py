@@ -171,20 +171,21 @@ class CrearLotesDialog(QDialog):
         if self.combo_explotacion.get_current_explotacion_id() is None:
             return self.tools.messages('Error','Debes seleccionar una Explotacion para asignar los lotes.',1,alert=True)
         
-        reply = QMessageBox.question(None,'aGrae Toolbox','¿Estás seguro de cargar los lotes seleccionados a la explotacion {}?'.format(nombre.upper()), QMessageBox.Yes, QMessageBox.No)
-        if reply == QMessageBox.Yes:
             
-            layer = self.combo_layer.currentLayer()
-            sourceCrs = layer.crs()
-            crsBase = QgsCoordinateReferenceSystem(4326)
-            tr = QgsCoordinateTransform(sourceCrs, crsBase, QgsProject.instance())
-        
-            selected_only = self.select_seleccionados.isChecked()
-            features = list(layer.getSelectedFeatures() if selected_only else layer.getFeatures())
+        layer = self.combo_layer.currentLayer()
+        sourceCrs = layer.crs()
+        crsBase = QgsCoordinateReferenceSystem(4326)
+        tr = QgsCoordinateTransform(sourceCrs, crsBase, QgsProject.instance())
+    
+        selected_only = self.select_seleccionados.isChecked()
+        features = list(layer.getSelectedFeatures() if selected_only else layer.getFeatures())
 
-            if selected_only and not features:
-                self.tools.messages('Advertencia', 'No hay lotes seleccionados.', 1, alert=True)
-                return
+        if selected_only and not features:
+            self.tools.messages('Advertencia', 'No hay lotes seleccionados.', 1, alert=True)
+            return
+            
+        reply = QMessageBox.question(None,'aGrae Toolbox','¿Estás seguro de cargar {} Lote/s a la explotacion {}?'.format(len(features),nombre.upper()), QMessageBox.Yes, QMessageBox.No)
+        if reply == QMessageBox.Yes:
             
             sql = self.agraeSql.getSql('new_lote_assign_copy.sql')
         
