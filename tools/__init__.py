@@ -921,6 +921,7 @@ class aGraeTools():
         - data: Any (cuerpo JSON cuando aplique)
         """
         url = self.backend_endpoint.rstrip("/") + endpoint
+        
         try:
             timeout = aiohttp.ClientTimeout(total=timeout_sec)
             async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -945,7 +946,7 @@ class aGraeTools():
                             message = await resp.text()
                         except Exception:
                             message = ""
-
+                    
                     # Arma la respuesta estandarizada
                     return {
                         "status_code": status,
@@ -962,6 +963,16 @@ class aGraeTools():
                 "message": str(e),
                 "data": None,
             }
+
+    async def copiar_analitica(self, idcampania:int, idexplotacion:int, idlote_donante:int, idlotes_receptores:list[int]):
+        endpoint = "/gis/lab/copiar-analitica"
+        payload = {
+            "idcampania": idcampania,
+            "idexplotacion": idexplotacion,
+            "idlote_donante": idlote_donante,
+            "idlotes_receptores": idlotes_receptores,
+        }
+        return await self._post_json(endpoint, payload, timeout_sec=300)
 
     async def crearPuntosMuestreo(
         self,

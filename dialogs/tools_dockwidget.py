@@ -16,7 +16,7 @@ from ..tools.analisis_tools import aGraeResamplearMuestras
 from ..tools.agrae_csv_tools import aGraeCSVTools
 from ..tools.gee import NDVIProcessor
 from ..tools.agraeIdentifyTool import aGraeSelectTool
-from ..tools.agraeCopiarAnaliticaSelectTool import aGraeCopiarAnaliticaSelectTool
+from ..tools.agraeCopiarAnaliticaSelectTool import aGraeCopyAnaliticaSelectTool
 
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
@@ -43,6 +43,7 @@ from .gee_dialog import aGraeGEEDialog
 from .reportes_dialog import ReportesDialog
 from .asignar_cultivos_dialog import AsignarCultivosDialog
 from .siembra_variable_dialog import SiembraVariableDialog
+from .copiar_analitica_dialog import CopyAnaliticaWizardDialog
 
 
 class agraeToolsDockwidget(QtWidgets.QDockWidget):
@@ -588,7 +589,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.DerivarDatosAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Derivar datos de Analitica',self)
         self.DerivarDatosAnalisis.triggered.connect(self.DerivarAnalitica)
         self.CopiarDatosAnaliticos = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Copiar Datos de Analiticas',self)
-        # self.CopiarDatosAnaliticos.triggered.connect(self.copiarDatosAnaliticos)
+        self.CopiarDatosAnaliticos.triggered.connect(self.copiarDatosAnaliticos)
 
         actions_lab = [self.GestionarMuestras,self.GenerarPuntosMuestreo,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis,self.DerivarDatosAnalisis,self.CopiarDatosAnaliticos]
         self.tools.settingsToolsButtons(self.tool_lab,actions_lab,icon=agraeGUI().getIcon('matraz'),setMainIcon=True)
@@ -797,16 +798,18 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         dlg.exec()
 
     def generateComposerDialog(self):
-        group  = '{}-{}'.format(self.combo_campania.currentText()[2:],self.combo_explotacion.currentText())
-        
 
-       
-
-        # dlg = agraeComposer(self.atlasLayers,self.combo_campania.currentData(),self.combo_explotacion.currentData())
-        # dlg.exec()
 
         dlg = new_Composer(self.combo_campania.currentData(),self.combo_explotacion.currentData(),self.layer)
         dlg.exec()
+    
+    def copiarDatosAnaliticos(self):
+        canvas = iface.mapCanvas()
+        layer = self.layer
+        self.copy_tool = aGraeCopyAnaliticaSelectTool(canvas, layer, self.combo_campania.currentData(), self.combo_explotacion.currentData(), id_field='idlote')
+        self.copy_tool.execute_endpoint.connect(lambda x,y: self.tools.copiar_analitica(self.combo_campania.currentData(),self.combo_explotacion.currentData(),x,y))
+
+        canvas.setMapTool(self.copy_tool)
 
     def run_ndvi_processor(self):
         idcampania = self.combo_campania.currentData()
