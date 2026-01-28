@@ -43,8 +43,8 @@ class aGraeTools():
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        # self.backend_endpoint = 'http://142.93.41.109:8000'
-        self.backend_endpoint = 'http://localhost:8000'
+        self.backend_endpoint = 'http://142.93.41.109:8000'
+        # self.backend_endpoint = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
@@ -1103,4 +1103,3 @@ class aGraeTools():
         }
         return await self._post_json(endpoint, payload, timeout_sec=300)
 
-    
