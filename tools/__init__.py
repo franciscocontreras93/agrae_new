@@ -43,8 +43,8 @@ class aGraeTools():
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        self.backend_endpoint = 'http://142.93.41.109:8000'
-        # self.backend_endpoint = 'http://localhost:8000'
+        # self.backend_endpoint = 'http://142.93.41.109:8000'
+        self.backend_endpoint = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
@@ -116,6 +116,7 @@ class aGraeTools():
                 if len(data) >= 1:
                     for e in data:
                         combo.addItem(e[0],e[1])
+    
     def getExplotacionDataNoFilter(self,combo:QComboBox):
 
         combo.clear()
@@ -405,7 +406,6 @@ class aGraeTools():
             QgsMessageLog.logMessage(f'{ex}', 'aGrae GIS', level=1)
             self.conn.rollback()
 
-        
     def crearRindes(self,
                      layer:QgsVectorLayer,
                      field_volumen:QgsField,
@@ -449,7 +449,6 @@ class aGraeTools():
         }
        
         return processing.run('native:reprojectlayer', parameter)['OUTPUT']
-
 
     def getLotesLayer(self):
         sql = aGraeSQLTools().getSql('lotes_layer.sql')
@@ -610,8 +609,6 @@ class aGraeTools():
                 lyrAmbientes.loadNamedStyle(styleUri)
                 return lyrAmbientes
 
-   
-
     def crearFormatoAnalitica(self,idcampania:int,idexplotacion:int,name:str):
         s = QSettings('agrae','dbConnection')
         path = s.value('analisis_path')
@@ -683,7 +680,6 @@ class aGraeTools():
                 QgsMessageLog.logMessage(f'{ex}', self.plugin_name, level=1)
                 self.conn.rollback()
            
-        
     def generarReporteAnalitica(self,idcampania):
         s = QSettings('agrae','dbConnection')
         path = s.value('analisis_path')
@@ -911,6 +907,87 @@ class aGraeTools():
             self.messages('aGrae GIS','Ocurrio un error al actualizar las fechas de siembra.\n {}'.format(ex),2,alert=True)
             print(ex)
 
+    def cargarLabelsDRIVE(self,file_path:str):
+        from .gdriveCore import GDrive
+        # file_path = r"D:\GeoSIG\aGrae\test\test_labels\label_A410201.pdf"
+        core = aGraeLabelGenerator()
+        qr,code = core.generateQR('A410205')
+        label = core.generateLabel(qr,code)
+
+        drive = GDrive()
+        url = drive.upload_file(label)
+
+    def getBasemapsDict(self) -> dict:
+        return  {
+          
+            'Esri Satelite' : {
+                'url': 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%7Bz%7D/%7By%7D/%7Bx%7D',
+                'options': 'crs=EPSG:3857&format&type=xyz&url=https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%7Bz%7D/%7By%7D/%7Bx%7D&zmax=20&zmin=0'
+            },
+            'Google Satelite' : {
+                'url': 'https://mt1.google.com/vt/lyrs=s&x=%7Bx%7D&y=%7By%7D&z=%7Bz%7D',
+                'options': 'type=xyz&zmin=0&zmax=20&url=https://mt1.google.com/vt/lyrs%3Ds%26x%3D{x}%26y%3D{y}%26z%3D{z}'
+            },
+            'PNOA Ortofoto' : {
+                'url': 'contextualWMSLegend=0&crs=EPSG:4326&dpiMode=7&featureCount=10&format=image/png&layers=OI.OrthoimageCoverage&styles' ,
+                'options': 'url=https://www.ign.es/wms-inspire/pnoa-ma'
+            },
+            'Parcelas Catastro' : {
+                'url': 'contextualWMSLegend=1&crs=EPSG:4326&dpiMode=7&featureCount=10&format=image/png&layers=CP.CadastralParcel&styles' ,
+                'options': 'url=http://ovc.catastro.meh.es/cartografia/INSPIRE/spadgcwms.aspx'
+            }
+
+        }
+
+    def updateLoteInfo(self,payload:dict):
+        """ Actualiza la información de un lote mediante una solicitud PATCH al backend. """
+        endpoint = self.backend_endpoint + '/gis/lotes/update'
+        try:
+            response = requests.patch(endpoint,json=payload,timeout=300)
+            if response.status_code == 200:
+                self.messages('aGrae GIS','Lote Actualizado Correctamente',3,alert=True)
+            else:
+                self.messages('aGrae GIS','Ocurrio un error al actualizar el lote.\n {}'.format(response.text),2,alert=True)
+        except Exception as ex:
+            self.messages('aGrae GIS','Ocurrio un error al actualizar el lote.\n {}'.format(ex),2,alert=True)
+            print(ex)
+    
+    def updateMultiLoteInfo(self,payload:dict):
+        """ Actualiza la información de múltiples lotes mediante una solicitud PATCH al backend. """
+        endpoint = self.backend_endpoint + '/gis/lotes/update/multi'
+        try:
+            response = requests.patch(endpoint,json=payload,timeout=300)
+            if response.status_code == 200:
+                self.messages('aGrae GIS','Lotes Actualizados Correctamente',3,alert=True)
+            else:
+                self.messages('aGrae GIS','Ocurrio un error al actualizar los lotes.\n {}'.format(response.text),2,alert=True)
+        except Exception as ex:
+            self.messages('aGrae GIS','Ocurrio un error al actualizar los lotes.\n {}'.format(ex),2,alert=True)
+            print(ex)
+
+    def updateFechaSiembraLotes(self,idcampania:int,idexplotacion:int,idcultivo:int,fecha_siembra:str, fecha_cosecha:str | None = None):
+        """ Actualiza la fecha de siembra de múltiples lotes mediante una solicitud PATCH al backend. """
+
+        payload = {
+            "idcampania": idcampania,
+            "idexplotacion": idexplotacion,
+            "idcultivo": idcultivo,
+            "fechasiembra": fecha_siembra
+        }
+        if fecha_cosecha:
+            payload["fechacosecha"] = fecha_cosecha
+
+        endpoint = self.backend_endpoint + '/gis/lotes/update/dates'
+        try:
+            response = requests.patch(endpoint,json=payload,timeout=300)
+            if response.status_code == 200:
+                self.messages('aGrae GIS','Fechas de Siembra Actualizadas Correctamente',3,alert=True)
+            else:
+                self.messages('aGrae GIS','Ocurrio un error al actualizar las fechas de siembra.\n {}'.format(response.text),2,alert=True)
+        except Exception as ex:
+            self.messages('aGrae GIS','Ocurrio un error al actualizar las fechas de siembra.\n {}'.format(ex),2,alert=True)
+            print(ex)
+
     async def _post_json(self, endpoint: str, payload: dict[str, Any], *, timeout_sec: int = 300) -> dict[str, Any]:
         """
         Helper común para POST JSON.
@@ -1025,88 +1102,5 @@ class aGraeTools():
             "idsegmentos_lista": idsegmentos_lista,
         }
         return await self._post_json(endpoint, payload, timeout_sec=300)
+
     
-    def cargarLabelsDRIVE(self,file_path:str):
-        from .gdriveCore import GDrive
-        # file_path = r"D:\GeoSIG\aGrae\test\test_labels\label_A410201.pdf"
-        core = aGraeLabelGenerator()
-        qr,code = core.generateQR('A410205')
-        label = core.generateLabel(qr,code)
-
-        drive = GDrive()
-        url = drive.upload_file(label)
-
-    def getBasemapsDict(self) -> dict:
-        return  {
-          
-            'Esri Satelite' : {
-                'url': 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%7Bz%7D/%7By%7D/%7Bx%7D',
-                'options': 'crs=EPSG:3857&format&type=xyz&url=https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%7Bz%7D/%7By%7D/%7Bx%7D&zmax=20&zmin=0'
-            },
-            'Google Satelite' : {
-                'url': 'https://mt1.google.com/vt/lyrs=s&x=%7Bx%7D&y=%7By%7D&z=%7Bz%7D',
-                'options': 'type=xyz&zmin=0&zmax=20&url=https://mt1.google.com/vt/lyrs%3Ds%26x%3D{x}%26y%3D{y}%26z%3D{z}'
-            },
-            'PNOA Ortofoto' : {
-                'url': 'contextualWMSLegend=0&crs=EPSG:4326&dpiMode=7&featureCount=10&format=image/png&layers=OI.OrthoimageCoverage&styles' ,
-                'options': 'url=https://www.ign.es/wms-inspire/pnoa-ma'
-            },
-            'Parcelas Catastro' : {
-                'url': 'contextualWMSLegend=1&crs=EPSG:4326&dpiMode=7&featureCount=10&format=image/png&layers=CP.CadastralParcel&styles' ,
-                'options': 'url=http://ovc.catastro.meh.es/cartografia/INSPIRE/spadgcwms.aspx'
-            }
-
-        }
-
-    def updateLoteInfo(self,payload:dict):
-        """ Actualiza la información de un lote mediante una solicitud PATCH al backend. """
-        endpoint = self.backend_endpoint + '/gis/lotes/update'
-        try:
-            response = requests.patch(endpoint,json=payload,timeout=300)
-            if response.status_code == 200:
-                self.messages('aGrae GIS','Lote Actualizado Correctamente',3,alert=True)
-            else:
-                self.messages('aGrae GIS','Ocurrio un error al actualizar el lote.\n {}'.format(response.text),2,alert=True)
-        except Exception as ex:
-            self.messages('aGrae GIS','Ocurrio un error al actualizar el lote.\n {}'.format(ex),2,alert=True)
-            print(ex)
-    
-    def updateMultiLoteInfo(self,payload:dict):
-        """ Actualiza la información de múltiples lotes mediante una solicitud PATCH al backend. """
-        endpoint = self.backend_endpoint + '/gis/lotes/update/multi'
-        try:
-            response = requests.patch(endpoint,json=payload,timeout=300)
-            if response.status_code == 200:
-                self.messages('aGrae GIS','Lotes Actualizados Correctamente',3,alert=True)
-            else:
-                self.messages('aGrae GIS','Ocurrio un error al actualizar los lotes.\n {}'.format(response.text),2,alert=True)
-        except Exception as ex:
-            self.messages('aGrae GIS','Ocurrio un error al actualizar los lotes.\n {}'.format(ex),2,alert=True)
-            print(ex)
-
-    def updateFechaSiembraLotes(self,idcampania:int,idexplotacion:int,idcultivo:int,fecha_siembra:str, fecha_cosecha:str | None = None):
-        """ Actualiza la fecha de siembra de múltiples lotes mediante una solicitud PATCH al backend. """
-
-        payload = {
-            "idcampania": idcampania,
-            "idexplotacion": idexplotacion,
-            "idcultivo": idcultivo,
-            "fechasiembra": fecha_siembra
-        }
-        if fecha_cosecha:
-            payload["fechacosecha"] = fecha_cosecha
-
-        endpoint = self.backend_endpoint + '/gis/lotes/update/dates'
-        try:
-            response = requests.patch(endpoint,json=payload,timeout=300)
-            if response.status_code == 200:
-                self.messages('aGrae GIS','Fechas de Siembra Actualizadas Correctamente',3,alert=True)
-            else:
-                self.messages('aGrae GIS','Ocurrio un error al actualizar las fechas de siembra.\n {}'.format(response.text),2,alert=True)
-        except Exception as ex:
-            self.messages('aGrae GIS','Ocurrio un error al actualizar las fechas de siembra.\n {}'.format(ex),2,alert=True)
-            print(ex)
-
-
-            
-

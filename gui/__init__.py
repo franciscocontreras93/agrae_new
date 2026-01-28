@@ -60,7 +60,7 @@ class agraeGUI():
          'satelite' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\satellite-solid.svg')),
          'map-base' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\map-regular.svg')),
          'laboratorio-icon' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\flask-solid.svg')),
-         'seed-icon' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\seed.svg')),
+         'seed-icon' : QIcon(os.path.join(os.path.dirname(__file__), r'icons\seed.svg'))
          
 
         }

@@ -588,7 +588,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.ImportarArchivoAnalisis.triggered.connect(self.cargarAnalitica)
         self.DerivarDatosAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Derivar datos de Analitica',self)
         self.DerivarDatosAnalisis.triggered.connect(self.DerivarAnalitica)
-        self.CopiarDatosAnaliticos = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Copiar Datos de Analiticas',self)
+        self.CopiarDatosAnaliticos = QtWidgets.QAction(agraeGUI().getIcon('clone'),'Copiar Datos de Analiticas',self)
         self.CopiarDatosAnaliticos.triggered.connect(self.copiarDatosAnaliticos)
 
         actions_lab = [self.GestionarMuestras,self.GenerarPuntosMuestreo,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis,self.DerivarDatosAnalisis,self.CopiarDatosAnaliticos]
