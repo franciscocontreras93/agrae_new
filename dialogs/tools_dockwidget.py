@@ -554,6 +554,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.GenerarUnidadesFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('tractor'),'Exportar SHP de Preescripcion',self)
         self.GenerarUnidadesFertilizacion.triggered.connect(self.exportarUFS)
         self.GenerarResumenFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Generar Resumen de Preescripcion',self)
+        self.GenerarResumenFertilizacion.setToolTip('Exportar resumen de prescripción de fertilización a archivo CSV.\nPermite generar reporte de todos los lotes, o solo los lotes seleccionados.')
         self.GenerarResumenFertilizacion.triggered.connect(self.exportarResumen)
         self.GenerarAmbientes = QtWidgets.QAction(agraeGUI().getIcon('satelite'),'Generar Mapas de Ambientes',self)
         self.GenerarAmbientes.triggered.connect(self.geeDialog)
@@ -1756,10 +1757,22 @@ FROM
 
 
     def exportarResumen(self):
+        #TODO EXPORTAR RESUMEN DE FERTILIZACION DE LOS LOTES SELECCIONADOS
+
         idcampania = self.combo_campania.currentData()
         idexplotacion = self.combo_explotacion.currentData()
         nameExp = str(self.combo_explotacion.currentText()).replace(' ','_')
-        self.tools.exportarResumenFertilizacion(idcampania,idexplotacion,nameExp)
+        if len(self.layer.selectedFeatures()) > 0:
+            iddata = [f['iddata'] for f in self.layer.selectedFeatures()]
+            self.tools.exportarResumenFertilizacion(
+                nameExp=nameExp,
+                iddata=iddata)
+        else:
+             self.tools.exportarResumenFertilizacion(
+                nameExp=nameExp,
+                idcampania=idcampania,
+                idexplotacion=idexplotacion)
+
 
     
     def actualizarProduccionCultivo(self):
