@@ -4,6 +4,8 @@ from qgis.PyQt.QtCore import *
 
 from ...tools import aGraeTools
 
+from .network import _AsyncRunner,_AsyncSignals,_noop
+
 
 
 class   WorkerGenerarPuntosMuestreo(QThread):

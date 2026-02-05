@@ -43,8 +43,8 @@ class aGraeTools():
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        self.backend_endpoint = 'http://142.93.41.109:8000'
-        # self.backend_endpoint = 'http://localhost:8000'
+        # self.backend_endpoint = 'http://142.93.41.109:8000'
+        self.backend_endpoint = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
@@ -1056,6 +1056,65 @@ class aGraeTools():
                 "data": None,
             }
 
+    async def _patch_json(self, endpoint: str, payload: dict[str, Any], *, timeout_sec: int = 300) -> dict[str, Any]:
+        url = self.backend_endpoint.rstrip("/") + endpoint
+
+        try:
+            timeout = aiohttp.ClientTimeout(total=timeout_sec)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.patch(url, json=payload, allow_redirects=False) as resp:
+                    status = resp.status
+
+                    raw_text = ""
+                    try:
+                        raw_text = await resp.text()
+                    except Exception:
+                        pass
+
+                    # Log útil (para ver 307/308/405/422)
+                    QgsMessageLog.logMessage(
+                        f"[PATCH] {status} {resp.url} body={raw_text[:500]}",
+                        "aGraeTools",
+                        Qgis.Info
+                    )
+
+                    # Si hay redirect por slash, lo reintentamos manual (307/308)
+                    if status in (307, 308):
+                        loc = resp.headers.get("Location", "")
+                        if loc:
+                            new_url = loc if loc.startswith("http") else (self.backend_endpoint.rstrip("/") + loc)
+                            async with session.patch(new_url, json=payload) as resp2:
+                                status2 = resp2.status
+                                data2 = None
+                                message2 = ""
+                                try:
+                                    data2 = await resp2.json(content_type=None)
+                                    if isinstance(data2, dict):
+                                        message2 = str(data2.get("message") or data2.get("detail") or data2.get("error") or "")
+                                except Exception:
+                                    message2 = await resp2.text()
+
+                                return {"status_code": status2, "ok": 200 <= status2 < 300, "message": message2, "data": data2}
+
+                    # Normal parse
+                    data: Any = None
+                    message: str = ""
+                    try:
+                        data = await resp.json(content_type=None)
+                        if isinstance(data, dict):
+                            message = str(data.get("message") or data.get("detail") or data.get("error") or "")
+                    except Exception:
+                        message = raw_text
+
+                    return {"status_code": status, "ok": 200 <= status < 300, "message": message, "data": data}
+
+        except Exception as e:
+            err = f"[PATCH {endpoint}] Exception: {e}"
+            QgsMessageLog.logMessage(err, "aGraeTools", Qgis.Critical)
+            return {"status_code": -1, "ok": False, "message": str(e), "data": None}
+
+
+
     async def copiar_analitica(self, idcampania:int, idexplotacion:int, idlote_donante:int, idlotes_receptores:list[int]):
         endpoint = "/gis/lab/copiar-analitica"
         payload = {
@@ -1118,3 +1177,6 @@ class aGraeTools():
         }
         return await self._post_json(endpoint, payload, timeout_sec=300)
 
+    async def asignarLotesAgricultor(self, payload: dict[str, Any]) -> dict[str, Any]:
+        endpoint = "/gis/agricultores/update/asignar_agricultor"
+        return await self._patch_json(endpoint, payload)

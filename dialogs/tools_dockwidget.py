@@ -23,7 +23,7 @@ from ..sql import aGraeSQLTools
 from ..gui import agraeGUI
 from ..gui.components import CampaniasComboBox, ExplotacionesComboBox, CultivosComboBox, RegimenComboBox, InfoCardNumLotes
 
-from ..dialogs import aGraeDialogs
+from ..dialogs import aGraeDialogs, AgricultorSelectDialog
 
 from .explotacion_dialogs import CopyExplotacionDialog, CreateExplotacionDialog, UpdateExplotacionDialog, GestionExplotacionDialog,GestionarExplotacionesDialog
 from .campania_dialogs import CloneCampaniaDialog, CreateCampaniaDialog, UpdateCampaniaDialog
@@ -538,6 +538,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         
         # TOOL_EXP_2
        
+        self.AsignarAgricultorLotes = QtWidgets.QAction(agraeGUI().getIcon('select-cultivo'),'Asignar Agricultor a Lotes Seleccionados',self) #TODO CAMBIAR EL ICONO
+        self.AsignarAgricultorLotes.triggered.connect(self.asignarAgricultorLotes) #TODO CREAR LA FUNCION
+
         self.AsignarCultivosLotes = QtWidgets.QAction(agraeGUI().getIcon('select-cultivo'),'Asignar Cultivo a Lotes Seleccionados',self)
         self.AsignarCultivosLotes.triggered.connect(self.asignarCultivosLotes)
         self.CargarCapasExplotacion = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar capas de Explotacion',self)
@@ -566,6 +569,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.MonitorDeRendimiento.triggered.connect(self.monitorRendimientoDialog)
         actions_exp = [
             self.AsignarCultivosLotes,
+            self.AsignarAgricultorLotes,
             self.CargarCapasExplotacion,
             self.GenerarReporteFertilizacion,
             self.GenerarMapaSig,
@@ -839,6 +843,11 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         dlg = AsignarCultivosDialog(iddata,self.combo_campania.get_current_campaign_qdates())
         dlg.exec()
         pass
+
+    def asignarAgricultorLotes(self):
+        idlote = [f['idlote'] for f in self.layer.selectedFeatures()]
+        dlg = AgricultorSelectDialog(idexplotacion= self.combo_explotacion.get_current_explotacion_id(), idlotes=idlote)
+        dlg.exec()
     
     def actualizarDatosCultivosCSV(self):
         file = self.tools.openFileDialog()

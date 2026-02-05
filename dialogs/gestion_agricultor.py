@@ -23,6 +23,8 @@ agraeDistribuidorDialog_ , _ = uic.loadUiType(os.path.join(os.path.dirname(__fil
 
 class GestionAgricultorDialog(QDialog,agraeDistribuidorDialog_): 
     closingPlugin = pyqtSignal()
+    idAgricultorSignal = pyqtSignal()
+
     def __init__(self, parent=None) -> None:
         super(GestionAgricultorDialog,self).__init__(parent)
         uic.loadUi(os.path.join(os.path.dirname(__file__), 'ui/agricultor_dialog.ui'), self)
@@ -400,3 +402,9 @@ class GestionAgricultorDialog(QDialog,agraeDistribuidorDialog_):
     def closeEvent(self,event):
         self.closingPlugin.emit()
         event.accept()
+
+
+
+
+
+

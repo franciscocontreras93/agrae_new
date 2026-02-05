@@ -4,6 +4,8 @@ from .lab_dialog import GestionLaboratorioDialog
 
 from . gee_dialog import aGraeGEEDialog
 
+from .gestion import AgricultorSelectDialog
+
 
 class aGraeDialogs():
     def __init__(self):
