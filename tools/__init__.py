@@ -15,6 +15,7 @@ from PIL import Image
 
 import psycopg2
 from psycopg2 import extras, Binary, errors, InterfaceError
+
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtWidgets import *
 from qgis.PyQt.QtGui import QIcon
@@ -1002,7 +1003,7 @@ class aGraeTools():
         except Exception as ex:
             self.messages('aGrae GIS','Ocurrio un error al actualizar las fechas de siembra.\n {}'.format(ex),2,alert=True)
             print(ex)
-
+    
     async def _post_json(self, endpoint: str, payload: dict[str, Any], *, timeout_sec: int = 300) -> dict[str, Any]:
         """
         Helper común para POST JSON.
