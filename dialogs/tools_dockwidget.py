@@ -538,8 +538,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         
         # TOOL_EXP_2
        
-        self.AsignarAgricultorLotes = QtWidgets.QAction(agraeGUI().getIcon('select-cultivo'),'Asignar Agricultor a Lotes Seleccionados',self) #TODO CAMBIAR EL ICONO
-        self.AsignarAgricultorLotes.triggered.connect(self.asignarAgricultorLotes) #TODO CREAR LA FUNCION
+        self.AsignarAgricultorLotes = QtWidgets.QAction(agraeGUI().getIcon('select-farmer'),'Asignar Agricultor a Lotes Seleccionados',self)
+        self.AsignarAgricultorLotes.triggered.connect(self.asignarAgricultorLotes) 
 
         self.AsignarCultivosLotes = QtWidgets.QAction(agraeGUI().getIcon('select-cultivo'),'Asignar Cultivo a Lotes Seleccionados',self)
         self.AsignarCultivosLotes.triggered.connect(self.asignarCultivosLotes)
@@ -837,14 +837,20 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         dlg.exec_()
 
     def asignarCultivosLotes(self):
-        #* NUEVO 
 
+        if len(self.layer.selectedFeatures()) == 0:
+            self.tools.messages('Asignar Cultivos','Seleccione al menos un lote para asignar los cultivos.',2)
+            return
+        
         iddata = [f['iddata'] for f in self.layer.selectedFeatures()]
         dlg = AsignarCultivosDialog(iddata,self.combo_campania.get_current_campaign_qdates())
         dlg.exec()
         pass
 
     def asignarAgricultorLotes(self):
+        if len(self.layer.selectedFeatures()) == 0:
+            self.tools.messages('Asignar Agricultor','Seleccione al menos un lote para asignar el agricultor.',2)
+            return
         idlote = [f['idlote'] for f in self.layer.selectedFeatures()]
         dlg = AgricultorSelectDialog(idexplotacion= self.combo_explotacion.get_current_explotacion_id(), idlotes=idlote)
         dlg.exec()
