@@ -1184,4 +1184,3 @@ class aGraeTools():
             return await self._patch_json(endpoint, payload, timeout_sec=300)
         except Exception as ex:
             self.messages('aGrae GIS','Ocurrio un error al asignar los lotes al agricultor.\n {}'.format(ex),2,alert=True)
-            print(ex)

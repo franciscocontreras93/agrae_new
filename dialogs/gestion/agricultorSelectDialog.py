@@ -91,5 +91,9 @@ class AgricultorSelectDialog(QDialog):
 
         # print(self.selected_value, self.selected_item)
         # print('payload _dialog:', payload)
-        asyncio.run(self.tools.asignarLotesAgricultor(payload))  
+        try:
+            asyncio.run(self.tools.asignarLotesAgricultor(payload))  
+            self.tools.messages('aGrae GIS','Lotes asignados al agricultor correctamente.',1,alert=True)
+        except Exception as ex:
+            self.tools.messages('aGrae GIS','Ocurrio un error al asignar los lotes al agricultor.\n {}'.format(ex),2,alert=True)
         self.accept()
