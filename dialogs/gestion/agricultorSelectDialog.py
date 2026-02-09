@@ -90,6 +90,6 @@ class AgricultorSelectDialog(QDialog):
         }
 
         # print(self.selected_value, self.selected_item)
-        print('payload _dialog:', payload)
+        # print('payload _dialog:', payload)
         asyncio.run(self.tools.asignarLotesAgricultor(payload))  
-        # self.accept()
+        self.accept()

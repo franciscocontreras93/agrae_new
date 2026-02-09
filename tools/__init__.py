@@ -1180,4 +1180,8 @@ class aGraeTools():
 
     async def asignarLotesAgricultor(self, payload: dict[str, Any]) -> dict[str, Any]:
         endpoint = "/gis/agricultores/update/asignar_agricultor"
-        return await self._patch_json(endpoint, payload)
+        try:
+            return await self._patch_json(endpoint, payload, timeout_sec=300)
+        except Exception as ex:
+            self.messages('aGrae GIS','Ocurrio un error al asignar los lotes al agricultor.\n {}'.format(ex),2,alert=True)
+            print(ex)
