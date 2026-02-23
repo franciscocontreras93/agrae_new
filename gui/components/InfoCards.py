@@ -154,7 +154,7 @@ class InfoCardNumLotes(QWidget):
     def __init__(self, parent=None, *, endpoint: str = "/api/kpi/num_lotes", title: str = "Lotes",
                  decimals: Optional[int] = None, timeout_total: int = 60, debounce_ms: int = 150):
         super().__init__(parent)
-        self._backend = aGraeTools().backend_endpoint.rstrip("/")
+        self._backend = aGraeTools().backend_url.rstrip("/")
         self.endpoint = endpoint if endpoint.startswith("/") else f"/{endpoint}"
         self.title = title
         self.fixed_decimals = decimals

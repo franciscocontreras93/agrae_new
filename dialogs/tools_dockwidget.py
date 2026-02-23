@@ -44,6 +44,7 @@ from .reportes_dialog import ReportesDialog
 from .asignar_cultivos_dialog import AsignarCultivosDialog
 from .siembra_variable_dialog import SiembraVariableDialog
 from .copiar_analitica_dialog import CopyAnaliticaWizardDialog
+from .contratos_dialog import ContratosDialog
 
 
 class agraeToolsDockwidget(QtWidgets.QDockWidget):
@@ -377,15 +378,15 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         layout_info_lote_details.addRow(self.label_4, self.combo_regimen)
         layout_info_lote_details.addRow(self.label_7, self.line_produccion)
         
-        h_layout_siembra = QtWidgets.QHBoxLayout()
-        h_layout_siembra.addWidget(self.check_siembra)
-        h_layout_siembra.addWidget(self.date_siembra)
-        layout_info_lote_details.addRow(h_layout_siembra)
+        # h_layout_siembra = QtWidgets.QHBoxLayout()
+        # h_layout_siembra.addWidget(self.check_siembra)
+        # h_layout_siembra.addWidget(self.date_siembra)
+        # layout_info_lote_details.addRow(h_layout_siembra)
 
-        h_layout_cosecha = QtWidgets.QHBoxLayout()
-        h_layout_cosecha.addWidget(self.check_cosecha)
-        h_layout_cosecha.addWidget(self.date_cosecha)
-        layout_info_lote_details.addRow(h_layout_cosecha)
+        # h_layout_cosecha = QtWidgets.QHBoxLayout()
+        # h_layout_cosecha.addWidget(self.check_cosecha)
+        # h_layout_cosecha.addWidget(self.date_cosecha)
+        # layout_info_lote_details.addRow(h_layout_cosecha)
 
         layout_info_lote_details.addRow(self.label_status)
         page_info_lote_layout.addWidget(group_info_lote_details)
@@ -401,6 +402,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
         page_info_lote_layout.addStretch() 
         self.toolBox.addItem(self.page_info_lote, "Información de Lote")
+        self.toolBox.setCurrentIndex(0)
+        self.toolBox.setItemIcon(0,agraeGUI().getIcon('info'))
 
         # --- Page 2: Fertilización y Cultivos Explotación ---
         self.page_fertilizacion_cultivos = QtWidgets.QWidget()
@@ -467,26 +470,58 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         # form_layout_in_group_act_cult_dates.addRow(QtWidgets.QLabel("Fecha Cosecha:"), self.date_cosecha_2)
         form_layout_in_group_act_cult_dates.addRow(self.btn_save_cultivo_date_exp)
         self.tab_widget_fertilizacion.addTab(widget_act_cult_dates_exp, "Actualizar Fechas Siembra | Cosecha")
-
-
-
         page_fertilizacion_layout.addStretch() 
         self.toolBox.addItem(self.page_fertilizacion_cultivos, "Datos de Fertilización y Cultivo")
+        self.toolBox.setItemIcon(1,agraeGUI().getIcon('tractor')) # Icono para la segunda pestaña
 
-        # self.page_facturacion = QtWidgets.QWidget()
-        # page_facturacion_layout = QtWidgets.QVBoxLayout()
-        # self.page_facturacion.setLayout(page_facturacion_layout)
-        # self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
+
+        # FACTURACION
+        self.page_facturacion = QtWidgets.QWidget()
+        page_facturacion_layout = QtWidgets.QVBoxLayout()
+        self.page_facturacion.setLayout(page_facturacion_layout)
+
+        # Gestion de Contratos
+        gb_contratos = QtWidgets.QGroupBox("Gestión de Contratos")
+        gb_contratos_layout = QtWidgets.QFormLayout(gb_contratos)
+        gb_contratos_layout.setLabelAlignment(Qt.AlignLeft)
+        gb_contratos_layout.setFormAlignment(Qt.AlignTop)
+        gb_contratos_layout.setHorizontalSpacing(12)
+        gb_contratos_layout.setVerticalSpacing(8)
+        gb_contratos_layout.setContentsMargins(10, 12, 10, 10)
+        btn_create_contrato = QtWidgets.QPushButton("Gestionar Contrato")
+        btn_create_contrato.setMinimumHeight(28)
+        btn_create_contrato.clicked.connect(self.gestionarContratosDialog)
+
+        row = QtWidgets.QWidget()
+        row_lay = QtWidgets.QHBoxLayout(row)
+        row_lay.setContentsMargins(0, 0, 0, 0)
+        row_lay.setSpacing(6)
+        row_lay.addWidget(btn_create_contrato)
+        row_lay.addStretch(1)
+
+        gb_contratos_layout.addRow(QtWidgets.QLabel('Contratos:'), row)
+
+        page_facturacion_layout.addWidget(gb_contratos)
+        page_facturacion_layout.addStretch(1)
+
+        
+
+
+
+        if True:
+            self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
+            self.toolBox.setItemIcon(2,agraeGUI().getIcon('explotacion'))
+
 
         # self.toolBox.addItem(self.page_gee_module, "Modulo de Google Earth Engine")
 
 
         # Set initial properties and connections
-        self.date_siembra.dateChanged.connect(self.dateSiembraChanged)
+        # self.date_siembra.dateChanged.connect(self.dateSiembraChanged)
         # self.date_cosecha.dateChanged.connect(self.dateCosechaChanged)
-        self.toolBox.setCurrentIndex(0)
-        self.toolBox.setItemIcon(0,agraeGUI().getIcon('info'))
-        self.toolBox.setItemIcon(1,agraeGUI().getIcon('tractor')) # Icono para la segunda pestaña
+
+        
+        
         # self.toolBox.setItemIcon(2,agraeGUI().getIcon('satelite')) # Icono para la segunda pestaña
         self.toolBox.currentChanged.connect(self.infoLote)
         
@@ -501,8 +536,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         
         self.initTools()
         
-        self.check_siembra.stateChanged.connect(lambda e: self.check_status(e,self.fechaSiembra,self.date_siembra))
-        self.check_cosecha.stateChanged.connect(lambda e: self.check_status(e,self.fechaCosecha,self.date_cosecha))
+        # self.check_siembra.stateChanged.connect(lambda e: self.check_status(e,self.fechaSiembra,self.date_siembra))
+        # self.check_cosecha.stateChanged.connect(lambda e: self.check_status(e,self.fechaCosecha,self.date_cosecha))
 
         self.combo_aplicacion.currentIndexChanged.connect(self.getCultivosCampaniaData)
         self.btn_save_cultivo_prod_exp.clicked.connect(self.actualizarProduccionCultivo)
@@ -539,10 +574,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         # TOOL_EXP_2
        
         self.AsignarAgricultorLotes = QtWidgets.QAction(agraeGUI().getIcon('select-farmer'),'Asignar Agricultor a Lotes Seleccionados',self)
-        self.AsignarAgricultorLotes.triggered.connect(self.asignarAgricultorLotes) 
+        self.AsignarAgricultorLotes.triggered.connect(self.asignarAgricultorLotesDialog) 
 
         self.AsignarCultivosLotes = QtWidgets.QAction(agraeGUI().getIcon('select-cultivo'),'Asignar Cultivo a Lotes Seleccionados',self)
-        self.AsignarCultivosLotes.triggered.connect(self.asignarCultivosLotes)
+        self.AsignarCultivosLotes.triggered.connect(self.asignarCultivosLotesDialog)
         self.CargarCapasExplotacion = QtWidgets.QAction(agraeGUI().getIcon('add-layer'),'Generar capas de Explotacion',self)
         self.CargarCapasExplotacion.triggered.connect(self.generarCapasExplotacion)
         self.GenerarReporteFertilizacion = QtWidgets.QAction(agraeGUI().getIcon('printer'),'Generar Reporte de Preescripcion',self)
@@ -836,7 +871,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         dlg = aGraeGEEDialog()
         dlg.exec_()
 
-    def asignarCultivosLotes(self):
+    def asignarCultivosLotesDialog(self):
 
         if len(self.layer.selectedFeatures()) == 0:
             self.tools.messages('Asignar Cultivos','Seleccione al menos un lote para asignar los cultivos.',2)
@@ -847,13 +882,18 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         dlg.exec()
         pass
 
-    def asignarAgricultorLotes(self):
+    def asignarAgricultorLotesDialog(self):
         if len(self.layer.selectedFeatures()) == 0:
             self.tools.messages('Asignar Agricultor','Seleccione al menos un lote para asignar el agricultor.',2)
             return
         idlote = [f['idlote'] for f in self.layer.selectedFeatures()]
         dlg = AgricultorSelectDialog(idexplotacion= self.combo_explotacion.get_current_explotacion_id(), idlotes=idlote)
         dlg.exec()
+
+    def gestionarContratosDialog(self):
+        dlg = ContratosDialog(idexplotacion=self.combo_explotacion.get_current_id())
+        dlg.exec()
+        pass
     
     def actualizarDatosCultivosCSV(self):
         file = self.tools.openFileDialog()

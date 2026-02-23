@@ -44,8 +44,8 @@ class aGraeTools():
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        self.backend_endpoint = 'http://142.93.41.109:8000'
-        # self.backend_endpoint = 'http://localhost:8000'
+        # self.backend_url = 'http://142.93.41.109:8000'
+        self.backend_url = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_
@@ -733,7 +733,7 @@ class aGraeTools():
 
         
         try:
-            r = requests.post('{}/gis/utils/report_export/'.format(self.backend_endpoint), json=payload, timeout=3000)
+            r = requests.post('{}/gis/utils/report_export/'.format(self.backend_url), json=payload, timeout=3000)
             r.raise_for_status()
 
             out_name = f"resumen_{nameExp}_{QDateTime.currentDateTime().toString('yyyyMMdd')}.csv"
@@ -912,7 +912,7 @@ class aGraeTools():
             "idcultivo": idcultivo,
         }
         
-        endpoint = self.backend_endpoint + '/gis/lotes/update/prod_esperada'
+        endpoint = self.backend_url + '/gis/lotes/update/prod_esperada'
         try:
             response = requests.patch(endpoint,json=payload,timeout=300)
             if response.status_code == 200:
@@ -957,7 +957,7 @@ class aGraeTools():
 
     def updateLoteInfo(self,payload:dict):
         """ Actualiza la información de un lote mediante una solicitud PATCH al backend. """
-        endpoint = self.backend_endpoint + '/gis/lotes/update'
+        endpoint = self.backend_url + '/gis/lotes/update'
         try:
             response = requests.patch(endpoint,json=payload,timeout=300)
             if response.status_code == 200:
@@ -970,7 +970,7 @@ class aGraeTools():
     
     def updateMultiLoteInfo(self,payload:dict):
         """ Actualiza la información de múltiples lotes mediante una solicitud PATCH al backend. """
-        endpoint = self.backend_endpoint + '/gis/lotes/update/multi'
+        endpoint = self.backend_url + '/gis/lotes/update/multi'
         try:
             response = requests.patch(endpoint,json=payload,timeout=300)
             if response.status_code == 200:
@@ -993,7 +993,7 @@ class aGraeTools():
         if fecha_cosecha:
             payload["fechacosecha"] = fecha_cosecha
 
-        endpoint = self.backend_endpoint + '/gis/lotes/update/dates'
+        endpoint = self.backend_url + '/gis/lotes/update/dates'
         try:
             response = requests.patch(endpoint,json=payload,timeout=300)
             if response.status_code == 200:
@@ -1013,7 +1013,7 @@ class aGraeTools():
         - message: str (mensaje del backend o texto de respuesta)
         - data: Any (cuerpo JSON cuando aplique)
         """
-        url = self.backend_endpoint.rstrip("/") + endpoint
+        url = self.backend_url.rstrip("/") + endpoint
         
         try:
             timeout = aiohttp.ClientTimeout(total=timeout_sec)
@@ -1058,7 +1058,7 @@ class aGraeTools():
             }
 
     async def _patch_json(self, endpoint: str, payload: dict[str, Any], *, timeout_sec: int = 300) -> dict[str, Any]:
-        url = self.backend_endpoint.rstrip("/") + endpoint
+        url = self.backend_url.rstrip("/") + endpoint
 
         try:
             timeout = aiohttp.ClientTimeout(total=timeout_sec)
@@ -1083,7 +1083,7 @@ class aGraeTools():
                     if status in (307, 308):
                         loc = resp.headers.get("Location", "")
                         if loc:
-                            new_url = loc if loc.startswith("http") else (self.backend_endpoint.rstrip("/") + loc)
+                            new_url = loc if loc.startswith("http") else (self.backend_url.rstrip("/") + loc)
                             async with session.patch(new_url, json=payload) as resp2:
                                 status2 = resp2.status
                                 data2 = None

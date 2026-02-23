@@ -145,7 +145,7 @@ def _build_manejo_spans(
 class FetchGDDDetailTask(QgsTask):
     def __init__(self, iddata: int):
         super().__init__("Cargando integral térmica", QgsTask.CanCancel)
-        self.url_base = aGraeTools().backend_endpoint
+        self.url_base = aGraeTools().backend_url
         self.url = f"{self.url_base}/gis/integral_termica/wang_detail_new/{iddata}"
         self.payload: Optional[Dict[str, Any]] = None
         self.result_data: Optional[List[Dict[str, Any]]] = None

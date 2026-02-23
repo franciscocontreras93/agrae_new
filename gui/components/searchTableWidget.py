@@ -68,7 +68,7 @@ class SearchTableWidget(QWidget):
 
         self.model = model
         self.map_func = map_func
-        self.base_url = aGraeTools().backend_endpoint 
+        self.base_url = aGraeTools().backend_url 
         self.endpoint = endpoint or ""
         self.local_filter = local_filter
         self.default_params = default_params or {}

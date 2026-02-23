@@ -127,7 +127,7 @@ class CustomComboBox(QComboBox):
     ):
         super().__init__(parent)
 
-        self._backend = aGraeTools().backend_endpoint.rstrip("/")
+        self._backend = aGraeTools().backend_url.rstrip("/")
         self.endpoint = endpoint if endpoint.startswith("/") else f"/{endpoint}"
 
         self.label_field = label_field
@@ -1312,3 +1312,152 @@ class RegimenComboBox(CustomComboBox):
     - Etiqueta formateada "Nombre".
     - auto_enable_on_load=False por defecto: el dock controla su estado (modo edición).
     """
+
+
+# ================================================================================
+# Contratos y Facturacion
+# ================================================================================
+
+
+class PlanesComboBox(CustomComboBox):
+    """
+    Combo para Planes (/billing/planes):
+    - Sin filtros (por ahora).
+    - value_field = idplan (según response).
+    - Señal plan_changed emite el dict completo del plan actual.
+    - Puede filtrar sólo activos (activo=True).
+    """
+
+    plan_changed = pyqtSignal(object)  # emite dict del plan o None
+
+    def __init__(
+        self,
+        endpoint: str = "/billing/planes",
+        parent=None,
+        *,
+        editable: bool = True,
+        only_active: bool = True,
+        auto_enable_on_load: bool = False,
+        show_details_in_label: bool = True,
+    ):
+        self._only_active = bool(only_active)
+        self._show_details_in_label = bool(show_details_in_label)
+
+        def _label(it: dict) -> str:
+            # Nombre "bonito" y estable (sin depender de campos que vayan a desaparecer)
+            nombre = str(it.get("nombre", "") or "").strip()
+            codigo = str(it.get("codigo", "") or "").strip()
+
+            if not self._show_details_in_label:
+                # Si hay código, lo ponemos delante
+                return f"{codigo} - {nombre}" if codigo else (nombre or "-")
+
+            pm = str(it.get("pricing_model", "") or "").strip()
+            pb = it.get("precio_base", None)
+            mh = it.get("max_ha", None)
+
+            # Ojo: precio_base / max_ha te pueden venir como string; lo mostramos tal cual
+            parts = []
+            if pm:
+                parts.append(pm)
+            if pb not in (None, ""):
+                parts.append(f"Base {pb}")
+            if mh not in (None, ""):
+                parts.append(f"Max {mh} ha")
+
+            suffix = f" ({' | '.join(parts)})" if parts else ""
+            base = f"{codigo} - {nombre}" if codigo else (nombre or "-")
+            return f"{base}{suffix}"
+
+        def _transform(items: list[dict]) -> list[dict]:
+            out = [it for it in items if isinstance(it, dict)]
+            if self._only_active:
+                out = [it for it in out if it.get("activo", True) is True]
+            return out
+
+        super().__init__(
+            endpoint=endpoint,
+            parent=parent,
+            label_field="nombre",
+            value_field="idplan",              # <-- CLAVE
+            allow_all=False,
+            editable=bool(editable),
+            sort_key="nombre",
+            sort_reverse=False,
+            auto_enable_on_load=bool(auto_enable_on_load),
+            first_item_text=True,
+            param_provider=lambda: {},         # <-- sin filtros
+            label_formatter=_label,
+            items_transform=_transform,
+        )
+
+        # Emitir dict completo cuando cambie
+        self.current_value_changed.connect(self._emit_plan_changed)
+
+        # Al cargar items, también emitimos el plan actual
+        self.items_loaded.connect(lambda _items: self._emit_plan_changed(self.currentData()))
+
+    # ------------------- API pública -------------------
+    def set_only_active(self, flag: bool, *, refresh: bool = True) -> None:
+        self._only_active = bool(flag)
+        # Reaplicamos la transform
+        self.set_items_transform(self._items_transform_dynamic(), refresh=refresh)
+
+    def set_show_details_in_label(self, flag: bool, *, refresh: bool = True) -> None:
+        self._show_details_in_label = bool(flag)
+        # Reaplicamos formatter (y refrescamos para repintar labels)
+        self.set_label_formatter(self._label_formatter_dynamic())
+        if refresh:
+            self.refresh()
+
+    def get_current_plan(self) -> dict | None:
+        return self.get_current_item()
+
+    def get_current_plan_id(self) -> int | None:
+        return self.get_current_id()
+
+    def get_current_plan_name(self) -> str | None:
+        it = self.get_current_plan()
+        if isinstance(it, dict):
+            return it.get("nombre")
+        return None
+
+    # ------------------- Internals -------------------
+    def _emit_plan_changed(self, _value: object) -> None:
+        self.plan_changed.emit(self.get_current_plan())
+
+    def _label_formatter_dynamic(self):
+        # reusa el mismo formateador con el estado actual
+        def _label(it: dict) -> str:
+            nombre = str(it.get("nombre", "") or "").strip()
+            codigo = str(it.get("codigo", "") or "").strip()
+
+            if not self._show_details_in_label:
+                return f"{codigo} - {nombre}" if codigo else (nombre or "-")
+
+            pm = str(it.get("pricing_model", "") or "").strip()
+            pb = it.get("precio_base", None)
+            mh = it.get("max_ha", None)
+
+            parts = []
+            if pm:
+                parts.append(pm)
+            if pb not in (None, ""):
+                parts.append(f"Base {pb}")
+            if mh not in (None, ""):
+                parts.append(f"Max {mh} ha")
+
+            suffix = f" ({' | '.join(parts)})" if parts else ""
+            base = f"{codigo} - {nombre}" if codigo else (nombre or "-")
+            return f"{base}{suffix}"
+
+        return _label
+
+    def _items_transform_dynamic(self):
+        def _transform(items: list[dict]) -> list[dict]:
+            out = [it for it in items if isinstance(it, dict)]
+            if self._only_active:
+                out = [it for it in out if it.get("activo", True) is True]
+            return out
+
+        return _transform
