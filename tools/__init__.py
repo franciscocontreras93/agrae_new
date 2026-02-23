@@ -31,6 +31,7 @@ from ..sql import aGraeSQLTools
 from .agraeQR import aGraeLabelGenerator
 
 
+
 class aGraeTools():
     MuestreoEndSignal = pyqtSignal(bool)
 
@@ -44,8 +45,11 @@ class aGraeTools():
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        # self.backend_url = 'http://142.93.41.109:8000'
-        self.backend_url = 'http://localhost:8000'
+        self.gee_backend_url = 'http://142.93.41.109:8500'
+        
+        self.backend_url = 'http://142.93.41.109:8000'
+
+        # self.backend_url = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_

@@ -1,1 +1,1 @@
-from .ndvi_downloader import NDVIProcessor
+from .ndvi_downloader import NDVIProcessor, NDVIListDownloadWorker

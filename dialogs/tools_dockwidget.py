@@ -1,5 +1,6 @@
 #type: ignore
 
+from multiprocessing import process
 import os
 
 import psycopg2
@@ -14,9 +15,10 @@ from qgis.gui import QgsMapToolIdentify,QgsMapMouseEvent, QgsHighlight # type: i
 from ..tools import aGraeTools
 from ..tools.analisis_tools import aGraeResamplearMuestras
 from ..tools.agrae_csv_tools import aGraeCSVTools
-from ..tools.gee import NDVIProcessor
+from ..tools.gee import NDVIProcessor, NDVIListDownloadWorker
 from ..tools.agraeIdentifyTool import aGraeSelectTool
 from ..tools.agraeCopiarAnaliticaSelectTool import aGraeCopyAnaliticaSelectTool
+from ..tools.styling_tools import _apply_index_style, _index_presets
 
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
@@ -226,7 +228,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.btn_save_cultivo_date_exp = QtWidgets.QPushButton("Guardar")
 
 
-
+        # Page 3: Google Earth Engine
         self.page_gee_module = QtWidgets.QWidget() # For the third tab
         self.page_gee_layout = QtWidgets.QVBoxLayout(self.page_gee_module)
 
@@ -250,16 +252,18 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.analisis_gee_layout = QtWidgets.QHBoxLayout(self.analisis_gee_group)
         self.page_gee_layout.setContentsMargins(10, 10, 10, 10)  # Add margins to the layout
         self.ndvi_radio = QtWidgets.QRadioButton("NDVI")
+        self.ndre_radio = QtWidgets.QRadioButton("NDRE")
         self.savi_radio = QtWidgets.QRadioButton("SAVI")
-        self.natural_color_radio = QtWidgets.QRadioButton("Color Natural")
+        # self.natural_color_radio = QtWidgets.QRadioButton("Color Natural") #TODO
 
-        self.savi_radio.setEnabled(False)
-        self.natural_color_radio.setEnabled(False)
+        # self.savi_radio.setEnabled(False) 
+        # self.natural_color_radio.setEnabled(False)
 
 
         self.analisis_gee_layout.addWidget(self.ndvi_radio)
+        self.analisis_gee_layout.addWidget(self.ndre_radio)
         self.analisis_gee_layout.addWidget(self.savi_radio)
-        self.analisis_gee_layout.addWidget(self.natural_color_radio)
+        # self.analisis_gee_layout.addWidget(self.natural_color_radio)
         self.ndvi_radio.setChecked(True)
         # self.analisis_gee_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins for a cleaner look
         self.analisis_gee_layout.setSpacing(10)  # Add spacing between buttons
@@ -277,14 +281,23 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.date_edit_hasta = QtWidgets.QDateEdit()
         self.date_edit_desde.setCalendarPopup(True)
         self.date_edit_hasta.setCalendarPopup(True)
-        self.date_edit_desde.setDate(QDate.currentDate().addYears(-1))
+        self.date_edit_desde.setDate(QDate.currentDate().addMonths(-2))
         self.date_edit_hasta.setDate(QDate.currentDate())
         self.date_edit_desde.setMaximumDate(QDate.currentDate())
         self.date_edit_hasta.setMaximumDate(QDate.currentDate())
+
+        self.date_edit_desde.dateChanged.connect(self._validate_date_range)
+        self.date_edit_hasta.dateChanged.connect(self._validate_date_range)
+
+
         self.analisis_gee_date_range_layout.addWidget(QtWidgets.QLabel("Desde:"), 0, 0)
         self.analisis_gee_date_range_layout.addWidget(self.date_edit_desde, 1, 0)
         self.analisis_gee_date_range_layout.addWidget(QtWidgets.QLabel("Hasta:"), 0, 1)
         self.analisis_gee_date_range_layout.addWidget(self.date_edit_hasta, 1, 1)
+
+
+        self.status_gee_label = QtWidgets.QLabel("")
+        self.status_gee_label.setVisible(False)
 
         self.analisis_gee_progressbar = QtWidgets.QProgressBar()
         self.analisis_gee_progressbar.setRange(0, 100)
@@ -294,9 +307,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.analisis_gee_ejecutar_button = QtWidgets.QPushButton("Ejecutar")
         self.analisis_gee_ejecutar_button.clicked.connect(self.run_ndvi_processor)
 
-        self.page_gee_layout.addWidget(self.filtrar_cultivo_group)
+        # self.page_gee_layout.addWidget(self.filtrar_cultivo_group)
         self.page_gee_layout.addWidget(self.analisis_gee_group)
         self.page_gee_layout.addWidget(self.analisis_gee_date_range_group)
+        self.page_gee_layout.addWidget(self.status_gee_label)
         self.page_gee_layout.addWidget(self.analisis_gee_progressbar)
         self.page_gee_layout.addWidget(self.analisis_gee_ejecutar_button)
         self.page_gee_layout.addStretch()  # Add stretch to push content to the top
@@ -513,7 +527,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         #     self.toolBox.setItemIcon(2,agraeGUI().getIcon('explotacion'))
 
 
-        # self.toolBox.addItem(self.page_gee_module, "Modulo de Google Earth Engine")
+        self.toolBox.addItem(self.page_gee_module, "Modulo de Google Earth Engine")
 
 
         # Set initial properties and connections
@@ -522,7 +536,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
         
         
-        # self.toolBox.setItemIcon(2,agraeGUI().getIcon('satelite')) # Icono para la segunda pestaña
+        self.toolBox.setItemIcon(2,agraeGUI().getIcon('satelite')) # Icono para la segunda pestaña
         self.toolBox.currentChanged.connect(self.infoLote)
         
         # for c in [self.combo_cultivo]:
@@ -852,20 +866,114 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         canvas.setMapTool(self.copy_tool)
 
     def run_ndvi_processor(self):
+
+        radio_map = {
+            self.ndvi_radio: 1,
+            self.ndre_radio: 2,
+            self.savi_radio: 3,
+        }
+
+        index = next((value for radio, value in radio_map.items() if radio.isChecked()), None)
+
         idcampania = self.combo_campania.currentData()
         idexplotacion = self.combo_explotacion.currentData()
-        fecha_inicio = self.date_edit_desde.date().toString('yyyy-MM-dd')
-        fecha_fin = self.date_edit_hasta.date().toString('yyyy-MM-dd')
+        fecha_inicio = self.date_edit_desde.date().toString("yyyy-MM-dd")
+        fecha_fin = self.date_edit_hasta.date().toString("yyyy-MM-dd")
 
-        # processor = NDVIProcessor(42, 52, "2025-01-01", "2025-01-31")
-        # processor.run()
-        print("[DEBUG] ID Campania:", idcampania)
-        print("[DEBUG] ID Explotación:", idexplotacion)
-        print("[DEBUG] Fecha Inicio:", fecha_inicio)
-        print("[DEBUG] Fecha Fin:", fecha_fin)
+        if index is None:
+            return
 
-        processor = NDVIProcessor(idcampania, idexplotacion, str(fecha_inicio), str(fecha_fin))
-        processor.run()
+        self._selected_index = index
+
+        payload = {
+            "idcampania": idcampania,
+            "idexplotacion": idexplotacion,
+            "fecha_inicio": fecha_inicio,
+            "fecha_fin": fecha_fin,
+            "index": index,
+        }
+
+        processor = NDVIProcessor("/gee/index_list")
+
+        self._ndvi_worker = NDVIListDownloadWorker(
+            processor=processor,
+            payload=payload,
+            max_workers=4,
+            parent=self,
+        )
+
+        # progressbar: indeterminado al inicio
+        self.analisis_gee_progressbar.setVisible(True)
+        self.analisis_gee_progressbar.setRange(0, 0)
+        self.analisis_gee_progressbar.setValue(0)
+
+        self.status_gee_label.setVisible(True)
+
+        # señales
+        def _on_init(total: int):
+            self.analisis_gee_progressbar.setRange(0, max(total, 1))
+            self.analisis_gee_progressbar.setValue(0)
+
+        self._ndvi_worker.progressInit.connect(_on_init)
+        self._ndvi_worker.status.connect(self.status_gee_label.setText)
+        self._ndvi_worker.progress.connect(self.analisis_gee_progressbar.setValue)
+        self._ndvi_worker.orderReady.connect(self._on_ndvi_order_ready)
+        self._ndvi_worker.itemReady.connect(self._on_ndvi_item_ready)
+        self._ndvi_worker.error.connect(lambda m: print(m))
+
+        self._ndvi_worker.start()
+
+    def _add_index_layer(self, fecha: str, path: str):
+        # 1) presets: como la función pide self, pásale self
+        presets = _index_presets()  
+
+        # 2) usa el índice entero como clave (1/2/3)
+        idx = getattr(self, "_selected_index", 1)
+        preset = presets.get(idx, presets[1])  
+
+        layer_name = f"{preset.name}_{fecha}"
+        rlayer = QgsRasterLayer(path, layer_name)
+
+        if not rlayer.isValid():
+            try:
+                os.remove(path)
+            except Exception:
+                pass
+            return
+
+        _apply_index_style(rlayer, preset, band=1)
+        QgsProject.instance().addMapLayer(rlayer)
+
+    def _on_ndvi_order_ready(self, fechas: list):
+        self._ndvi_expected_order = fechas          # lista ordenada old->new
+        self._ndvi_downloaded_paths = {}            # fecha -> path
+        self._ndvi_next_idx = 0
+
+
+    def _on_ndvi_item_ready(self, fecha: str, path: str):
+        # Guardar lo que llegó
+        if not hasattr(self, "_ndvi_downloaded_paths"):
+            self._ndvi_downloaded_paths = {}
+        self._ndvi_downloaded_paths[fecha] = path
+
+        # Intentar cargar en orden
+        self._flush_ndvi_layers_in_order()
+
+    def _flush_ndvi_layers_in_order(self):
+        if not getattr(self, "_ndvi_expected_order", None):
+            return
+
+        while self._ndvi_next_idx < len(self._ndvi_expected_order):
+            fecha = self._ndvi_expected_order[self._ndvi_next_idx]
+            path = self._ndvi_downloaded_paths.get(fecha)
+            if not path:
+                break  # esa fecha todavía no está descargada
+
+            # aquí sí cargas capa y aplicas estilo
+            self._add_index_layer(fecha, path)
+            self._ndvi_next_idx += 1
+
+        
 
     def geeDialog(self):
         dlg = aGraeGEEDialog()
@@ -1864,6 +1972,38 @@ FROM
         self.subMenu.addAction(analizeAction)
         # self.subMenu.addAction(self.simpleSelection)
         # self.subMenu.addAction(self.polygonSelection)
+
+    def _validate_date_range(self):
+        max_months = 6
+
+        desde = self.date_edit_desde.date()
+        hasta = self.date_edit_hasta.date()
+
+        # No permitir fechas futuras
+        today = QDate.currentDate()
+        if hasta > today:
+            hasta = today
+            self.date_edit_hasta.setDate(hasta)
+
+        if desde > today:
+            desde = today
+            self.date_edit_desde.setDate(desde)
+
+        # Si rango mayor a 6 meses, ajustar automáticamente
+        max_hasta = desde.addMonths(max_months)
+
+        if hasta > max_hasta:
+            self.date_edit_hasta.blockSignals(True)
+            self.date_edit_hasta.setDate(max_hasta)
+            self.date_edit_hasta.blockSignals(False)
+
+        # Si usuario mueve "hasta" hacia atrás más de 6 meses
+        min_desde = hasta.addMonths(-max_months)
+
+        if desde < min_desde:
+            self.date_edit_desde.blockSignals(True)
+            self.date_edit_desde.setDate(min_desde)
+            self.date_edit_desde.blockSignals(False)
 
 
 
