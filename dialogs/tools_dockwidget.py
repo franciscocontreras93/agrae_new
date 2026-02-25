@@ -1,5 +1,6 @@
 #type: ignore
 
+from math import inf
 from multiprocessing import process
 import os
 
@@ -11,7 +12,7 @@ from qgis.PyQt.QtGui import QIcon,QColor #type: ignore
 
 from qgis.core import * #type: ignore
 from qgis.utils import iface #type: ignore
-from qgis.gui import QgsMapToolIdentify,QgsMapMouseEvent, QgsHighlight # type: ignore
+from qgis.gui import QgsMapToolIdentify,QgsMapMouseEvent, QgsHighlight, QgsCollapsibleGroupBox # type: ignore
 from ..tools import aGraeTools
 from ..tools.analisis_tools import aGraeResamplearMuestras
 from ..tools.agrae_csv_tools import aGraeCSVTools
@@ -331,7 +332,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         dock_layout = QtWidgets.QVBoxLayout(main_widget)
 
         # Group: Selección de Campaña y Explotación (Fuera del ToolBox)
-        group_camp_exp = QtWidgets.QGroupBox("Selección de Campaña y Explotación")
+        group_camp_exp = QgsCollapsibleGroupBox("Selección de Campaña y Explotación")
+        group_camp_exp.setCollapsed(False)
         layout_camp_exp = QtWidgets.QGridLayout(group_camp_exp)
         layout_camp_exp.addWidget(QtWidgets.QLabel("Campaña:"), 0, 0)
         layout_camp_exp.addWidget(self.combo_campania, 0, 1)
@@ -343,14 +345,16 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         # Añadir nuevos labels para información de lotes
         dock_layout.addWidget(group_camp_exp)
 
-        info_group_box = QtWidgets.QGroupBox("Datos de la Explotación.")
+        info_group_box = QgsCollapsibleGroupBox("Datos de la Explotación.")
+        info_group_box.setCollapsed(True)
         layout_info_group = QtWidgets.QGridLayout(info_group_box)
         layout_info_group.addWidget(self.label_info,0,0)
         layout_info_group.addWidget(self.label_info_muestreo,1,0)
         # layout_info_group.addWidget(self.card_num_lotes,0,0)
 
         # Group: Herramientas Generales (Fuera del ToolBox)
-        tools_group_box = QtWidgets.QGroupBox("Herramientas")
+        tools_group_box = QgsCollapsibleGroupBox("Herramientas")
+        tools_group_box.setCollapsed(True)
         layout_tools_group = QtWidgets.QGridLayout(tools_group_box) # Usar QHBoxLayout para que estén en línea
 
         self.tool_agrae.setText("aGrae General")
@@ -366,13 +370,22 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         layout_tools_group.addWidget(self.tool_exp_2,1,1) 
         layout_tools_group.addWidget(self.tool_lab,1,2)
         layout_tools_group.addWidget(self.tool_data,1,3)
-        dock_layout.addWidget(info_group_box)
         dock_layout.addWidget(tools_group_box)
+        dock_layout.addWidget(info_group_box)
 
 
         # Create ToolBox and add it to the main dock layout
         self.toolBox = QtWidgets.QToolBox()
         dock_layout.addWidget(self.toolBox)
+
+        # # --- Page 0: Informacion de Explotacion
+        # self.page_info_explotacion = QtWidgets.QWidget()
+        # page_info_explotacion_layout = QtWidgets.QVBoxLayout(self.page_info_explotacion)
+        # page_info_explotacion_layout.addWidget(info_group_box)
+
+        # self.toolBox.addItem(self.page_info_explotacion, "Información de Explotación")
+
+
 
         # --- Page 1: Información de Lote ---
         self.page_info_lote = QtWidgets.QWidget()
