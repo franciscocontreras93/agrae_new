@@ -233,19 +233,11 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.page_gee_module = QtWidgets.QWidget() # For the third tab
         self.page_gee_layout = QtWidgets.QVBoxLayout(self.page_gee_module)
 
-        self.filtrar_cultivo_group = QtWidgets.QGroupBox("Filtrar por cultivo:")
-        self.filtrar_cultivo_group.setCheckable(True)
-        self.filtrar_cultivo_group.setChecked(False)
 
-        self.filtrar_cultivo_layout = QtWidgets.QHBoxLayout(self.filtrar_cultivo_group)
 
         self.combo_cultivo_3 = QtWidgets.QComboBox()
         self.combo_cultivo_3.setEditable(True)
         self.combo_cultivo_3.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-
-        self.filtrar_cultivo_layout.addWidget(QtWidgets.QLabel("Cultivo:"))
-        self.filtrar_cultivo_layout.addWidget(self.combo_cultivo_3)
-
 
 
 
@@ -274,8 +266,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
         self.analisis_gee_date_range_group = QtWidgets.QGroupBox("Rango de Fechas:")
         self.analisis_gee_date_range_group.setToolTip('Rango de fechas para el análisis, si se desactiva, se usara la ultima imagen disponible según parametros.')
-        self.analisis_gee_date_range_group.setCheckable(True)
-        self.analisis_gee_date_range_group.setChecked(True)
+        # self.analisis_gee_date_range_group.setCheckable(True)
+        # self.analisis_gee_date_range_group.setChecked(True)
         self.analisis_gee_date_range_layout = QtWidgets.QGridLayout(self.analisis_gee_date_range_group)
 
         self.date_edit_desde = QtWidgets.QDateEdit()
@@ -888,8 +880,13 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
         index = next((value for radio, value in radio_map.items() if radio.isChecked()), None)
 
-        idcampania = self.combo_campania.currentData()
-        idexplotacion = self.combo_explotacion.currentData()
+        # idcampania = self.combo_campania.currentData()
+        # idexplotacion = self.combo_explotacion.currentData()
+        idlotes = [f['idlote'] for f in self.layer.selectedFeatures() ]
+        if self.layer.selectedFeatureCount() == 0:
+            idlotes = [f['idlote'] for f in self.layer.getFeatures() ]
+        else:
+            idlotes = [f['idlote'] for f in self.layer.selectedFeatures() ]
         fecha_inicio = self.date_edit_desde.date().toString("yyyy-MM-dd")
         fecha_fin = self.date_edit_hasta.date().toString("yyyy-MM-dd")
 
@@ -897,16 +894,17 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
             return
 
         self._selected_index = index
+        
 
         payload = {
-            "idcampania": idcampania,
-            "idexplotacion": idexplotacion,
+            "idlotes": idlotes,
             "fecha_inicio": fecha_inicio,
             "fecha_fin": fecha_fin,
             "index": index,
+            "buffer":10
         }
 
-        processor = NDVIProcessor("/gee/index_list")
+        processor = NDVIProcessor("/gee/index_by_idlotes")
 
         self._ndvi_worker = NDVIListDownloadWorker(
             processor=processor,
