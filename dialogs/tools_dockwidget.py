@@ -1,7 +1,3 @@
-#type: ignore
-
-from math import inf
-from multiprocessing import process
 import os
 
 import psycopg2
@@ -153,16 +149,16 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.line_produccion.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
         self.line_produccion.setSuffix(" Kg/Ha")
         self.line_produccion.setMaximum(500000) # Max 200 Ton/Ha
-        self.check_siembra = QtWidgets.QCheckBox("Fecha Siembra")
-        self.check_siembra.setEnabled(False)
-        self.date_siembra = QtWidgets.QDateEdit()
-        self.date_siembra.setEnabled(False)
-        self.date_siembra.setCalendarPopup(True)
-        self.check_cosecha = QtWidgets.QCheckBox("Fecha Cosecha")
-        self.check_cosecha.setEnabled(False)
-        self.date_cosecha = QtWidgets.QDateEdit()
-        self.date_cosecha.setEnabled(False)
-        self.date_cosecha.setCalendarPopup(True)
+        # self.check_siembra = QtWidgets.QCheckBox("Fecha Siembra")
+        # self.check_siembra.setEnabled(False)
+        # self.date_siembra = QtWidgets.QDateEdit()
+        # self.date_siembra.setEnabled(False)
+        # self.date_siembra.setCalendarPopup(True)
+        # self.check_cosecha = QtWidgets.QCheckBox("Fecha Cosecha")
+        # self.check_cosecha.setEnabled(False)
+        # self.date_cosecha = QtWidgets.QDateEdit()
+        # self.date_cosecha.setEnabled(False)
+        # self.date_cosecha.setCalendarPopup(True)
         self.label_status = QtWidgets.QLabel("Estado: Desconocido")
         self.tool_lote = QtWidgets.QToolButton()
 
@@ -728,7 +724,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.EliminarLoteAction.triggered.connect(self.deleteLote)
         self.GenerarPanelesDialogAction = QtWidgets.QAction(agraeGUI().getIcon('chart-bar'),'Panel de Analisis Grafico',self)
         self.GenerarPanelesDialogAction.triggered.connect(self.loteAnliticDialog)
-        self.EditarLoteAction.triggered.connect(lambda: self.tools.enableElements(self.EditarLoteAction,[self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.ActualizarLoteAction,self.EliminarLoteAction, self.check_siembra, self.check_cosecha]))
+        self.EditarLoteAction.triggered.connect(lambda: self.tools.enableElements(self.EditarLoteAction,[self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.ActualizarLoteAction,self.EliminarLoteAction]))
         actions_lote = [self.EditarLoteAction,self.ActualizarLoteAction,self.ClimaLoteAction,self.GenerarPanelesDialogAction,self.EliminarLoteAction,]
         self.tools.settingsToolsButtons(self.tool_lote, actions_lote)
 
@@ -1098,19 +1094,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         else:
             toolbutton.setDefaultAction(actions[0])
 
-    def dateSiembraChanged(self,e):
-        self.fechaSiembra = QDate(self.date_siembra.date())
-        self.date_cosecha.setMinimumDate(self.date_siembra.date().addDays(15))
-        
-    def dateCosechaChanged(self,e):
-        """[DEPRECATED]"""
-        # print(e)
-        self.fechaCosecha = ''
-
-        if self.fechaSiembra != '' or self.date_cosecha.date() >= self.fechaSiembra.addMonths(1):
-            self.fechaCosecha = self.date_cosecha.date()
-            # print(self.date_cosecha.date())
-        pass
 
     def check_status(self,e,variable,date):
         # print(e)
@@ -1161,10 +1144,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
                 self.FechaDesde = data[0]
                 self.FechaHasta = data[1]
 
-                self.date_siembra.setMinimumDate(self.FechaDesde)
-                self.date_siembra.setMaximumDate(self.FechaHasta)
-                self.date_cosecha.setMinimumDate(self.FechaDesde)
-                self.date_cosecha.setMaximumDate(self.FechaHasta)
+                # self.date_siembra.setMinimumDate(self.FechaDesde)
+                # self.date_siembra.setMaximumDate(self.FechaHasta)
+                # self.date_cosecha.setMinimumDate(self.FechaDesde)
+                # self.date_cosecha.setMaximumDate(self.FechaHasta)
                 self.date_aplicacion.setMinimumDate(self.FechaDesde)
                 self.date_aplicacion.setMaximumDate(self.FechaHasta)
                 # print(data)
@@ -1528,8 +1511,8 @@ FROM
         iface.addDockWidget(Qt.RightDockWidgetArea,self)
         self.featureLote = feat
 
-        self.date_siembra.setDate(self.FechaDesde)
-        self.date_cosecha.setDate(self.FechaHasta)
+        # self.date_siembra.setDate(self.FechaDesde)
+        # self.date_cosecha.setDate(self.FechaHasta)
 
         self.toolBox.setCurrentIndex(0)
 
@@ -1551,33 +1534,33 @@ FROM
         self.checkData(isinstance(self.prodEsperada,int) and self.prodEsperada > 0  ,self.label_7,self.prodEsperada,self.line_produccion)
 
         if isinstance(feat['fechasiembra'],QDate):
-            self.check_siembra.setChecked(True)
-            if self.EditarLoteAction.isChecked():
-                self.date_siembra.setEnabled(True)
-            else:
-                self.date_siembra.setEnabled(False)
+            # self.check_siembra.setChecked(True)
+            # if self.EditarLoteAction.isChecked():
+            #     self.date_siembra.setEnabled(True)
+            # else:
+            #     self.date_siembra.setEnabled(False)
 
             self.label_status.setText('Cultivando')
             self.label_status.setStyleSheet("QLabel { background-color : green; color : white; }")
-            self.fechaSiembra = feat['fechasiembra'].toString('yyyy-MM-dd')
-            self.date_siembra.setDate(feat['fechasiembra'])
+            # self.fechaSiembra = feat['fechasiembra'].toString('yyyy-MM-dd')
+            # self.date_siembra.setDate(feat['fechasiembra'])
         else:
 
-            self.check_siembra.setChecked(False)
+            # self.check_siembra.setChecked(False)
             self.fechaSiembra = ''
 
         if isinstance(feat['fechacosecha'],QDate):
-            self.check_cosecha.setChecked(True)
-            if self.EditarLoteAction.isChecked():
-                self.date_cosecha.setEnabled(True)
-            else:
-                self.date_cosecha.setEnabled(False)
+            # self.check_cosecha.setChecked(True)
+            # # if self.EditarLoteAction.isChecked():
+            # #     self.date_cosecha.setEnabled(True)
+            # else:
+            #     self.date_cosecha.setEnabled(False)
             self.fechaCosecha = feat['fechacosecha'].toString('yyyy-MM-dd')
-            self.date_cosecha.setDate(feat['fechacosecha'])
+            # self.date_cosecha.setDate(feat['fechacosecha'])
             self.label_status.setText('Lote Cosechado')
             self.label_status.setStyleSheet("QLabel { background-color : blue; color : white; }")
         else:
-            self.check_cosecha.setChecked(False)
+            # self.check_cosecha.setChecked(False)
             self.fechaCosecha = ''
   
         
@@ -1603,10 +1586,10 @@ FROM
         }
         }
 
-        if self.check_siembra.isChecked():
-            json_payload['data_campania']['fechasiembra'] = self.date_siembra.date().toString('yyyy-MM-dd')
-        if self.check_cosecha.isChecked():
-            json_payload['data_campania']['fechacosecha'] = self.date_cosecha.date().toString('yyyy-MM-dd')
+        # if self.check_siembra.isChecked():
+        #     json_payload['data_campania']['fechasiembra'] = self.date_siembra.date().toString('yyyy-MM-dd')
+        # if self.check_cosecha.isChecked():
+        #     json_payload['data_campania']['fechacosecha'] = self.date_cosecha.date().toString('yyyy-MM-dd')
 
         # print(json_payload)
 
@@ -1761,7 +1744,8 @@ FROM
     def deleteLote(self):
         question = 'Quieres eliminar el lote {}?, esta acción eliminará\nsolo los datos asociados a la campaña.'.format(self.nombreLote)
         sql = '''delete from campaign.data where iddata = {}'''.format(self.idData)
-        actions = [self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.date_siembra,self.date_cosecha,self.ActualizarLoteAction,self.EliminarLoteAction]
+        actions = [self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.ActualizarLoteAction,self.EliminarLoteAction]
+        # actions = [self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.date_siembra,self.date_cosecha,self.ActualizarLoteAction,self.EliminarLoteAction]
         try:
             self.tools.deleteAction(question,sql,self.EditarLoteAction,actions)
             self.tools.messages('aGrae Tools','Se elimino el lote {} de la explotacion actual.'.format(self.nombreLote),3,duration=5)
