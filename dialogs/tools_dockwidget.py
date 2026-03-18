@@ -310,6 +310,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.area_visible_input.setValue(80)
         self.area_visible_input.setMinimum(0)
         self.area_visible_input.setMaximum(100)
+        self.area_visible_input.setSuffix(" %")
 
         self.shadow_mask = QtWidgets.QCheckBox("Máscara de sombras")
         self.snow_mask = QtWidgets.QCheckBox("Máscara de nieve")
@@ -935,12 +936,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         }
 
         if self.gee_parametros_avanzados_group.isChecked():
-            area_visible = round((self.area_visible_input.value()/100),1)
-            mask_snow = self.snow_mask.isChecked()
-            mask_shadow = self.shadow_mask.isChecked()
-            payload["area_visible"] = area_visible
-            payload["mask_snow"] = mask_snow
-            payload["mask_shadow"] = mask_shadow
+            payload["area_visible"] = round((self.area_visible_input.value()/100),1)
+            payload["mask_snow"] = self.snow_mask.isChecked()
+            payload["mask_shadow"] = self.shadow_mask.isChecked()
+
         
         if index is None:
             return
