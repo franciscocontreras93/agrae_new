@@ -74,6 +74,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         except Exception:
             pass
 
+        
+
         # self.identifyTool = selectTool(self.layer)
         # self.identifyTool.featureSelected.connect(self.fillDataLote)
         self.currentDate = QDate().currentDate()
@@ -261,7 +263,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         
 
         self.analisis_gee_date_range_group = QtWidgets.QGroupBox("Rango de Fechas:")
-        self.analisis_gee_date_range_group.setToolTip('Rango de fechas para el análisis, si se desactiva, se usara la ultima imagen disponible según parametros.')
+        # self.analisis_gee_date_range_group.setToolTip('Rango de fechas para el análisis, si se desactiva, se usara la ultima imagen disponible según parametros.')
         # self.analisis_gee_date_range_group.setCheckable(True)
         # self.analisis_gee_date_range_group.setChecked(True)
         self.analisis_gee_date_range_layout = QtWidgets.QGridLayout(self.analisis_gee_date_range_group)
@@ -296,12 +298,44 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.analisis_gee_ejecutar_button = QtWidgets.QPushButton("Ejecutar")
         self.analisis_gee_ejecutar_button.clicked.connect(self.run_ndvi_processor)
 
+        self.gee_parametros_avanzados_group = QgsCollapsibleGroupBox("Parametros avanzados")
+        self.gee_parametros_avanzados_group.setCollapsed(True)
+        self.gee_parametros_avanzados_group.setCheckable(True)
+        self.gee_parametros_avanzados_group.setChecked(False)
+        # self.gee_parametros_avanzados_group.toggled.connect(self._on_parametros_avanzados_toggled)
+        gee_parametros_avanzados_layout = QtWidgets.QGridLayout(self.gee_parametros_avanzados_group)
+
+        self.area_visible_input = QtWidgets.QSpinBox()
+        self.area_visible_input.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
+        self.area_visible_input.setValue(80)
+        self.area_visible_input.setMinimum(0)
+        self.area_visible_input.setMaximum(100)
+
+        self.shadow_mask = QtWidgets.QCheckBox("Máscara de sombras")
+        self.snow_mask = QtWidgets.QCheckBox("Máscara de nieve")
+        self.shadow_mask.setChecked(True)
+        self.snow_mask.setChecked(True)
+
+        self.warning_parametros_label = QtWidgets.QLabel("El cambio de estos parametros puede alterar el resultado del analisis, use los resultados bajo su criterio profesional")
+        self.warning_parametros_label.setVisible(True)
+        self.warning_parametros_label.setWordWrap(True)
+        self.warning_parametros_label.setStyleSheet("color: red; font-weight: bold;")
+
+        gee_parametros_avanzados_layout.addWidget(QtWidgets.QLabel("Umbral de Area visible:"),0,0)
+        gee_parametros_avanzados_layout.addWidget(self.area_visible_input,0,1)
+        gee_parametros_avanzados_layout.addWidget(self.shadow_mask,1,0)
+        gee_parametros_avanzados_layout.addWidget(self.snow_mask,1,1)
+        gee_parametros_avanzados_layout.addWidget(self.warning_parametros_label,2,0,1,2)
+
+
         # self.page_gee_layout.addWidget(self.filtrar_cultivo_group)
         self.page_gee_layout.addWidget(self.analisis_gee_group)
         self.page_gee_layout.addWidget(self.analisis_gee_date_range_group)
         self.page_gee_layout.addWidget(self.status_gee_label)
         self.page_gee_layout.addWidget(self.analisis_gee_progressbar)
         self.page_gee_layout.addWidget(self.analisis_gee_ejecutar_button)
+        self.page_gee_layout.addWidget(self.gee_parametros_avanzados_group)
+        # self.page_gee_layout.addWidget(self.warning_parametros_label)
         self.page_gee_layout.addStretch()  # Add stretch to push content to the top
 
         # Herramientas Generales (fuera del ToolBox)
@@ -562,6 +596,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.toolBox.setObjectName("toolBox")
         self.combo_campania.setObjectName("combo_campania")
         # ... and so on for other widgets if you need to style them via objectName
+
+    def _on_parametros_avanzados_toggled(self, checked):
+        self.warning_parametros_label.setVisible(checked)
 
     def initTools(self):
 
@@ -885,12 +922,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
             idlotes = [f['idlote'] for f in self.layer.selectedFeatures() ]
         fecha_inicio = self.date_edit_desde.date().toString("yyyy-MM-dd")
         fecha_fin = self.date_edit_hasta.date().toString("yyyy-MM-dd")
-
-        if index is None:
-            return
-
-        self._selected_index = index
-        
+        area_visible = 0.8
+        mask_snow = True
+        mask_shadow = True
 
         payload = {
             "idlotes": idlotes,
@@ -900,6 +934,21 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
             "buffer":10
         }
 
+        if self.gee_parametros_avanzados_group.isChecked():
+            area_visible = round((self.area_visible_input.value()/100),1)
+            mask_snow = self.snow_mask.isChecked()
+            mask_shadow = self.shadow_mask.isChecked()
+            payload["area_visible"] = area_visible
+            payload["mask_snow"] = mask_snow
+            payload["mask_shadow"] = mask_shadow
+        
+        if index is None:
+            return
+
+        self._selected_index = index
+        
+
+        
         processor = NDVIProcessor("/gee/index_by_idlotes")
 
         self._ndvi_worker = NDVIListDownloadWorker(
