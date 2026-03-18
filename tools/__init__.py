@@ -45,8 +45,8 @@ class aGraeTools():
             self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        # self.gee_backend_url = 'http://142.93.41.109:8500'
-        self.gee_backend_url = 'http://localhost:8500'
+        self.gee_backend_url = 'http://142.93.41.109:8500'
+        # self.gee_backend_url = 'http://localhost:8500'
     
         self.backend_url = 'http://142.93.41.109:8000'
 
