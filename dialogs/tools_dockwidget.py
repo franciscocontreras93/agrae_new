@@ -1041,7 +1041,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
             return
         
         iddata = [f['iddata'] for f in self.layer.selectedFeatures()]
-        dlg = AsignarCultivosDialog(iddata,self.combo_campania.get_current_campaign_qdates())
+        dlg = AsignarCultivosDialog(iddata)
         dlg.exec()
         pass
 

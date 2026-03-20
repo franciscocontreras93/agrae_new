@@ -455,7 +455,7 @@ class CampaniasComboBox(CustomComboBox):
 
     def __init__(
         self,
-        endpoint: str = "/api/campanias/",
+        endpoint: str = "/gis/campanias/data_combo",
         parent=None,
         *,
         exclude_latest: bool = False,

@@ -153,7 +153,7 @@ class FetchGDDDetailTask(QgsTask):
 
     def run(self) -> bool:
         try:
-            r = requests.get(self.url, timeout=60)
+            r = requests.get(self.url, timeout=60, verify=False)
             r.raise_for_status()
             payload = r.json()
 

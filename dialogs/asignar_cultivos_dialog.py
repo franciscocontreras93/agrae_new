@@ -22,7 +22,7 @@ class AsignarCultivosDialog(QDialog):
     """
     idCultivoSignal = pyqtSignal(int)
 
-    def __init__(self, iddata: List[int], dates:Tuple[QDate, QDate], parent: Optional[QtWidgets.QWidget] = None):
+    def __init__(self, iddata: List[int], parent: Optional[QtWidgets.QWidget] = None):
         """
         Args:
             iddata: lista de iddata de los lotes seleccionados
@@ -34,7 +34,6 @@ class AsignarCultivosDialog(QDialog):
 
         self.tools = aGraeTools()
         self.iddata = iddata or []
-        self.dates = dates
 
         self._build_ui()
         self._wire_events()
@@ -58,37 +57,6 @@ class AsignarCultivosDialog(QDialog):
         self.ln_prod.setSingleStep(500)
         self.ln_prod.setToolTip("Producción esperada en Kg/ha")
         self.ln_prod.setValue(0)
-
-        self.fecha_siembra = QDateEdit()
-        self.fecha_siembra.setCalendarPopup(True)
-        self.fecha_siembra.setDisplayFormat("dd/MM/yyyy")
-        self.fecha_siembra.setDate(QDate.currentDate())
-        self.fecha_siembra.setToolTip("Fecha de siembra (opcional)")
-        self.fecha_siembra.setEnabled(False)  # Deshabilitada por defecto
-        self.fecha_siembra.setMinimumDate(self.dates[0])
-        self.fecha_siembra.setMaximumDate(self.dates[1])
-
-        self.fecha_cosecha = QDateEdit()
-        self.fecha_cosecha.setCalendarPopup(True)
-        self.fecha_cosecha.setDisplayFormat("dd/MM/yyyy")
-        self.fecha_cosecha.setDate(QDate.currentDate())
-        self.fecha_cosecha.setToolTip("Fecha de cosecha (opcional)")
-        self.fecha_cosecha.setEnabled(False)  # Deshabilitada por defecto
-        self.fecha_cosecha.setMinimumDate(self.dates[0])
-        self.fecha_cosecha.setMaximumDate(self.dates[1])
-
-        self.check_siembra = QtWidgets.QCheckBox("Fecha Siembra")
-        self.check_siembra.setToolTip("Habilitar para asignar fecha de siembra")
-        self.check_siembra.toggled.connect(self.fecha_siembra.setEnabled)
-
-
-
-        self.check_cosecha = QtWidgets.QCheckBox("Fecha Cosecha")
-        self.check_cosecha.setToolTip("Habilitar para asignar fecha de cosecha")
-        self.check_cosecha.toggled.connect(self.fecha_cosecha.setEnabled)
-
-
-        
 
         # Formulario
         group_layout.addWidget(QLabel("Cultivo"), 0, 0)

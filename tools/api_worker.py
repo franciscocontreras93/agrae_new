@@ -88,7 +88,8 @@ class GenericApiWorker(QObject):
                 headers=headers,
                 json=data_payload if method in ["POST", "PUT", "PATCH"] and isinstance(data_payload, (dict, list)) else None,
                 data=data_payload if method in ["POST", "PUT", "PATCH"] and not isinstance(data_payload, (dict, list)) else None,
-                timeout=timeout
+                timeout=timeout,
+                verify=False
             )
             response.raise_for_status()
 

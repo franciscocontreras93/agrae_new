@@ -50,6 +50,8 @@ class aGraeTools():
     
         self.backend_url = 'http://142.93.41.109:8000'
 
+        # self.backend_url = 'https://localhost:8080/api/v1'
+
         # self.backend_url = 'http://localhost:8000'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
