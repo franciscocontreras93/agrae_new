@@ -185,7 +185,7 @@ class SiembraVariableDialog(QDialog):
                 ce36 = feat['ce36']
                 if isinstance(ce36, (int, float)):
                     val_clipped = min(max(ce36, ce_min), ce_max)
-                    dosis_value = int(round(val_clipped * _slope + _intercept))
+                    dosis_value = int(round(val_clipped * _slope + _intercept)) * self.index_value.value()
                     layer.changeAttributeValue(feat.id(), dosis_idx, dosis_value)
 
         
