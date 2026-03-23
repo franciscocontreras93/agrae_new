@@ -175,11 +175,11 @@ class AsignarCultivosDialog(QDialog):
         }
         # Si más adelante agregas fechas opcionales aquí, solo añade las claves si existen (o usa None para borrar).
 
-        if self.check_siembra.isChecked():
-            payload["fechasiembra"] = self.fecha_siembra.date().toString("yyyy-MM-dd")
+        # if self.check_siembra.isChecked():
+        #     payload["fechasiembra"] = self.fecha_siembra.date().toString("yyyy-MM-dd")
 
-        if self.check_cosecha.isChecked():
-            payload["fechacosecha"] = self.fecha_cosecha.date().toString("yyyy-MM-dd")
+        # if self.check_cosecha.isChecked():
+        #     payload["fechacosecha"] = self.fecha_cosecha.date().toString("yyyy-MM-dd")
 
 
         return payload
