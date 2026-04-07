@@ -558,9 +558,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
 
 
-        if True:
-            self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
-            self.toolBox.setItemIcon(2,agraeGUI().getIcon('explotacion'))
+        # if True:
+        #     self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
+        #     self.toolBox.setItemIcon(2,agraeGUI().getIcon('explotacion'))
 
 
         self.toolBox.addItem(self.page_gee_module, "Modulo de Google Earth Engine")
