@@ -1791,33 +1791,34 @@ FROM
 
     def deleteLote(self):
         question = 'Quieres eliminar el lote {}?, esta acción eliminará\nsolo los datos asociados a la campaña.'.format(self.nombreLote)
+        reply = QtWidgets.QMessageBox.question(None,'aGrae Toolbox',question,QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            try:
+                ok, message = self.tools.eliminarLoteData(self.idData)
 
-        try:
-            ok, message = self.tools.eliminarLoteData(self.idData)
+                if ok:
+                    self.tools.messages(
+                        'aGrae Tools',
+                        'Se eliminó el lote {} de la explotación actual.'.format(self.nombreLote),
+                        3,
+                        duration=5
+                    )
+                else:
+                    self.tools.messages(
+                        'aGrae Tools',
+                        'No se pudo eliminar el lote {}.\n{}'.format(self.nombreLote, message),
+                        2,
+                        alert=True
+                    )
 
-            if ok:
+            except Exception as ex:
+                print(f"Error en deleteLote: {ex}")
                 self.tools.messages(
                     'aGrae Tools',
-                    'Se eliminó el lote {} de la explotación actual.'.format(self.nombreLote),
-                    3,
-                    duration=5
-                )
-            else:
-                self.tools.messages(
-                    'aGrae Tools',
-                    'No se pudo eliminar el lote {}.\n{}'.format(self.nombreLote, message),
+                    'No se pudo eliminar el lote {}.'.format(self.nombreLote),
                     2,
                     alert=True
                 )
-
-        except Exception as ex:
-            print(f"Error en deleteLote: {ex}")
-            self.tools.messages(
-                'aGrae Tools',
-                'No se pudo eliminar el lote {}.'.format(self.nombreLote),
-                2,
-                alert=True
-            )
 
 
     def crearFormatoAnalitica(self):
