@@ -48,7 +48,7 @@ class aGraeTools():
         self.gee_backend_url = 'http://142.93.41.109:8500'
         # self.gee_backend_url = 'http://localhost:8500'
     
-        self.backend_url = 'https://backend.agrae.es/api/v1'
+        self.backend_url = 'http://142.93.41.109:8000'
 
         # self.backend_url = 'https://localhost:8080/api/v1'
 
@@ -1121,8 +1121,45 @@ class aGraeTools():
             QgsMessageLog.logMessage(err, "aGraeTools", Qgis.Critical)
             return {"status_code": -1, "ok": False, "message": str(e), "data": None}
 
+    def eliminarLoteData(self, iddata: int, timeout_sec: int = 300):
+        try:
+            resp = requests.delete(
+                f"{self.backend_url}/gis/lotes/{iddata}",
+                timeout=timeout_sec
+            )
 
+            # 204 No Content = éxito
+            if resp.status_code == 204:
+                return True, "Lote eliminado correctamente."
 
+            # Para otros casos, intentar leer mensaje si existe
+            message = ""
+
+            try:
+                data = resp.json()
+                if isinstance(data, dict):
+                    message = str(
+                        data.get("message")
+                        or data.get("detail")
+                        or data.get("error")
+                        or ""
+                    )
+                else:
+                    message = str(data)
+            except Exception:
+                message = (resp.text or "").strip()
+
+            if resp.ok:
+                return True, message or "Operación completada correctamente."
+
+            return False, message or f"Error HTTP {resp.status_code}"
+
+        except requests.RequestException as ex:
+            return False, f"Error de conexión con el backend: {ex}"
+
+        except Exception as ex:
+            return False, f"Error inesperado: {ex}"
+    
     async def copiar_analitica(self, idcampania:int, idexplotacion:int, idlote_donante:int, idlotes_receptores:list[int]):
         endpoint = "/gis/lab/copiar-analitica"
         payload = {
@@ -1139,6 +1176,7 @@ class aGraeTools():
         segmento_remuestreo: list,
         segmento_derivar: list,
         tipo: int = 1,
+        dist_min_m: int = 50
     ) -> dict[str, Any]:
         """
         Crea puntos de muestreo.
@@ -1156,6 +1194,7 @@ class aGraeTools():
             "segmentos_muestreo": segmento_remuestreo,
             "segmentos_derivar": segmento_derivar,
             "tipo": tipo,
+            'dist_min_m': dist_min_m
         }
         return await self._post_json(endpoint, payload, timeout_sec=300)
 

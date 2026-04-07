@@ -558,9 +558,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
 
 
-        # if True:
-        #     self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
-        #     self.toolBox.setItemIcon(2,agraeGUI().getIcon('explotacion'))
+        if True:
+            self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
+            self.toolBox.setItemIcon(2,agraeGUI().getIcon('explotacion'))
 
 
         self.toolBox.addItem(self.page_gee_module, "Modulo de Google Earth Engine")
@@ -1791,15 +1791,33 @@ FROM
 
     def deleteLote(self):
         question = 'Quieres eliminar el lote {}?, esta acción eliminará\nsolo los datos asociados a la campaña.'.format(self.nombreLote)
-        sql = '''delete from campaign.data where iddata = {}'''.format(self.idData)
-        actions = [self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.ActualizarLoteAction,self.EliminarLoteAction]
-        # actions = [self.line_nombre,self.line_produccion,self.combo_cultivo,self.combo_regimen,self.date_siembra,self.date_cosecha,self.ActualizarLoteAction,self.EliminarLoteAction]
+
         try:
-            self.tools.deleteAction(question,sql,self.EditarLoteAction,actions)
-            self.tools.messages('aGrae Tools','Se elimino el lote {} de la explotacion actual.'.format(self.nombreLote),3,duration=5)
+            ok, message = self.tools.eliminarLoteData(self.idData)
+
+            if ok:
+                self.tools.messages(
+                    'aGrae Tools',
+                    'Se eliminó el lote {} de la explotación actual.'.format(self.nombreLote),
+                    3,
+                    duration=5
+                )
+            else:
+                self.tools.messages(
+                    'aGrae Tools',
+                    'No se pudo eliminar el lote {}.\n{}'.format(self.nombreLote, message),
+                    2,
+                    alert=True
+                )
+
         except Exception as ex:
-            print(ex)
-            self.tools.messages('aGrae Tools','No se pudo eliminar el lote'.format(self.nombreLote),2,alert=True)
+            print(f"Error en deleteLote: {ex}")
+            self.tools.messages(
+                'aGrae Tools',
+                'No se pudo eliminar el lote {}.'.format(self.nombreLote),
+                2,
+                alert=True
+            )
 
 
     def crearFormatoAnalitica(self):

@@ -88,5 +88,5 @@ left join agrae.persona per_asesor on per_asesor.idpersona = asesor.idpersona --
 --   FROM agrae.ddc_anual da
 --   GROUP BY da.idlote
 -- ) ddc ON ddc.idlote = d.idlote
-WHERE d.idcampania = {} and d.idexplotacion = {}
+WHERE d.idcampania = {} and d.idexplotacion = {} and d.borradologico = false
 

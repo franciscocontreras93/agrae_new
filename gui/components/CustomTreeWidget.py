@@ -420,9 +420,6 @@ class ContratosTreePanel(CustomTreePanel):
         year_nodes: Dict[str, QtWidgets.QTreeWidgetItem] = {}
 
         for c in items:
-            
-            
-            
 
             desde = str(c.get("vigencia_desde") or "")
             year = desde[:4] if len(desde) >= 4 else "Sin fecha"
@@ -435,7 +432,7 @@ class ContratosTreePanel(CustomTreePanel):
                 year_nodes[year] = root
 
             plan = c.get("plan") or {}
-            label = f"{self._na(c.get('vigencia_desde'))} → {self._na(c.get('vigencia_hasta'))}  (#{self._na(c.get('idcontrato'))})"
+            label = f"{c.get('explotacion').get('nombre','-')} {self._na(c.get('vigencia_desde'))} → {self._na(c.get('vigencia_hasta'))}  (#{self._na(c.get('idcontrato'))})"
 
             precio = self._precio_efectivo(c)
 
