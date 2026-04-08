@@ -31,6 +31,9 @@ from ..sql import aGraeSQLTools
 from .agraeQR import aGraeLabelGenerator
 
 
+import dotenv
+
+
 
 class aGraeTools():
     MuestreoEndSignal = pyqtSignal(bool)
@@ -38,21 +41,27 @@ class aGraeTools():
     def __init__(self):
         self.instance = QgsProject.instance()
         self.dsn = agraeDataBaseDriver().dsn
-        try:
-            self.conn = agraeDataBaseDriver().connection()
-        except Exception as ex:
-            print(ex)
-            self.conn = None
         self.plugin_name = 'aGrae Toolbox'
 
-        self.gee_backend_url = 'http://142.93.41.109:8500'
-        # self.gee_backend_url = 'http://localhost:8500'
-    
-        self.backend_url = 'http://142.93.41.109:8000'
+        try:
+            env_path = os.path.join(os.path.dirname(__file__), '..', '.env.local')
+            if os.path.exists(env_path):
+                dotenv.load_dotenv(env_path, override=True)
+            
+            self.local = str(os.getenv('LOCAL')).strip().lower() in ['true', '1', 'yes']
+            self.conn = agraeDataBaseDriver().connection()
 
-        # self.backend_url = 'https://localhost:8080/api/v1'
+        except Exception as ex:
+            print(ex)
+            self.local = False
+            self.conn = None
 
-        # self.backend_url = 'http://localhost:8000'
+        if self.local:
+            self.backend_url = os.getenv('backend_url_dev') or 'http://localhost:8000'
+            self.gee_backend_url = os.getenv('backend_gee_url_dev') or 'http://localhost:8500'
+        else:
+            self.backend_url = 'http://142.93.41.109:8000'
+            self.gee_backend_url = 'http://142.93.41.109:8500'
 
     def settingsToolsButtons(self,toolbutton,actions=None,icon:QIcon=None,setMainIcon=False):
         """_summary_

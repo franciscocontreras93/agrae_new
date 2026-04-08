@@ -1,28 +1,35 @@
+from numpy import dot
 import psycopg2
 import os
 from qgis.PyQt.QtCore import QSettings
+
+import dotenv
 
 
 
 class agraeDataBaseDriver():
     def __init__(self) -> None:
-        BASEDIR = os.path.abspath(os.path.dirname(__file__))
-        os.environ['PGSERVICEFILE'] = os.path.join(BASEDIR,'pg_service.conf')
-        # print(os.environ['PGSERVICEFILE'] )
-    
-        self.conn = None
-        self.s = QSettings('agrae','dbConnection')
-        self.local  = False
+        env_path = os.path.join(os.path.dirname(__file__), '..', '.env.local')
 
-        if self.local and os.environ['COMPUTERNAME'] == 'FRANCISCO':
-            from dotenv import load_dotenv
-            load_dotenv(os.path.join(BASEDIR, '.env'))
+
+        if os.path.exists(env_path):
+            dotenv.load_dotenv(env_path, override=True)
+
+        BASEDIR = os.path.abspath(os.path.dirname(__file__))
+        os.environ['PGSERVICEFILE'] = os.path.join(BASEDIR, 'pg_service.conf')
+
+        self.local = str(os.getenv('LOCAL')).strip().lower() in ['true', '1', 'yes']
+
+        self.conn = None
+        self.s = QSettings('agrae', 'dbConnection')
+
+        if self.local:
             self.dsn = {
                 'dbname': os.getenv('DBNAME'),
-                'user': self.s.value('dbuser'),
-                'password': self.s.value('dbpass'),
+                'user': os.getenv('DBUSER'),
+                'password': os.getenv('DBPASSWORD'),
                 'host': os.getenv('HOST'),
-                'port': self.s.value('dbport')
+                'port': os.getenv('DBPORT')
             }
         else:
             self.dsn = {
@@ -31,8 +38,7 @@ class agraeDataBaseDriver():
                 'password': self.s.value('dbpass'),
                 'host': self.s.value('dbhost'),
                 'port': self.s.value('dbport')
-            }        
-        pass
+            }
 
     def connection(self):
         if self.local:
