@@ -3,22 +3,17 @@ import psycopg2
 import os
 from qgis.PyQt.QtCore import QSettings
 
-import dotenv
-
+from ..core.config import aGraeConfig
 
 
 class agraeDataBaseDriver():
     def __init__(self) -> None:
-        env_path = os.path.join(os.path.dirname(__file__), '..', '.env.local')
 
-
-        if os.path.exists(env_path):
-            dotenv.load_dotenv(env_path, override=True)
+        self.config = aGraeConfig()
+        self.local = self.config.local
 
         BASEDIR = os.path.abspath(os.path.dirname(__file__))
         os.environ['PGSERVICEFILE'] = os.path.join(BASEDIR, 'pg_service.conf')
-
-        self.local = str(os.getenv('LOCAL')).strip().lower() in ['true', '1', 'yes']
 
         self.conn = None
         self.s = QSettings('agrae', 'dbConnection')

@@ -30,6 +30,8 @@ from ..sql import aGraeSQLTools
 
 from .agraeQR import aGraeLabelGenerator
 
+from ..core.config import aGraeConfig
+
 
 import dotenv
 
@@ -43,12 +45,12 @@ class aGraeTools():
         self.dsn = agraeDataBaseDriver().dsn
         self.plugin_name = 'aGrae Toolbox'
 
+        self.config = aGraeConfig()
+
         try:
-            env_path = os.path.join(os.path.dirname(__file__), '..', '.env.local')
-            if os.path.exists(env_path):
-                dotenv.load_dotenv(env_path, override=True)
+           
             
-            self.local = str(os.getenv('LOCAL')).strip().lower() in ['true', '1', 'yes']
+            self.local = self.config.local
             self.conn = agraeDataBaseDriver().connection()
 
         except Exception as ex:
