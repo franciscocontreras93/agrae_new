@@ -44,6 +44,7 @@ from .asignar_cultivos_dialog import AsignarCultivosDialog
 from .siembra_variable_dialog import SiembraVariableDialog
 from .copiar_analitica_dialog import CopyAnaliticaWizardDialog
 from .contratos_dialog import ContratosDialog
+from .facturacion_dialog import FacturacionDialog
 
 
 class agraeToolsDockwidget(QtWidgets.QDockWidget):
@@ -565,7 +566,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
         btn_create_factura = QtWidgets.QPushButton("Crear Factura")
         btn_create_factura.setMinimumHeight(28)
-        # btn_create_factura.clicked.connect(self.crearFacturaDialog)
+        btn_create_factura.clicked.connect(self.crearFacturaDialog)
         
         row_factura = QtWidgets.QWidget()
         row_factura_lay = QtWidgets.QHBoxLayout(row_factura)
@@ -1087,6 +1088,12 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
     def gestionarContratosDialog(self):
         dlg = ContratosDialog(idexplotacion=self.combo_explotacion.get_current_id())
         dlg.exec()
+        pass
+
+    def crearFacturaDialog(self):
+        dlg = FacturacionDialog(idexplotacion=self.combo_explotacion.get_current_id())
+        dlg.exec_()
+
         pass
     
     def actualizarDatosCultivosCSV(self):

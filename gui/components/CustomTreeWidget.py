@@ -567,3 +567,620 @@ class ContratosTreePanel(CustomTreePanel):
         if contrato and isinstance(contrato, dict):
             return contrato
         return None
+
+
+class FacturacionTreePanel(CustomTreePanel):
+    """
+    Panel de líneas de facturación LOCAL, compatible con el uso actual del diálogo.
+
+    Objetivos:
+      - Componente compuesto (tree + detalle + resumen)
+      - Mantener líneas locales de facturación
+      - Permitir futura integración con selección de lotes / map canvas
+      - Ser compatible con llamadas tipo QTreeWidget usadas por el diálogo:
+            clear()
+            addTopLevelItem(...)
+            topLevelItemCount()
+            topLevelItem(...)
+            selectedItems()
+            indexOfTopLevelItem(...)
+            takeTopLevelItem(...)
+
+    Notas:
+      - addTopLevelItem(QTreeWidgetItem) se soporta como compatibilidad.
+      - Internamente convertimos cada item a una línea local.
+      - Para uso nuevo, preferir add_contrato_line / add_plan_line / set_line_lotes.
+    """
+
+    factura_selected = QtCore.pyqtSignal(object)          # dict | None
+    lineas_changed = QtCore.pyqtSignal(list)              # list[dict]
+    resumen_changed = QtCore.pyqtSignal(object)           # dict
+    request_select_lotes = QtCore.pyqtSignal(object)      # dict linea
+    request_edit_linea = QtCore.pyqtSignal(object)        # dict linea
+    request_remove_linea = QtCore.pyqtSignal(object)      # dict linea
+
+    def __init__(self, parent=None, **kwargs):
+        super().__init__(
+            parent=parent,
+            endpoint="/billing/facturas",   # reservado, no usado por ahora
+            columns=["Concepto", "Plan", "Modelo", "Precio", "Max ha", "Ha sel.", "Lotes", "Estado"],
+            expand_level=0,
+            show_only_active_checkbox=False,
+            detail_title="Detalle de línea",
+            auto_load=False,
+            **kwargs
+        )
+
+        self._lineas: List[dict] = []
+        self._item_by_temp_id: Dict[object, QtWidgets.QTreeWidgetItem] = {}
+        self._next_temp_id = 1
+
+        self.tree.setRootIsDecorated(False)
+        self.tree.setColumnWidth(0, 260)
+
+        self._build_detail_ui()
+        self._build_extra_toolbar()
+        self.item_dict_selected.connect(self._on_item_selected)
+
+        self._refresh_actions()
+        self._emit_resumen_changed()
+
+    # ------------------------------------------------------------------
+    # UI adicional
+    # ------------------------------------------------------------------
+    def _build_extra_toolbar(self) -> None:
+        root_layout = self.layout()
+        if root_layout is None or root_layout.count() == 0:
+            return
+
+        top_item = root_layout.itemAt(0)
+        if top_item is None:
+            return
+
+        top_layout = top_item.layout()
+        if top_layout is None:
+            return
+
+        self.btn_add_demo = QtWidgets.QPushButton("Añadir demo")
+        self.btn_select_lotes = QtWidgets.QPushButton("Seleccionar lotes…")
+        self.btn_edit_linea = QtWidgets.QPushButton("Editar línea")
+        self.btn_remove_linea = QtWidgets.QPushButton("Quitar línea")
+        self.btn_clear = QtWidgets.QPushButton("Limpiar")
+
+        insert_pos = 3
+        top_layout.insertWidget(insert_pos, self.btn_add_demo)
+        top_layout.insertWidget(insert_pos + 1, self.btn_select_lotes)
+        top_layout.insertWidget(insert_pos + 2, self.btn_edit_linea)
+        top_layout.insertWidget(insert_pos + 3, self.btn_remove_linea)
+        top_layout.insertWidget(insert_pos + 4, self.btn_clear)
+
+        self.btn_refresh.setVisible(False)
+        self.btn_expand.setVisible(False)
+        self.btn_collapse.setVisible(False)
+        self.chk_only_active.setVisible(False)
+
+        self.btn_add_demo.clicked.connect(self._add_demo_line)
+        self.btn_select_lotes.clicked.connect(self._emit_request_select_lotes)
+        self.btn_edit_linea.clicked.connect(self._emit_request_edit_linea)
+        self.btn_remove_linea.clicked.connect(self._emit_request_remove_linea)
+        self.btn_clear.clicked.connect(self.clear)
+
+    def _build_detail_ui(self) -> None:
+        lay = QtWidgets.QVBoxLayout(self.detail_panel)
+        lay.setContentsMargins(10, 12, 10, 10)
+        lay.setSpacing(10)
+
+        form = QtWidgets.QFormLayout()
+        form.setLabelAlignment(Qt.AlignLeft)
+        form.setFormAlignment(Qt.AlignTop)
+        form.setHorizontalSpacing(12)
+        form.setVerticalSpacing(8)
+
+        self.lbl_concepto = QtWidgets.QLabel("-")
+        self.lbl_contrato = QtWidgets.QLabel("-")
+        self.lbl_plan = QtWidgets.QLabel("-")
+        self.lbl_modelo = QtWidgets.QLabel("-")
+        self.lbl_precio = QtWidgets.QLabel("-")
+        self.lbl_maxha = QtWidgets.QLabel("-")
+        self.lbl_hasel = QtWidgets.QLabel("-")
+        self.lbl_nlotes = QtWidgets.QLabel("-")
+        self.lbl_estado = QtWidgets.QLabel("-")
+
+        form.addRow("Concepto:", self.lbl_concepto)
+        form.addRow("Contrato:", self.lbl_contrato)
+        form.addRow("Plan:", self.lbl_plan)
+        form.addRow("Modelo:", self.lbl_modelo)
+        form.addRow("Precio:", self.lbl_precio)
+        form.addRow("Max ha:", self.lbl_maxha)
+        form.addRow("Ha seleccionadas:", self.lbl_hasel)
+        form.addRow("Nº lotes:", self.lbl_nlotes)
+        form.addRow("Estado:", self.lbl_estado)
+
+        lay.addLayout(form)
+
+        self.lotes_tree = QtWidgets.QTreeWidget()
+        self.lotes_tree.setColumnCount(3)
+        self.lotes_tree.setHeaderLabels(["Lote", "Área ha", "Estado"])
+        self.lotes_tree.setRootIsDecorated(False)
+        self.lotes_tree.setAlternatingRowColors(True)
+        self.lotes_tree.setMinimumHeight(180)
+
+        hh = self.lotes_tree.header()
+        hh.setStretchLastSection(False)
+        hh.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        hh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        hh.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+
+        lay.addWidget(self.lotes_tree)
+
+        self.gb_resumen = QtWidgets.QGroupBox("Resumen")
+        resumen = QtWidgets.QFormLayout(self.gb_resumen)
+        resumen.setLabelAlignment(Qt.AlignLeft)
+        resumen.setFormAlignment(Qt.AlignTop)
+        resumen.setHorizontalSpacing(12)
+        resumen.setVerticalSpacing(8)
+
+        self.lbl_total_lineas = QtWidgets.QLabel("0")
+        self.lbl_total_lotes = QtWidgets.QLabel("0")
+        self.lbl_total_ha = QtWidgets.QLabel("0.00")
+        self.lbl_total_importe = QtWidgets.QLabel("0.00 €")
+
+        resumen.addRow("Líneas:", self.lbl_total_lineas)
+        resumen.addRow("Lotes:", self.lbl_total_lotes)
+        resumen.addRow("Ha totales:", self.lbl_total_ha)
+        resumen.addRow("Importe est.:", self.lbl_total_importe)
+
+        lay.addWidget(self.gb_resumen)
+        lay.addStretch(1)
+
+    # ------------------------------------------------------------------
+    # Compatibilidad con QTreeWidget para el diálogo actual
+    # ------------------------------------------------------------------
+    def clear(self) -> None:
+        self._lineas.clear()
+        self._item_by_temp_id.clear()
+        self.rebuild()
+        self._clear_detail()
+        self._emit_lineas_changed()
+        self._emit_resumen_changed()
+        self._refresh_actions()
+
+    def addTopLevelItem(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        """
+        Compatibilidad con el diálogo viejo.
+        Espera un QTreeWidgetItem con:
+            0 concepto
+            1 cantidad
+            2 precio_unitario
+            3 importe
+            4 estado
+        """
+        if item is None:
+            return
+
+        concepto = item.text(0)
+        cantidad = item.text(1)
+        precio_unit = item.text(2)
+        importe = item.text(3)
+        estado = item.text(4) or "PENDIENTE"
+
+        linea = {
+            "_temp_id": self._next_temp_id,
+            "source_type": "manual",
+            "idcontrato": None,
+            "idplan": None,
+            "concepto": concepto or "Concepto",
+            "contrato": None,
+            "plan": {
+                "idplan": None,
+                "nombre": "-",
+            },
+            "pricing_model": "PACKAGE",
+            "precio": self._to_float(importe) if importe else self._to_float(precio_unit),
+            "max_ha": None,
+            "ha_seleccionadas": 0.0,
+            "lotes": [],
+            "estado": estado,
+            # compat con diálogo viejo
+            "_legacy_cantidad": cantidad or "1",
+            "_legacy_precio_unitario": precio_unit or "0.00",
+            "_legacy_importe": importe or "0.00",
+        }
+        self._next_temp_id += 1
+
+        self._lineas.append(linea)
+        self.rebuild()
+        self._select_by_temp_id(linea["_temp_id"])
+        self._emit_lineas_changed()
+        self._emit_resumen_changed()
+        self._refresh_actions()
+
+    def topLevelItemCount(self) -> int:
+        return len(self._lineas)
+
+    def topLevelItem(self, index: int) -> Optional[QtWidgets.QTreeWidgetItem]:
+        return self.tree.topLevelItem(index)
+
+    def selectedItems(self) -> List[QtWidgets.QTreeWidgetItem]:
+        return self.tree.selectedItems()
+
+    def indexOfTopLevelItem(self, item: QtWidgets.QTreeWidgetItem) -> int:
+        return self.tree.indexOfTopLevelItem(item)
+
+    def takeTopLevelItem(self, index: int) -> Optional[QtWidgets.QTreeWidgetItem]:
+        item = self.tree.topLevelItem(index)
+        if item is None:
+            return None
+
+        data = item.data(0, Qt.UserRole)
+        if isinstance(data, dict):
+            temp_id = data.get("_temp_id")
+            self._lineas = [ln for ln in self._lineas if ln.get("_temp_id") != temp_id]
+            self.rebuild()
+            self._emit_lineas_changed()
+            self._emit_resumen_changed()
+            self._refresh_actions()
+
+        return item
+
+    # ------------------------------------------------------------------
+    # API pública nueva
+    # ------------------------------------------------------------------
+    def items(self) -> List[dict]:
+        return list(self._lineas)
+
+    def selected_line(self) -> Optional[dict]:
+        return self.selected_item_dict()
+
+    def remove_line(self, temp_id: object) -> None:
+        self._lineas = [ln for ln in self._lineas if ln.get("_temp_id") != temp_id]
+        self.rebuild()
+        self._emit_lineas_changed()
+        self._emit_resumen_changed()
+        self._refresh_actions()
+
+    def add_contrato_line(self, contrato: dict, *, concepto: Optional[str] = None) -> dict:
+        if not isinstance(contrato, dict):
+            raise ValueError("contrato inválido")
+
+        plan = contrato.get("plan") or {}
+        precio = contrato.get("precio_contratado")
+        if precio is None:
+            precio = plan.get("precio_base")
+
+        linea = {
+            "_temp_id": self._next_temp_id,
+            "source_type": "contrato",
+            "idcontrato": contrato.get("idcontrato"),
+            "idplan": plan.get("idplan"),
+            "concepto": concepto or f"{plan.get('nombre', 'Concepto')}",
+            "contrato": contrato,
+            "plan": plan,
+            "pricing_model": plan.get("pricing_model"),
+            "precio": precio,
+            "max_ha": plan.get("max_ha"),
+            "ha_seleccionadas": 0.0,
+            "lotes": [],
+            "estado": "SIN_LOTES",
+            "_legacy_cantidad": "1",
+            "_legacy_precio_unitario": f"{self._to_float(precio):.2f}",
+            "_legacy_importe": f"{self._estimate_importe_from_values(plan.get('pricing_model'), precio, 0.0):.2f}",
+        }
+        self._next_temp_id += 1
+
+        self._lineas.append(linea)
+        self.rebuild()
+        self._select_by_temp_id(linea["_temp_id"])
+        self._emit_lineas_changed()
+        self._emit_resumen_changed()
+        self._refresh_actions()
+        return linea
+
+    def add_plan_line(self, plan: dict, *, concepto: Optional[str] = None) -> dict:
+        if not isinstance(plan, dict):
+            raise ValueError("plan inválido")
+
+        precio = plan.get("precio_base")
+        linea = {
+            "_temp_id": self._next_temp_id,
+            "source_type": "plan",
+            "idcontrato": None,
+            "idplan": plan.get("idplan"),
+            "concepto": concepto or f"{plan.get('nombre', 'Concepto')}",
+            "contrato": None,
+            "plan": plan,
+            "pricing_model": plan.get("pricing_model"),
+            "precio": precio,
+            "max_ha": plan.get("max_ha"),
+            "ha_seleccionadas": 0.0,
+            "lotes": [],
+            "estado": "SIN_LOTES",
+            "_legacy_cantidad": "1",
+            "_legacy_precio_unitario": f"{self._to_float(precio):.2f}",
+            "_legacy_importe": f"{self._estimate_importe_from_values(plan.get('pricing_model'), precio, 0.0):.2f}",
+        }
+        self._next_temp_id += 1
+
+        self._lineas.append(linea)
+        self.rebuild()
+        self._select_by_temp_id(linea["_temp_id"])
+        self._emit_lineas_changed()
+        self._emit_resumen_changed()
+        self._refresh_actions()
+        return linea
+
+    def set_line_lotes(self, temp_id: object, lotes: List[dict]) -> None:
+        linea = self._find_line(temp_id)
+        if not linea:
+            return
+
+        cleaned: List[dict] = []
+        total_ha = 0.0
+
+        for lote in lotes or []:
+            if not isinstance(lote, dict):
+                continue
+
+            area = self._to_float(lote.get("area_ha"))
+            total_ha += area
+
+            cleaned.append({
+                "idlote": lote.get("idlote"),
+                "nombre": lote.get("nombre", "-"),
+                "area_ha": area,
+                "estado": lote.get("estado", "OK"),
+            })
+
+        linea["lotes"] = cleaned
+        linea["ha_seleccionadas"] = total_ha
+        linea["estado"] = self._compute_estado(linea)
+
+        precio_unit = self._to_float(linea.get("precio"))
+        linea["_legacy_cantidad"] = f"{total_ha:.2f}" if (linea.get("pricing_model") == "PER_HA") else "1"
+        linea["_legacy_precio_unitario"] = f"{precio_unit:.2f}"
+        linea["_legacy_importe"] = f"{self._estimate_importe(linea):.2f}"
+
+        self.rebuild()
+        self._select_by_temp_id(temp_id)
+        self._emit_lineas_changed()
+        self._emit_resumen_changed()
+        self._refresh_actions()
+
+    # ------------------------------------------------------------------
+    # Overrides
+    # ------------------------------------------------------------------
+    def rebuild(self) -> None:
+        self.tree.clear()
+        self._item_by_temp_id.clear()
+        self.build_tree(self._lineas)
+        self.select_default_item()
+        self.item_dict_selected.emit(self.selected_item_dict())
+
+    def build_tree(self, items: List[dict]) -> None:
+        for linea in items:
+            plan = linea.get("plan") or {}
+            row = [
+                self._na(linea.get("concepto")),
+                self._na(plan.get("nombre")),
+                self._na(linea.get("pricing_model")),
+                self._fmt_money(linea.get("precio")),
+                self._fmt_ha(linea.get("max_ha")),
+                self._fmt_ha(linea.get("ha_seleccionadas")),
+                str(len(linea.get("lotes") or [])),
+                self._na(linea.get("estado")),
+            ]
+
+            node = QtWidgets.QTreeWidgetItem(self.tree, row)
+            node.setData(0, Qt.UserRole, linea)
+
+            temp_id = linea.get("_temp_id")
+            if temp_id is not None:
+                self._item_by_temp_id[temp_id] = node
+
+            if linea.get("estado") == "EXCEDE_MAX_HA":
+                node.setToolTip(7, "La suma de hectáreas seleccionadas supera el máximo del plan.")
+
+    def select_default_item(self) -> None:
+        if self.tree.topLevelItemCount() > 0:
+            item = self.tree.topLevelItem(0)
+            self.tree.setCurrentItem(item)
+            self.tree.scrollToItem(item)
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+    def _na(self, v) -> str:
+        if v is None:
+            return "-"
+        if isinstance(v, str) and not v.strip():
+            return "-"
+        return str(v)
+
+    def _to_float(self, value: Any) -> float:
+        if value is None:
+            return 0.0
+        txt = str(value).strip().replace("€", "").replace(",", ".")
+        if not txt:
+            return 0.0
+        try:
+            return float(txt)
+        except Exception:
+            return 0.0
+
+    def _fmt_money(self, value: Any) -> str:
+        return f"{self._to_float(value):.2f}"
+
+    def _fmt_ha(self, value: Any) -> str:
+        if value is None:
+            return "-"
+        return f"{self._to_float(value):.2f}"
+
+    def _compute_estado(self, linea: dict) -> str:
+        lotes = linea.get("lotes") or []
+        if not lotes:
+            return "SIN_LOTES"
+
+        ha = self._to_float(linea.get("ha_seleccionadas"))
+        max_ha = linea.get("max_ha")
+
+        if max_ha is not None and ha > self._to_float(max_ha):
+            return "EXCEDE_MAX_HA"
+
+        return "OK"
+
+    def _estimate_importe_from_values(self, pricing_model: Any, precio: Any, ha: float) -> float:
+        precio_f = self._to_float(precio)
+        if pricing_model == "PER_HA":
+            return precio_f * ha
+        if pricing_model == "PACKAGE":
+            return precio_f
+        return precio_f
+
+    def _estimate_importe(self, linea: dict) -> float:
+        return self._estimate_importe_from_values(
+            linea.get("pricing_model"),
+            linea.get("precio"),
+            self._to_float(linea.get("ha_seleccionadas")),
+        )
+
+    def _find_line(self, temp_id: object) -> Optional[dict]:
+        for linea in self._lineas:
+            if linea.get("_temp_id") == temp_id:
+                return linea
+        return None
+
+    def _select_by_temp_id(self, temp_id: object) -> None:
+        item = self._item_by_temp_id.get(temp_id)
+        if item is not None:
+            self.tree.setCurrentItem(item)
+            self.tree.scrollToItem(item)
+
+    def _refresh_actions(self) -> None:
+        has_selection = self.selected_line() is not None
+        has_items = len(self._lineas) > 0
+
+        self.btn_select_lotes.setEnabled(has_selection)
+        self.btn_edit_linea.setEnabled(has_selection)
+        self.btn_remove_linea.setEnabled(has_selection)
+        self.btn_clear.setEnabled(has_items)
+
+    # ------------------------------------------------------------------
+    # Detail
+    # ------------------------------------------------------------------
+    def _on_item_selected(self, linea: Optional[dict]) -> None:
+        self.factura_selected.emit(linea)
+
+        if not linea:
+            self._clear_detail()
+            self._refresh_actions()
+            return
+
+        self._fill_detail(linea)
+        self._refresh_actions()
+
+    def _fill_detail(self, linea: dict) -> None:
+        self.lotes_tree.clear()
+
+        contrato = linea.get("contrato") or {}
+        plan = linea.get("plan") or {}
+
+        self.lbl_concepto.setText(self._na(linea.get("concepto")))
+        self.lbl_contrato.setText(self._na(contrato.get("idcontrato")) if contrato else "-")
+        self.lbl_plan.setText(self._na(plan.get("nombre")))
+        self.lbl_modelo.setText(self._na(linea.get("pricing_model")))
+        self.lbl_precio.setText(f"{self._fmt_money(linea.get('precio'))} €")
+        self.lbl_maxha.setText(self._fmt_ha(linea.get("max_ha")))
+        self.lbl_hasel.setText(self._fmt_ha(linea.get("ha_seleccionadas")))
+        self.lbl_nlotes.setText(str(len(linea.get("lotes") or [])))
+        self.lbl_estado.setText(self._na(linea.get("estado")))
+
+        for lote in linea.get("lotes") or []:
+            row = [
+                self._na(lote.get("nombre")),
+                self._fmt_ha(lote.get("area_ha")),
+                self._na(lote.get("estado")),
+            ]
+            QtWidgets.QTreeWidgetItem(self.lotes_tree, row)
+
+    def _clear_detail(self) -> None:
+        self.lbl_concepto.setText("-")
+        self.lbl_contrato.setText("-")
+        self.lbl_plan.setText("-")
+        self.lbl_modelo.setText("-")
+        self.lbl_precio.setText("-")
+        self.lbl_maxha.setText("-")
+        self.lbl_hasel.setText("-")
+        self.lbl_nlotes.setText("-")
+        self.lbl_estado.setText("-")
+        self.lotes_tree.clear()
+
+    # ------------------------------------------------------------------
+    # Señales y resumen
+    # ------------------------------------------------------------------
+    def _emit_lineas_changed(self) -> None:
+        self.lineas_changed.emit(self.items())
+
+    def _emit_resumen_changed(self) -> None:
+        total_lineas = len(self._lineas)
+        total_lotes = sum(len(ln.get("lotes") or []) for ln in self._lineas)
+        total_ha = sum(self._to_float(ln.get("ha_seleccionadas")) for ln in self._lineas)
+        total_importe = sum(
+            self._to_float(ln.get("_legacy_importe")) if ln.get("source_type") == "manual"
+            else self._estimate_importe(ln)
+            for ln in self._lineas
+        )
+        has_errors = any((ln.get("estado") == "EXCEDE_MAX_HA") for ln in self._lineas)
+
+        self.lbl_total_lineas.setText(str(total_lineas))
+        self.lbl_total_lotes.setText(str(total_lotes))
+        self.lbl_total_ha.setText(f"{total_ha:.2f}")
+        self.lbl_total_importe.setText(f"{total_importe:.2f} €")
+
+        self.resumen_changed.emit({
+            "total_lineas": total_lineas,
+            "total_lotes": total_lotes,
+            "total_ha": total_ha,
+            "total_importe": total_importe,
+            "has_errors": has_errors,
+        })
+
+    def _emit_request_select_lotes(self) -> None:
+        linea = self.selected_line()
+        if not linea:
+            return
+        self.request_select_lotes.emit(linea)
+
+    def _emit_request_edit_linea(self) -> None:
+        linea = self.selected_line()
+        if not linea:
+            return
+        self.request_edit_linea.emit(linea)
+
+    def _emit_request_remove_linea(self) -> None:
+        linea = self.selected_line()
+        if not linea:
+            return
+        self.request_remove_linea.emit(linea)
+        self.remove_line(linea.get("_temp_id"))
+
+    # ------------------------------------------------------------------
+    # Demo
+    # ------------------------------------------------------------------
+    def _add_demo_line(self) -> None:
+        contrato = {
+            "idcontrato": "demo-1",
+            "precio_contratado": "85.00",
+            "plan": {
+                "idplan": 1,
+                "nombre": "Plan abonado variable",
+                "pricing_model": "PER_HA",
+                "precio_base": "90.00",
+                "max_ha": "12.50",
+            }
+        }
+
+        linea = self.add_contrato_line(contrato)
+        self.set_line_lotes(linea["_temp_id"], [
+            {"idlote": 101, "nombre": "Lote Norte", "area_ha": 4.20},
+            {"idlote": 102, "nombre": "Lote Sur", "area_ha": 3.10},
+        ])

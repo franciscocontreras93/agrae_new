@@ -1461,3 +1461,67 @@ class PlanesComboBox(CustomComboBox):
             return out
 
         return _transform
+
+
+class SeriesComboBox(CustomComboBox):
+    """
+    Combo para Series de Facturación (/billing/series):
+    - Sin filtros (por ahora).
+    - value_field = idserie (según response).
+    - label_field = nombre (según response).
+    """
+
+    def __init__(
+        self,
+        endpoint: str = "billing/series",
+        parent=None,
+        *,
+        editable: bool = False,
+        auto_enable_on_load: bool = True,
+    ):
+        super().__init__(
+            endpoint=endpoint,
+            parent=parent,
+            label_field="letra",
+            value_field="idserie",  # <-- CLAVE
+            allow_all=False,
+            editable=bool(editable),
+            sort_key="letra",
+            sort_reverse=False,
+            auto_enable_on_load=bool(auto_enable_on_load),
+            first_item_text=False,
+            param_provider=lambda: {},  # <-- sin filtros
+        )  
+
+    def get_current_serie(self) -> dict | None:
+        return self.get_current_item()
+    
+
+    def _custom_label_formatter(self, it: dict) -> str:
+        letra = str(it.get("letra", "") or "").strip()
+        anio = str(it.get("anio", "") or "").strip()
+        return f"{letra} → {anio}" if anio else (letra or "-")
+    
+
+class ContratosComboBox(CustomComboBox):
+    def __init__(
+        self,
+        endpoint: str = "/billing/contratos",
+        parent=None,
+        *,
+        editable: bool = False,
+        auto_enable_on_load: bool = True,
+    ):
+        super().__init__(
+            endpoint=endpoint,
+            parent=parent,
+            label_field="nombre",
+            value_field="idcontrato",  # <-- CLAVE
+            allow_all=False,
+            editable=bool(editable),
+            sort_key="nombre",
+            sort_reverse=False,
+            auto_enable_on_load=bool(auto_enable_on_load),
+            first_item_text=False,
+            param_provider=lambda: {},  # <-- sin filtros
+        )
