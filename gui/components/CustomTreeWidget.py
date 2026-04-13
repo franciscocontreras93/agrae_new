@@ -487,9 +487,12 @@ class ContratosTreePanel(CustomTreePanel):
         btns = QtWidgets.QHBoxLayout()
         self.btn_duplicar = QtWidgets.QPushButton("Duplicar")
         self.btn_editar = QtWidgets.QPushButton("Editar…")
-        self.btn_editar.setEnabled(False)
+        self.btn_editar.setEnabled(True)
+        self.btn_eliminar = QtWidgets.QPushButton("Eliminar")
+        self.btn_eliminar.setEnabled(True)
         btns.addWidget(self.btn_duplicar)
         btns.addWidget(self.btn_editar)
+        btns.addWidget(self.btn_eliminar)
         btns.addStretch(1)
         lay.addLayout(btns)
 
@@ -521,7 +524,6 @@ class ContratosTreePanel(CustomTreePanel):
         ):
             lbl.setText("-")
 
-    
     def select_default_item(self) -> None:
         """
         Selecciona por defecto el contrato vigente (active=True).
@@ -548,3 +550,20 @@ class ContratosTreePanel(CustomTreePanel):
 
         # Fallback
         super().select_default_item()
+
+
+    # --------------------------------------------------------------------------- #
+    # ACTIONS
+    # --------------------------------------------------------------------------- #
+
+    def _get_selected_contrato_id(self) -> Optional[int]:
+        contrato = self.selected_item_dict()
+        if contrato and isinstance(contrato, dict):
+            return contrato.get("idcontrato")
+        return None
+    
+    def _get_selected_contrato(self) -> Optional[dict]:
+        contrato = self.selected_item_dict()
+        if contrato and isinstance(contrato, dict):
+            return contrato
+        return None

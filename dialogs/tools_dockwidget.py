@@ -21,7 +21,7 @@ from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..gui import agraeGUI
 from ..gui.components import CampaniasComboBox, ExplotacionesComboBox, CultivosComboBox, RegimenComboBox, InfoCardNumLotes
-
+from ..core.config import aGraeConfig
 from ..dialogs import aGraeDialogs, AgricultorSelectDialog
 
 from .explotacion_dialogs import CopyExplotacionDialog, CreateExplotacionDialog, UpdateExplotacionDialog, GestionExplotacionDialog,GestionarExplotacionesDialog
@@ -60,6 +60,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.setWindowTitle('aGrae Tools')
         self.layer = layer
         self.conn = agraeDataBaseDriver().connection()
+        self.config = aGraeConfig()
         self.tools = aGraeTools()
         self.UIComponents()
         # --- Wire backend-driven combo signals ---
@@ -542,25 +543,55 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         btn_create_contrato.setMinimumHeight(28)
         btn_create_contrato.clicked.connect(self.gestionarContratosDialog)
 
-        row = QtWidgets.QWidget()
-        row_lay = QtWidgets.QHBoxLayout(row)
-        row_lay.setContentsMargins(0, 0, 0, 0)
-        row_lay.setSpacing(6)
-        row_lay.addWidget(btn_create_contrato)
-        row_lay.addStretch(1)
+        row_contratos = QtWidgets.QWidget()
+        row_lay_contratos = QtWidgets.QHBoxLayout(row_contratos)
+        row_lay_contratos.setContentsMargins(0, 0, 0, 0)
+        row_lay_contratos.setSpacing(6)
+        row_lay_contratos.addWidget(btn_create_contrato)
+        # row_lay_contratos.addWidget(btn_create_factura)
+        row_lay_contratos.addStretch(1)
 
-        gb_contratos_layout.addRow(QtWidgets.QLabel('Contratos:'), row)
+        gb_contratos_layout.addRow(QtWidgets.QLabel('Contratos:'), row_contratos)
+
+
+        # Gestion de Facturas
+        gb_facturas = QtWidgets.QGroupBox("Gestión de Facturas")
+        gb_facturas_layout = QtWidgets.QFormLayout(gb_facturas)
+        gb_facturas_layout.setLabelAlignment(Qt.AlignLeft)
+        gb_facturas_layout.setFormAlignment(Qt.AlignTop)
+        gb_facturas_layout.setHorizontalSpacing(12)
+        gb_facturas_layout.setVerticalSpacing(8)
+        gb_facturas_layout.setContentsMargins(10, 12, 10, 10)
+
+        btn_create_factura = QtWidgets.QPushButton("Crear Factura")
+        btn_create_factura.setMinimumHeight(28)
+        # btn_create_factura.clicked.connect(self.crearFacturaDialog)
+        
+        row_factura = QtWidgets.QWidget()
+        row_factura_lay = QtWidgets.QHBoxLayout(row_factura)
+        row_factura_lay.setContentsMargins(0, 0, 0, 0)
+        row_factura_lay.setSpacing(6)
+        row_factura_lay.addWidget(btn_create_factura)
+        row_factura_lay.addStretch(1)
+
+        # row_factura.addWidget(btn_create_factura)
+        gb_facturas_layout.addRow(QtWidgets.QLabel('Facturas:'), row_factura)
+
+
+
+
 
         page_facturacion_layout.addWidget(gb_contratos)
+        page_facturacion_layout.addWidget(gb_facturas)  
         page_facturacion_layout.addStretch(1)
 
         
 
 
 
-        # if True:
-        #     self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
-        #     self.toolBox.setItemIcon(2,agraeGUI().getIcon('explotacion'))
+        if self.config.local:
+            self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
+            self.toolBox.setItemIcon(2,agraeGUI().getIcon('explotacion'))
 
 
         self.toolBox.addItem(self.page_gee_module, "Modulo de Google Earth Engine")

@@ -1,7 +1,12 @@
+import http
+import rlcompleter
+
 from qgis.PyQt import QtWidgets, QtCore
 
 from ..gui.components.CustomComboBox import PlanesComboBox
 from ..gui.components.CustomTreeWidget import ContratosTreePanel
+
+from ..core.api import APIRequest
 
 
 
@@ -18,6 +23,8 @@ class ContratosDialog(QtWidgets.QDialog):
         super().__init__(parent)
         self.setWindowTitle("aGrae | Gestión de contratos")
         self.resize(900, 520)
+
+        self._api_request = APIRequest()  # para llamadas a endpoints (puedes pasar backend_url si quieres)
 
         self._contratos = []  # lista cruda del endpoint (dicts)
 
@@ -49,7 +56,7 @@ class ContratosDialog(QtWidgets.QDialog):
         # TAB 3: NUEVO
         # ----------------------------
         self.tab_nuevo = QtWidgets.QWidget()
-        self.tabs.addTab(self.tab_nuevo, "Nuevo contrato")
+        self.tabs.addTab(self.tab_nuevo, "Crear o Editar contratos")
         self._build_tab_nuevo()
 
         # Botonera inferior
@@ -110,6 +117,7 @@ class ContratosDialog(QtWidgets.QDialog):
         self.btn_nuevo_desde_activo.clicked.connect(lambda: self.tabs.setCurrentWidget(self.tab_nuevo))
 
     def _build_tab_historico(self):
+        
         lay = QtWidgets.QVBoxLayout(self.tab_historico)
         lay.setContentsMargins(10, 10, 10, 10)
         lay.setSpacing(10)
@@ -122,6 +130,10 @@ class ContratosDialog(QtWidgets.QDialog):
             # headers_provider=lambda: {"Authorization": f"Bearer {self.token}"},  # si aplica
             auto_load=True,
         )
+        self.contratos_panel.btn_duplicar.setEnabled(False)   #TODO DEFINIR SI SE VA A PERMITIR MODIFICAR O ELIMINAR Y CREAR UNO NUEVO.
+        self.contratos_panel.btn_editar.setEnabled(False)  #TODO DEFINIR SI SE VA A PERMITIR MODIFICAR O ELIMINAR Y CREAR UNO NUEVO.
+        self.contratos_panel.btn_editar.clicked.connect(self._on_update_activo_clicked)
+        self.contratos_panel.btn_eliminar.clicked.connect(self._on_delete_clicked)
 
         # Si querés reaccionar cuando el usuario seleccione un contrato:
         # self.contratos_panel.contrato_selected.connect(self._on_contrato_selected)
@@ -138,7 +150,7 @@ class ContratosDialog(QtWidgets.QDialog):
         lay.setContentsMargins(10, 10, 10, 10)
         lay.setSpacing(10)
 
-        gb = QtWidgets.QGroupBox("Nuevo contrato")
+        gb = QtWidgets.QGroupBox("Crear o Editar contrato")
         form = QtWidgets.QFormLayout(gb)
         form.setContentsMargins(10, 12, 10, 10)
         form.setHorizontalSpacing(12)
@@ -196,6 +208,7 @@ class ContratosDialog(QtWidgets.QDialog):
 
         actions = QtWidgets.QHBoxLayout()
         self.btn_guardar = QtWidgets.QPushButton("Guardar")
+        self.btn_guardar.clicked.connect(self._on_guardar_clicked)
         self.btn_cancelar = QtWidgets.QPushButton("Cancelar")
         actions.addWidget(self.btn_guardar)
         actions.addWidget(self.btn_cancelar)
@@ -353,3 +366,127 @@ class ContratosDialog(QtWidgets.QDialog):
 
     def _on_chk_usar_precio_toggled(self, checked: bool):
         self.spin_precio.setEnabled(not checked)
+
+
+    
+    
+    # =================================================================================================
+    # ACCIONES (guardar, duplicar, nuevo desde activo, etc)
+    # =================================================================================================
+
+    def _on_guardar_clicked(self):
+        """ 
+        Aquí iría la lógica para validar el formulario y llamar al endpoint de creación de contrato.
+         - Validar que plan esté seleccionado
+         - Validar que vigencia_desde < vigencia_hasta
+         - Validar que precio_contratado > 0 (si no se usa precio base)
+         - Mostrar mensajes de error si algo no está bien
+         - Si todo es correcto, llamar al endpoint (con requests o similar) y pasar los datos necesarios
+         - Manejar la respuesta: si es éxito, mostrar mensaje y recargar contratos; si es error, mostrar mensaje.
+         - Opcional: bloquear UI mientras se hace la petición para evitar múltiples clicks.
+        """
+
+        payload = {}
+
+        payload["idexplotacion"] = int(self.idexplotacion)
+        payload["idplan"] = int(self.cmb_plan.get_current_plan_id())
+        payload["vigencia_desde"] = self.date_desde.date().toString("yyyy-MM-dd")
+        payload["vigencia_hasta"] = self.date_hasta.date().toString("yyyy-MM-dd")
+        if self.chk_usar_precio.isChecked():
+            payload["precio_contratado"] = self.spin_precio_plan.value()
+        else:
+            payload["precio_contratado"] = self.spin_precio.value()
+        
+        # print(payload)
+        confirm = QtWidgets.QMessageBox.question(
+            self, "Confirmar creación", f"¿Confirma que desea crear este contrato?\n\nPlan: {self.cmb_plan.currentText()}\nVigencia: {payload['vigencia_desde']} → {payload['vigencia_hasta']}\nPrecio: {payload['precio_contratado']} €",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+        if confirm == QtWidgets.QMessageBox.Yes:
+            r = self._api_request.post("billing/contratos", data=payload)
+            # print("Respuesta del endpoint de creación:", r)
+            if not r:
+                QtWidgets.QMessageBox.warning(self, "Error de conexión", "No se pudo conectar al servidor. Por favor, intenta nuevamente.")
+                return
+            if r["http_status"] == 201:
+                QtWidgets.QMessageBox.information(self, "Contrato creado", r.get("data", {}).get("message", "El contrato ha sido creado exitosamente."))
+                self.contratos_panel.load_items()  # recargar la lista de contratos
+                self.tabs.setCurrentWidget(self.tab_historico)  # ir al histórico para ver el nuevo contrato
+                return
+            if r["http_status"] != 201:
+               QtWidgets.QMessageBox.warning(self, "Error al crear", f"No se pudo crear el contrato: {r.get('data', {}).get('message', 'Error desconocido')}")
+            
+
+    def _on_update_activo_clicked(self):
+        """
+        Maneja la acción de actualización para un contrato seleccionado.
+        
+        Recupera el contrato actualmente seleccionado del panel de contratos y completa
+        el formulario de edición con sus datos. Configura los campos del formulario con
+        los detalles del contrato incluyendo:
+        - Plan (mediante selección en combo box)
+        - Precio del contrato (con opción de anulación de precio personalizado)
+        - Fechas de vigencia (desde y hasta)
+        
+        Muestra un mensaje de advertencia si no hay ningún contrato seleccionado.
+        Cambia la interfaz a la pestaña de edición después de cargar exitosamente
+        los datos del contrato.
+        
+        Lanza:
+            QtWidgets.QMessageBox.warning: Si no hay contrato seleccionado para editar.
+        """
+        contrato = self.contratos_panel._get_selected_contrato()
+        print("Contrato seleccionado para editar:", contrato)
+        if not contrato:
+            QtWidgets.QMessageBox.warning(self, "Editar contrato", "Por favor, selecciona un contrato para editar.")
+            return
+        
+        idplan = (contrato.get("plan") or {}).get("idplan")
+        precioContratado = float(contrato.get("precio_contratado", 0))
+        fechaDesde = QtCore.QDate.fromString(contrato.get("vigencia_desde", ""), "yyyy-MM-dd")
+        fechaHasta = QtCore.QDate.fromString(contrato.get("vigencia_hasta", ""), "yyyy-MM-dd")
+
+        if idplan:
+            self.cmb_plan.select_by_id(idplan)
+        else:
+            self.cmb_plan.setCurrentIndex(-1)
+
+        self.date_desde.setDate(fechaDesde if fechaDesde.isValid() else QtCore.QDate.currentDate())
+        self.date_hasta.setDate(fechaHasta if fechaHasta.isValid() else QtCore.QDate.currentDate().addYears(1))
+
+        if precioContratado != self.spin_precio_plan.value():
+            self.chk_usar_precio.setChecked(False)
+            self.spin_precio.setValue(precioContratado)
+        
+
+        
+        # self.tab_nuevo.setTitle("Editar contrato")
+        # self.tabs.getTabBar().setTabText(self.tabs.indexOf(self.tab_nuevo), "Editar contrato")
+        self.tabs.setCurrentWidget(self.tab_nuevo)
+        # Aquí podrías cargar los datos del contrato seleccionado en el formulario de edición (similar a _fill_detail pero con campos editables)
+        # Luego, al guardar, llamarías a un endpoint de actualización (PUT/PATCH) en lugar de creación.
+
+    def _on_delete_clicked(self):
+        """
+        Lógica para eliminar un contrato.
+        Debería pedir confirmación al usuario antes de eliminar.
+        Luego llamar al endpoint de eliminación y manejar la respuesta similar a guardar.
+        """
+
+        idcontrato = self.contratos_panel._get_selected_contrato_id()
+        if idcontrato is None:
+            QtWidgets.QMessageBox.warning(self, "Eliminar contrato", "Por favor, selecciona un contrato para eliminar.")
+            return
+        confirm = QtWidgets.QMessageBox.question(
+            self, "Confirmar eliminación", "¿Estás seguro de que deseas eliminar el contrato seleccionado?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+        if confirm == QtWidgets.QMessageBox.Yes:
+            # Llamar al endpoint de eliminación y manejar la respuesta
+            r = self._api_request.delete(f"billing/contratos/{idcontrato}")
+            # print("Respuesta del endpoint de eliminación:", r)
+            if r['http_status'] == 200:
+                QtWidgets.QMessageBox.information(self, "Contrato eliminado", "{}".format(r.get('data', {}).get('message', '')))
+                self.contratos_panel.load_items()  # recargar la lista de contratos
+            else:
+                QtWidgets.QMessageBox.warning(self, "Error al eliminar", f"No se pudo eliminar el contrato: {r.get('data', {}).get('message', 'Error desconocido')}")

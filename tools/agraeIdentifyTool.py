@@ -5,11 +5,14 @@ from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtGui import QColor, QCursor, QGuiApplication
 from qgis.PyQt.QtWidgets import QMenu, QAction
 from qgis.gui import QgsMapToolIdentify, QgsHighlight
-from qgis.core import QgsProject, QgsFeature
+from qgis.core import QgsProject, QgsFeature, Qgis
 from qgis.utils import iface
 
 from ..dialogs import aGraeGEEDialog
 from ..dialogs.integral_termica_detail_dialog import IntegralTermicaDialog
+
+
+from ..core import APIRequest 
 
 
 class aGraeSelectTool(QgsMapToolIdentify):
@@ -35,6 +38,8 @@ class aGraeSelectTool(QgsMapToolIdentify):
         parent=None,
     ):
         super().__init__(iface.mapCanvas())
+        self.api = APIRequest()
+
         self.layer = layer
         self.canvas = iface.mapCanvas()
 
@@ -121,6 +126,7 @@ class aGraeSelectTool(QgsMapToolIdentify):
         # Submenú: Herramientas básicas
         menu_basicas = menu.addMenu("aGrae")
 
+
         # # Opción 1: crear QAction y conectarla
         act_it_dialog = QAction("Detalle Integral Térmica", menu_basicas)
         # # triggered(bool) -> capturamos el bool con "_" y fijamos 'feature' en el closure
@@ -131,6 +137,11 @@ class aGraeSelectTool(QgsMapToolIdentify):
 
         menu_basicas.addAction(act_it_dialog)
 
+        menu_economicas = menu.addMenu("Facturación")
+        act_facturacion = QAction("Asignar prescripción", menu_economicas)
+        act_facturacion.triggered.connect(self._post_facturacion_action)
+
+        menu_economicas.addAction(act_facturacion)
         # IMPORTANTE: añadir el submenú al menú principal (ya lo hicimos con addMenu arriba)
         # NO añadas la acción al menú raíz con menu.addAction(act_zoom_lote),
         # eso saca la acción fuera del submenú.
@@ -293,6 +304,23 @@ class aGraeSelectTool(QgsMapToolIdentify):
         # print(iddata)
         dlg = IntegralTermicaDialog(iddata=iddata)
         dlg.exec()
+
+    def _post_facturacion_action(self):
+        features = self.layer.getSelectedFeatures()
+        if not features:
+            return
+        iddata = [f["iddata"] if "iddata" in f.fields().names() else f.id() for f in features]
+
+        data = {
+            "iddata": iddata
+        }
+        try:
+            r = self.api.post("billing/data_estado/prescripcion_ejecutada",data) 
+            if r['status'] == 'success':
+                iface.messageBar().pushMessage("Correcto", f" {r['message']}", level=Qgis.Success)
+        except Exception as e:
+            iface.messageBar().pushMessage("Error", f"No se pudo asignar la prescripción: {e}", level=Qgis.Critical)    
+        
     # ----------------- Hooks proyecto/capa -----------------
     def _on_project_change(self, *args, **kwargs):
         self.clearCustomSelection()
