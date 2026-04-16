@@ -1,1 +1,1 @@
-from .agricultorSelectDialog import AgricultorSelectDialog
+from .agricultor.agricultorSelectDialog import AgricultorSelectDialog

@@ -23,7 +23,7 @@ agraePersonasDialog_ , _ = uic.loadUiType(os.path.join(os.path.dirname(__file__)
 
 class GestionPersonasDialog(QDialog,agraePersonasDialog_): 
     closingPlugin = pyqtSignal()
-    idPersonaSignal = pyqtSignal(list)
+    PersonaSignal = pyqtSignal(list)
     def __init__(self, parent=None) -> None:
         super(GestionPersonasDialog,self).__init__(parent)
         uic.loadUi(os.path.join(os.path.dirname(__file__), 'ui/personas_dialog.ui'), self)
@@ -215,7 +215,7 @@ class GestionPersonasDialog(QDialog,agraePersonasDialog_):
          row = self.tableWidget.currentRow()
          id = self.tableWidget.item(row,0).text()
          name = self.tableWidget.item(row,2).text()
-         self.idPersonaSignal.emit([int(id),name])
+         self.PersonaSignal.emit([int(id),name])
          self.close()
 
         

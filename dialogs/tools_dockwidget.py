@@ -30,7 +30,7 @@ from .lotes_dialog import LoteWeatherDialog
 from .analitica_dialogs import agraeAnaliticaDialog
 from .gestion_personas import GestionPersonasDialog
 from .gestion_distribuidor import GestionDistribuidorDialog
-from .gestion_agricultor import GestionAgricultorDialog
+from .gestion.agricultor import GestionAgricultorDialog
 from .datos_base_dialog import GestionDatosBaseDialog, CrearLotesDialog
 from .composer_dialog import agraeComposer
 from .new_composer_dialog import new_Composer 

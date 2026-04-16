@@ -112,33 +112,33 @@ class FacturacionDialog(QtWidgets.QDialog):
         gb_lineas_layout = QtWidgets.QVBoxLayout(gb_lineas)
         gb_lineas_layout.setContentsMargins(8, 10, 8, 8)
 
-        # self.tree_facturacion = QtWidgets.QTreeWidget()
-        # self.tree_facturacion.setColumnCount(5)
-        # self.tree_facturacion.setHeaderLabels([
-        #     "Concepto",
-        #     "Cantidad",
-        #     "Precio Unit.",
-        #     "Importe",
-        #     "Estado"
-        # ])
-        # self.tree_facturacion.setRootIsDecorated(False)
-        # self.tree_facturacion.setAlternatingRowColors(True)
-        # self.tree_facturacion.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        # self.tree_facturacion.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        # self.tree_facturacion.setUniformRowHeights(True)
+        self.tree_facturacion = QtWidgets.QTreeWidget()
+        self.tree_facturacion.setColumnCount(5)
+        self.tree_facturacion.setHeaderLabels([
+            "Concepto",
+            "Cantidad",
+            "Precio Unit.",
+            "Importe",
+            "Estado"
+        ])
+        self.tree_facturacion.setRootIsDecorated(False)
+        self.tree_facturacion.setAlternatingRowColors(True)
+        self.tree_facturacion.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.tree_facturacion.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tree_facturacion.setUniformRowHeights(True)
 
-        # header = self.tree_facturacion.header()
-        # header.setStretchLastSection(False)
-        # header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        # header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
-        # header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
-        # header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
-        # header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)
+        header = self.tree_facturacion.header()
+        header.setStretchLastSection(False)
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)
 
-        # self.tree_facturacion = FacturacionTreePanel()
+        self.tree_facturacion = FacturacionTreePanel()
 
 
-        # gb_lineas_layout.addWidget(self.tree_facturacion)
+        gb_lineas_layout.addWidget(self.tree_facturacion)
 
         lineas_btn_layout = QtWidgets.QHBoxLayout()
 

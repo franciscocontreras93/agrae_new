@@ -1,0 +1,2 @@
+from .agricultor_form_dialog import AgricultorFormDialog
+from .GestionarAgricultorDialog import GestionAgricultorDialog

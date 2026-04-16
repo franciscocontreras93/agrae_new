@@ -21,10 +21,25 @@ import json
 from qgis.PyQt.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTableView, QHeaderView
 from qgis.PyQt.QtCore import Qt, QTimer, QUrl, QByteArray, pyqtSignal
 from qgis.PyQt.QtNetwork import QNetworkRequest
-
+from qgis.PyQt import sip
 from qgis.core import QgsNetworkAccessManager, QgsMessageLog, Qgis
 
 from ...tools import aGraeTools
+
+from ...core.models import (
+    # MODELOS
+    AgricultoresTableModel, 
+    PersonasTableModel,
+    ExplotacionesTableModel,
+    AsesoresTableModel,
+    DistribuidoresTableModel,
+    # MAPPERS
+    map_agricultores, 
+    map_personas, 
+    map_explotacion,
+    map_asesores,
+    map_distribuidores
+    )
 
 
 from ...core.proxies import MultiColumnFilterProxy
@@ -90,10 +105,11 @@ class SearchTableWidget(QWidget):
         self.proxy.setSourceModel(self.model)
 
         self.table.setModel(self.proxy if self.local_filter else self.model)
+        # self.table.setColumnHidden(0, True)  # ocultar columna ID por defecto, se asume que es la primera. Ajusta según tu modelo.
 
         hdr = self.table.horizontalHeader()
         hdr.setSectionResizeMode(QHeaderView.Stretch)
-        self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setVisible(True)
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(6, 6, 6, 6)
@@ -183,6 +199,12 @@ class SearchTableWidget(QWidget):
             raise AttributeError("El modelo no implementa set_items(items).")
         self.model.set_items(items or [])
 
+        if self.local_filter:
+            self.proxy.invalidate()
+
+        self.table.clearSelection()
+        self.table.viewport().update()
+
     def reload(self, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None):
         """
         Hace GET y carga el modelo con map_func.
@@ -190,17 +212,21 @@ class SearchTableWidget(QWidget):
         url = self._full_url(params)
         req = QNetworkRequest(url)
 
-        # headers opcionales
         if headers:
             for k, v in headers.items():
                 req.setRawHeader(QByteArray(k.encode("utf-8")), QByteArray(str(v).encode("utf-8")))
 
         # Cancelar request anterior si sigue vivo
-        if self._reply and self._reply.isRunning():
+        if self._reply is not None:
             try:
-                self._reply.abort()
+                if not sip.isdeleted(self._reply) and self._reply.isRunning():
+                    self._reply.abort()
+            except RuntimeError:
+                pass
             except Exception:
                 pass
+            finally:
+                self._reply = None
 
         self._reply = self.nam.get(req)
         self._reply.finished.connect(self._on_reply_finished)
@@ -219,25 +245,60 @@ class SearchTableWidget(QWidget):
     # -----------------------------
     # Network callbacks
     # -----------------------------
+
     def _on_reply_finished(self):
         r = self._reply
+        self._reply = None
+
         if r is None:
             return
 
+        try:
+            if sip.isdeleted(r):
+                return
+        except Exception:
+            return
+
+        url = r.url().toString()
+        status_code = r.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+        reason = r.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
+        content_type = r.header(QNetworkRequest.ContentTypeHeader)
+
+        data = bytes(r.readAll())
+        text = data.decode("utf-8", errors="replace").strip()
+
         if r.error():
-            msg = f"Error GET {r.url().toString()}: {r.errorString()}"
+            msg = (
+                f"Error GET {url}: {r.errorString()} | "
+                f"status={status_code} reason={reason} | "
+                f"content-type={content_type} | body={text[:500]}"
+            )
             QgsMessageLog.logMessage(msg, "aGrae", Qgis.Warning)
             self.set_items([])
             r.deleteLater()
             return
 
-        data = bytes(r.readAll())
+        QgsMessageLog.logMessage(
+            f"GET {url} | status={status_code}",
+            "aGrae",
+            Qgis.Info
+        )
+
         r.deleteLater()
 
+        if not text:
+            QgsMessageLog.logMessage(
+                f"Respuesta vacía en {url}",
+                "aGrae",
+                Qgis.Warning
+            )
+            self.set_items([])
+            return
+
         try:
-            raw = json.loads(data.decode("utf-8"))
+            raw = json.loads(text)
         except Exception as e:
-            msg = f"Respuesta no-JSON en {r.url().toString()}: {e}"
+            msg = f"Respuesta no-JSON en {url}: {e} | body={text[:500]}"
             QgsMessageLog.logMessage(msg, "aGrae", Qgis.Warning)
             self.set_items([])
             return
@@ -245,7 +306,7 @@ class SearchTableWidget(QWidget):
         try:
             items = self.map_func(raw)
         except Exception as e:
-            msg = f"Error mapeando respuesta ({r.url().toString()}): {e}"
+            msg = f"Error mapeando respuesta ({url}): {e}"
             QgsMessageLog.logMessage(msg, "aGrae", Qgis.Warning)
             self.set_items([])
             return
@@ -275,4 +336,103 @@ class SearchTableWidget(QWidget):
             value = item
 
         self.rowDoubleClicked.emit(value, item)
+
+
+
+# AGRICULTORES
+
+class AgricultorSearchTable(SearchTableWidget):
+    def __init__(self ,parent=None):
+        super().__init__(
+            model=AgricultoresTableModel(),
+            endpoint='/gis/agricultores/',
+            map_func=map_agricultores,
+            placeholder="Buscar agricultor...",
+            local_filter=True,
+            emit_field="idagricultor",
+            parent=parent
+        )
+
+
+        self.table.setColumnHidden(0, True)  # ocultar columna ID
+
+class AsignarAgricultorSearchTable(SearchTableWidget):
+    def __init__(self, idexplotacion: int ,parent=None):
+        super().__init__(
+            model=AgricultoresTableModel(),
+            endpoint='/gis/agricultores/exp/{}'.format(idexplotacion),
+            map_func=map_agricultores,
+            placeholder="Buscar agricultor...",
+            local_filter=True,
+            emit_field="idagricultor",
+            parent=parent
+        )
+
+
+# PERSONAS
+class PersonaSearchTable(SearchTableWidget):
+    def __init__(self ,parent=None):
+        super().__init__(
+            model=PersonasTableModel(),
+            endpoint='/gis/personas/',
+            map_func=map_personas,
+            placeholder="Buscar persona...",
+            local_filter=True,
+            emit_field="idpersona",
+            parent=parent
+        )
+
+
+        self.table.setColumnHidden(0, True)  # ocultar columna ID
+
+
+# EXPLOTACIONES
+class ExplotacionSearchTable(SearchTableWidget):
+    def __init__(self ,parent=None):
+        super().__init__(
+            model=ExplotacionesTableModel(),
+            endpoint='/gis/explotaciones/',
+            map_func=map_explotacion,
+            placeholder="Buscar explotación...",
+            local_filter=True,
+            emit_field="idexplotacion",
+            parent=parent
+        )
+
+
+        self.table.setColumnHidden(0, True)  # ocultar columna ID
+
+
+# ASESORES
+class AsesorSearchTable(SearchTableWidget):
+    def __init__(self ,parent=None):
+        super().__init__(
+            model=AsesoresTableModel(),
+            endpoint='/gis/asesores/',
+            map_func=map_asesores,
+            placeholder="Buscar asesor...",
+            local_filter=True,
+            emit_field="idasesor",
+            parent=parent
+        )
+
+
+        self.table.setColumnHidden(0, True)  # ocultar columna ID
+
+
+class DistribuidorSearchTable(SearchTableWidget):
+    def __init__(self ,parent=None):
+        super().__init__(
+            model=DistribuidoresTableModel(),
+            endpoint='/gis/distribuidores/',
+            map_func=map_distribuidores,
+            placeholder="Buscar distribuidor...",
+            local_filter=True,
+            emit_field="iddistribuidor",
+            parent=parent
+        )
+
+
+        self.table.setColumnHidden(0, True)  # ocultar columna ID
+
 

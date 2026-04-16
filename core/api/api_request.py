@@ -45,12 +45,41 @@ class APIRequest:
         try:
             response = requests.delete(url, json=data)
             response.raise_for_status()
+            
+            return response.json() if response.content else {"http_status": response.status_code, "data": None}
+        except requests.RequestException as e:
+            # print(f"Error during DELETE request: {e}")
+            return {
+                "http_status": None,
+                "data": None
+            }
+    
+    def put(self, endpoint, data=None):
+        url = f"{self.base_url}/{endpoint}"
+        try:
+            response = requests.put(url, json=data)
+            response.raise_for_status()
             return {
                 "http_status": response.status_code,
                 "data": response.json() if response.content else None
             }
         except requests.RequestException as e:
-            # print(f"Error during DELETE request: {e}")
+            # print(f"Error during PUT request: {e}")
+            return {
+                "http_status": None,
+                "data": None
+            }
+    def patch(self, endpoint, data=None):
+        url = f"{self.base_url}/{endpoint}"
+        try:
+            response = requests.patch(url, json=data)
+            response.raise_for_status()
+            return {
+                "http_status": response.status_code,
+                "data": response.json() if response.content else None
+            }
+        except requests.RequestException as e:
+            # print(f"Error during PATCH request: {e}")
             return {
                 "http_status": None,
                 "data": None

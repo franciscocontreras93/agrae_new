@@ -11,11 +11,11 @@ Diálogo simple de selección:
 from qgis.PyQt.QtWidgets import QDialog, QVBoxLayout
 from qgis.PyQt.QtCore import pyqtSignal
 
-from ...core.models.agricultorModel import AgricultoresTableModel
-from ...gui.components import SearchTableWidget
+from ....core.models.gestion.agricultorModel import AgricultoresTableModel
+from ....gui.components.searchTableWidget import SearchTableWidget, AsignarAgricultorSearchTable
 
 
-from ...tools import aGraeTools
+from ....tools import aGraeTools
 
 import asyncio
 
@@ -40,7 +40,11 @@ def map_agricultores(raw):
             "explotacion": {
                 "nombre": explot.get("nombre", ""),
                 "direccion": explot.get("direccion", ""),
+            },
+            "asesor": {
+                "nombre_completo": r.get("asesor", {}).get("nombre_completo", "")
             }
+            
         })
 
     return items
@@ -62,14 +66,16 @@ class AgricultorSelectDialog(QDialog):
         self.tools = aGraeTools()
 
 
-        self.table = SearchTableWidget(
-            model=AgricultoresTableModel(),
-            endpoint='/gis/agricultores/exp/{}'.format(idexplotacion),
-            map_func=map_agricultores,
-            placeholder="Buscar agricultor...",
-            emit_field="idagricultor",
-            local_filter=True
-        )
+        # self.table = SearchTableWidget(
+        #     model=AgricultoresTableModel(),
+        #     endpoint='/gis/agricultores/exp/{}'.format(idexplotacion),
+        #     map_func=map_agricultores,
+        #     placeholder="Buscar agricultor...",
+        #     emit_field="idagricultor",
+        #     local_filter=True
+        # )
+
+        self.table = AsignarAgricultorSearchTable(idexplotacion)
 
         self.table.rowDoubleClicked.connect(self._on_selected)
 

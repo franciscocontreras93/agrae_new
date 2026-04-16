@@ -1,19 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-agricultorModel.py
-
-Modelo Qt (QAbstractTableModel) para mostrar Agricultores en QTableView.
-
-Columnas:
-- idagricultor
-- persona (nombre completo)
-- explotación (nombre)
-- dirección (explotación)
-
-Uso:
-    from .agricultorModel import AgricultoresTableModel
-    model = AgricultoresTableModel()
-    model.set_items(items_normalizados)
+asesoresModel.py
+Modelo Qt (QAbstractTableModel) para mostrar Asesores en QTableView.
 """
 
 from qgis.PyQt.QtCore import Qt, QAbstractTableModel, QModelIndex
@@ -31,18 +19,33 @@ def safe_get(d: dict, path: str, default=""):
         cur = cur.get(k)
     return default if cur is None else cur
 
+def map_distribuidores(raw):
+    """
+    raw = respuesta JSON del endpoint (lista de dicts)
+    devuelve = lista de dicts que entiende DistribuidoresTableModel
+    """
+    items = []
 
-class AgricultoresTableModel(QAbstractTableModel):
+    for r in (raw or []):
+       
+
+        items.append({
+           "iddistribuidor": r.get("iddistribuidor"),
+           "nombre": r.get("nombre", "")
+        })
+
+    return items
+
+
+class DistribuidoresTableModel(QAbstractTableModel):
     """
     Tabla para QTableView.
     Guarda items como lista de dicts ya normalizados (o raw si respetan paths).
     """
 
     COLS = [
-        ("ID Agricultor", "idagricultor"),
-        ("Nombre", "persona.nombre_completo"),
-        ("Explotación", "explotacion.nombre"),
-        ("Dirección", "explotacion.direccion"),
+        ("ID Distribuidor", "iddistribuidor"),
+        ("Nombre", "nombre"),
     ]
 
     def __init__(self, parent=None):
