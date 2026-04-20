@@ -170,104 +170,83 @@ class CrearLotesDialog(QDialog):
         nombre_exp = self.combo_explotacion.get_current_explotacion_name()
         idexp = self.combo_explotacion.get_current_explotacion_id()
         idcamp = self.combo_campania.get_current_campaign_id()
-        
-        if idcamp is None:
-            return self.tools.messages('Error','Debes seleccionar una Campaña para asignar los lotes.',1,alert=True)
-        if idexp is None:
-            return self.tools.messages('Error','Debes seleccionar una Explotación para asignar los lotes.',1,alert=True)
-        
 
-       
-            
+        if idcamp is None:
+            return self.tools.messages('Error', 'Debes seleccionar una Campaña para asignar los lotes.', 1, alert=True)
+        if idexp is None:
+            return self.tools.messages('Error', 'Debes seleccionar una Explotación para asignar los lotes.', 1, alert=True)
+
+        # asegurar tipos nativos
+        idcamp = int(idcamp)
+        idexp = int(idexp)
+        nombre_exp = str(nombre_exp)
+
         layer = self.combo_layer.currentLayer()
         sourceCrs = layer.crs()
         crsBase = QgsCoordinateReferenceSystem(4326)
         tr = QgsCoordinateTransform(sourceCrs, crsBase, QgsProject.instance())
-    
+
         selected_only = self.select_seleccionados.isChecked()
         features = list(layer.getSelectedFeatures() if selected_only else layer.getFeatures())
 
         if selected_only and not features:
             self.tools.messages('Advertencia', 'No hay lotes seleccionados.', 1, alert=True)
             return
-        
+
+        reply = QMessageBox.question(
+            None,
+            'aGrae Toolbox',
+            f'¿Estás seguro de cargar {len(features)} Lote/s a la explotación {nombre_exp.upper()}?',
+            QMessageBox.Yes,
+            QMessageBox.No
+        )
+
+        if reply != QMessageBox.Yes:
+            return
+
         items = []
-            
-        reply = QMessageBox.question(None,'aGrae Toolbox','¿Estás seguro de cargar {} Lote/s a la explotacion {}?'.format(len(features),nombre_exp.upper()), QMessageBox.Yes, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            
-            for feature in features:
-                
-                nombre = str(feature[self.combo_nombre.currentField()])
-                elev = feature['elev'] if 'elev' in feature.fields().names() else 0
-                geom = feature.geometry()
 
-                if sourceCrs != crsBase:
-                    geom = geom.clone()
-                    geom.transform(tr)
-                
-                items.append({
-                    "nombre": nombre,
-                    "wkt": geom.asWkt(),
-                    "elev": elev
-                })
-            
+        for feature in features:
+            nombre = feature[self.combo_nombre.currentField()]
+            nombre = "" if nombre is None else str(nombre)
 
+            elev = feature['elev'] if 'elev' in feature.fields().names() else 0
 
-            
-            payload =             {
+            # convertir elev a tipo nativo
+            if elev is None:
+                elev = 0
+            else:
+                try:
+                    elev = float(elev)
+                except Exception:
+                    elev = 0
+
+            geom = QgsGeometry(feature.geometry())
+            if sourceCrs != crsBase:
+                geom.transform(tr)
+
+            items.append({
+                "nombre": nombre,
+                "wkt": str(geom.asWkt()),
+                "elev": elev
+            })
+
+        payload = {
             "idcampania": idcamp,
             "idexplotacion": idexp,
             "items": items
-            }
+        }
 
-            print(payload)
-            asyncio.run(self.tools._post_json(endpoint='/gis/lotes/create',payload=payload))
-            # print(response)
-  
+        # print(payload)
+        try:
+            asyncio.run(self.tools._post_json(
+                endpoint='/gis/lotes/create',
+                payload=payload
+            ))
 
+            self.tools.messages('aGrae', f'{len(items)} Lote/s cargado/s correctamente a la explotación {nombre_exp.upper()}.')
+            self.accept()
+
+        except Exception as e:
+            self.tools.messages('Error', f'Error al cargar los lotes: {str(e)}', 1, alert=True)
             
-            # sql = self.agraeSql.getSql('new_lote_assign_copy.sql')
-        
-            # se quita la posibilidad de cargar un lote sin asignarlo a una explotacion. 
-            # if self.select_explotacion.isChecked():
-            #     sql = self.agraeSql.getSql('new_lote_assign_copy.sql')
-            # # else:
-            #     sql = self.agraeSql.getSql('create_lote.sql')
-            
-            for f in features: 
-                nombre_exp = str(f[self.combo_nombre.currentField()])
-                elev = f['elev'] if 'elev' in f.fields().names() else 0
-                for e in ['/','-']:
-                    nombre_exp.replace(e,'_')
-                    
-                geom = f.geometry()
-                if sourceCrs != crsBase:
-                    geom.transform(tr)
-
-                    # query = sql.format(nombre,round(elev,2),geom.asWkt(),self.combo_campania.get_current_campaign_id(),self.combo_explotacion.get_current_explotacion_id())
-
-                    # # if self.select_explotacion.isChecked():
-                    # #     query = sql.format(nombre,geom.asWkt(),self.combo_campania.get_current_campaign_id(),self.combo_explotacion.get_current_explotacion_id())
-                    # # else:
-                    # #     query = sql.format(nombre,geom.asWkt())
-                    
-                    # try:
-                    #     cursor.execute(query)
-                    #     response = cursor.fetchone()
-
-                    #     # print(response)
-                    #     if len(response) > 0:
-                    #         QgsMessageLog.logMessage('Lote: {} cargado correctamente as la Base de Datos'.format(response[0]), 'aGrae Logs', 3)
-                    #         self.tools.messages('aGrae Toolbox','Lote: {} cargado correctamente as la Base de Datos'.format(response[0]),3)
-                    #         self.conn.commit()
-                    #     else: 
-                    #         self.tools.messages('Lote: {} ya existe en la Base de Datos'.format(nombre),1)
-                    #         QgsMessageLog.logMessage('Lote: {} ya existe en la Base de Datos'.format(nombre), 'aGrae Logs', 1)
-                    #         self.conn.rollback()
-
-                    #     # print(query)
-
-                    # except Exception as ex:
-                    #     print(ex)
-                    #     self.conn.rollback()

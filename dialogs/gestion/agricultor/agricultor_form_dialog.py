@@ -194,7 +194,7 @@ class AgricultorFormDialog(QDialog):
         try:
             if self.item is None:
                 r = self.api.post("gis/agricultores/", payload)
-                print(r)
+                # print(r)
                 # http_status = r.get("http_status")
                 # if http_status not in (200, 201):
                 #     raise Exception(f"HTTP {http_status}")
@@ -206,6 +206,8 @@ class AgricultorFormDialog(QDialog):
             #         raise Exception(f"HTTP {http_status}")
                 
             # print(r)
+
+                QMessageBox.information(self, "aGrae", "Agricultor creado correctamente.")
 
             self.accept()
 
