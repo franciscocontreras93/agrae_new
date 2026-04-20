@@ -6,11 +6,13 @@ class APIRequest:
         self.config = aGraeConfig()
         self.base_url = self.config.backend_url if base_url is None else base_url
 
-    def get(self, endpoint, params=None):
+    def get(self, endpoint, params=None, raw = False):
         url = f"{self.base_url}/{endpoint}"
         try:
             response = requests.get(url, params=params)
             response.raise_for_status()
+            if raw:
+                return response.content
             return response.json()
         except requests.RequestException as e:
             print(f"Error during GET request: {e}")
