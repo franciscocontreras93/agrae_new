@@ -201,8 +201,8 @@ class aGraeComposerTools():
         project_path = QgsProject.instance().fileName()
         base_dir = os.path.dirname(project_path) if project_path else os.path.expanduser("~")
 
-        default_name = f"{self.nombre_explotacion or 'explotacion'}_lotes.txt"
-        default_name = default_name.replace(" ", "_").replace("/", "_").replace("\\", "_")
+        default_name = f"informes_lotes.txt"
+        # default_name = default_name.replace(" ", "_").replace("/", "_").replace("\\", "_")
 
         file_path, _ = QFileDialog.getSaveFileName(
             None,
