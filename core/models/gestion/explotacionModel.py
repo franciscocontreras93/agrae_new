@@ -15,7 +15,7 @@ def map_explotacion(raw):
 
     for r in (raw or []):
         items.append({
-            "idexplotacion": r.get("idexplotacion"),
+            "idexplotacion": int(r.get("idexplotacion") or 0),
             "nombre": r.get("nombre", ""),
             "direccion": r.get("direccion", ""),
             "agricultores": r.get("agricultores", 0),

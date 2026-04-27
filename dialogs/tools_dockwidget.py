@@ -24,12 +24,13 @@ from ..gui.components import CampaniasComboBox, ExplotacionesComboBox, CultivosC
 from ..core.config import aGraeConfig
 from ..dialogs import aGraeDialogs, AgricultorSelectDialog
 
-from .explotacion_dialogs import CopyExplotacionDialog, CreateExplotacionDialog, UpdateExplotacionDialog, GestionExplotacionDialog,GestionarExplotacionesDialog
+from .explotacion_dialogs import CopyExplotacionDialog, CreateExplotacionDialog, UpdateExplotacionDialog,GestionarExplotacionesDialog
 from .campania_dialogs import CloneCampaniaDialog, CreateCampaniaDialog, UpdateCampaniaDialog
 from .lotes_dialog import LoteWeatherDialog
 from .analitica_dialogs import agraeAnaliticaDialog
 from .gestion_personas import GestionPersonasDialog
 from .gestion_distribuidor import GestionDistribuidorDialog
+from .gestion.explotacion import GestionarExplotacionDialog
 from .gestion.agricultor import GestionAgricultorDialog
 from .datos_base_dialog import GestionDatosBaseDialog, CrearLotesDialog
 from .composer_dialog import agraeComposer
@@ -883,7 +884,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         pass
 
     def gestionExplotacionDialog(self):
-        dlg = GestionarExplotacionesDialog()
+        dlg = GestionarExplotacionDialog()
+        dlg.search_table.rowDoubleClicked.disconnect()
         # dlg = GestionExplotacionDialog()
         # dlg.idExplotacionSignal.connect()
         dlg.exec()

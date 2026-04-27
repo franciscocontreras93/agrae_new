@@ -13,6 +13,8 @@ from qgis.PyQt.QtWidgets import (
 from ....gui import agraeGUI
 from ....gui.components.searchTableWidget import AgricultorSearchTable
 
+from ..asesores import GestionarAsesoresDialog
+
 from .agricultor_form_dialog import AgricultorFormDialog
 
 from ....core.api import APIRequest
@@ -54,6 +56,13 @@ class GestionAgricultorDialog(QDialog):
 
         right_layout.addStretch()
 
+        self.btn_asesor = QPushButton()
+        self.btn_asesor.setFixedSize(42, 42)
+        self.btn_asesor.setIcon(agraeGUI().getIcon("user"))
+        self.btn_asesor.setIconSize(QSize(22, 22))
+        self.btn_asesor.setToolTip("Asignar Asesor al Agricultor Seleccionado")
+        right_layout.addWidget(self.btn_asesor)
+
         self.btn_add = QPushButton()
         self.btn_add.setFixedSize(42, 42)
         self.btn_add.setIcon(agraeGUI().getIcon("add"))
@@ -86,6 +95,7 @@ class GestionAgricultorDialog(QDialog):
         self.btn_delete.clicked.connect(self._delete_selected)
         self.btn_reload.clicked.connect(self.search_table.reload)
         self.btn_add.clicked.connect(self._add_new_agricultor)
+        self.btn_asesor.clicked.connect(self._dialog_asesor)
 
     def _on_row_double_clicked(self, value, item):
         self.idAgricultorSignal.emit(value)
@@ -98,6 +108,51 @@ class GestionAgricultorDialog(QDialog):
         dialog = AgricultorFormDialog(self)
         if dialog.exec_() == QDialog.Accepted:
             self.search_table.reload()
+
+    def _dialog_asesor(self):
+        item = self.search_table.selected_item()
+        if not item:
+            QMessageBox.information(self, "aGrae", "Selecciona un agricultor.")
+            return
+
+        agricultor = item
+        dialog = GestionarAsesoresDialog(self)
+        dialog.AsesorSignal.connect(lambda asesor: self._asignar_asesor(agricultor, asesor))
+        dialog.exec_()
+
+    def _asignar_asesor(self, agricultor, asesor):
+        data = {
+            "idagricultor": int(agricultor.get("idagricultor")),
+            "idasesor": int(asesor.get("idasesor")),
+        }
+
+
+        try:
+            r = self.api.patch("gis/agricultores/update/asignar-asesor", data)
+
+            if r.get("http_status") != 200:
+                raise Exception(
+                    f"HTTP {r.get('http_status')} - {r.get('data')}"
+                )
+
+            QMessageBox.information(
+                self,
+                "aGrae",
+                "Asesor {} asignado al agricultor: {} correctamente.".format(
+                    asesor.get("nombre", "desconocido"),
+                    agricultor.get("persona", {}).get("nombre_completo", "desconocido")
+                )
+            )
+
+            self.search_table.reload()
+
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                "aGrae",
+                f"No se pudo asignar el asesor al agricultor.\nError: {str(e)}"
+            )
+
 
     def _delete_selected(self):
         item = self.search_table.selected_item()

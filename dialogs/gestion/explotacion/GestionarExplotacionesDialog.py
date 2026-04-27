@@ -12,6 +12,9 @@ from ....gui import agraeGUI
 from ....gui.components.searchTableWidget import ExplotacionSearchTable
 from ....core.api import APIRequest
 
+from .explotacion_form_dialog import ExplotacionFormDialog
+
+
 
 class GestionarExplotacionDialog(QDialog):
     closingPlugin = pyqtSignal()
@@ -39,7 +42,8 @@ class GestionarExplotacionDialog(QDialog):
         content_layout.setSpacing(8)
         main_layout.addLayout(content_layout)
 
-        self.search_table = ExplotacionSearchTable(self)
+        self.search_table = ExplotacionSearchTable(idvisible=True, parent=self)
+        # self.search_table.setColumnHidden(0, False)
         content_layout.addWidget(self.search_table, 1)
 
         right_panel = QWidget(self)
@@ -55,6 +59,15 @@ class GestionarExplotacionDialog(QDialog):
         self.btn_add.setIconSize(QSize(22, 22))
         self.btn_add.setToolTip("Añadir nueva explotación")
         right_layout.addWidget(self.btn_add)
+
+        self.btn_edit = QPushButton()
+        self.btn_edit.setFixedSize(42, 42)
+        self.btn_edit.setIcon(agraeGUI().getIcon("edit"))
+        self.btn_edit.setIconSize(QSize(22, 22))
+        self.btn_edit.setToolTip("Editar explotación seleccionada")
+        # self.btn_edit.setEnabled(True)
+        right_layout.addWidget(self.btn_edit)
+
 
         self.btn_reload = QPushButton()
         self.btn_reload.setFixedSize(42, 42)
@@ -81,6 +94,8 @@ class GestionarExplotacionDialog(QDialog):
         self.btn_delete.clicked.connect(self._delete_selected)
         self.btn_reload.clicked.connect(self.search_table.reload)
         self.btn_add.clicked.connect(self._add_new_explotacion)
+        self.btn_edit.clicked.connect(self._edit_selected)
+
 
     def _on_row_double_clicked(self, value, item):
         self.ExplotacionSignal.emit(item)
@@ -91,7 +106,21 @@ class GestionarExplotacionDialog(QDialog):
         self.btn_delete.setEnabled(bool(item))
 
     def _add_new_explotacion(self):
+        dialog = ExplotacionFormDialog(self,None)
+        if dialog.exec_() == QDialog.Accepted:
+            self.search_table.reload()
+
         pass
+
+    def _edit_selected(self):
+        item = self.search_table.selected_item()
+        if not item:
+            QMessageBox.information(self, "aGrae", "Selecciona una explotación para editar.")
+            return
+
+        dialog = ExplotacionFormDialog(self,item)
+        if dialog.exec_() == QDialog.Accepted:
+            self.search_table.reload()
 
     def _delete_selected(self):
         item = self.search_table.selected_item()
@@ -119,7 +148,7 @@ class GestionarExplotacionDialog(QDialog):
             QMessageBox.information(
                 self,
                 "aGrae",
-                f"Explotación {nombre or idexplotacion} eliminada."
+                f"Explotación {nombre} eliminada."
             )
 
             self.search_table.reload()

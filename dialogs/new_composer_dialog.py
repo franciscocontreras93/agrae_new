@@ -285,7 +285,7 @@ class new_Composer(QDialog):
                 iddata_literal,
                 '''select distinct idlote,nombre as lote,codigo as codigo_muestra,
                           n as valor,no3,nh4,lower(n_tipo) as tipo,
-                          n_inc as incremento, st_asText(geom) as geom
+                          n_inc as incremento, densidad, st_asText(geom) as geom
                    from segm_analitica;'''
             ),
             'Fosforo': aGraeSQLTools().getSql('segmentos_layers_query.sql').format(

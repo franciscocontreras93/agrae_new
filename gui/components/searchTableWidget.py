@@ -388,7 +388,7 @@ class PersonaSearchTable(SearchTableWidget):
 
 # EXPLOTACIONES
 class ExplotacionSearchTable(SearchTableWidget):
-    def __init__(self ,parent=None):
+    def __init__(self , idvisible = True, parent=None):
         super().__init__(
             model=ExplotacionesTableModel(),
             endpoint='/gis/explotaciones/',
@@ -400,9 +400,13 @@ class ExplotacionSearchTable(SearchTableWidget):
         )
 
 
-        self.table.setColumnHidden(0, True)  # ocultar columna ID
+        self.setColumnHidden(0, not idvisible)  # ocultar columna ID según idvisible
 
+        # self.table.setColumnHidden(0, idvisible)  # ocultar columna ID
 
+    def setColumnHidden(self, column: int, hide: bool):
+        self.table.setColumnHidden(column, hide)
+        
 # ASESORES
 class AsesorSearchTable(SearchTableWidget):
     def __init__(self ,parent=None):
@@ -436,3 +440,5 @@ class DistribuidorSearchTable(SearchTableWidget):
         self.table.setColumnHidden(0, True)  # ocultar columna ID
 
 
+
+   

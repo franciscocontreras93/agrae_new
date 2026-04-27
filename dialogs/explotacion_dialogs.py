@@ -8,6 +8,7 @@ import time
 # from datetime import date
 from psycopg2 import InterfaceError, errors, extras
 
+
 from qgis.PyQt.QtWidgets import *
 from qgis.PyQt.QtWidgets import (
     QDialog,
@@ -41,6 +42,8 @@ from ..gui.CustomLineEdit import CustomLineEdit
 from ..gui.CustomLineSearch import CustomLineSearch
 from ..gui.CustomTable import CustomTable
 from ..gui.CustomPushButton import CustomPushButton
+
+from ..gui.components.searchTableWidget  import ExplotacionSearchTable
 
 class CreateExplotacionDialog(QDialog):
     closingPlugin = pyqtSignal()
@@ -598,8 +601,13 @@ class GestionarExplotacionesDialog(QDialog):
         widgetConsulta = QWidget()
         layoutConsulta = QGridLayout()
         columnsLabels = ['id','Nombre','Direccion','Agricultores']
-        self.tableWidget = CustomTable(widgetConsulta,['id','Nombre','Agricultores','Direccion'])
-        self.tableWidget.doubleClicked.connect(self.getExplotacionData)
+        # self.tableWidget = CustomTable(widgetConsulta,['id','Nombre','Agricultores','Direccion'])
+        self.tableWidget = ExplotacionSearchTable()
+        self.tableWidget.rowDoubleClicked.connect(self.getExplotacionData)
+
+        # self.tableWidget.doubleClicked.connect(self.getExplotacionData)
+        # self.tableWidget.setColumnHidden(0, False)
+        self.tableWidget.setColumnHidden(0, True)
 
         self.ln_search = CustomLineSearch(self.completer,self.getData,placeholder='Ingresa el Nombre o Direccion de la explotacion a buscar')
         self.btn_delete = CustomPushButton(widgetConsulta,icon=agraeGUI().getIcon('trash'),action=self.delete)

@@ -6,8 +6,10 @@ class APIRequest:
         self.config = aGraeConfig()
         self.base_url = self.config.backend_url if base_url is None else base_url
 
+
     def get(self, endpoint, params=None, raw = False):
         url = f"{self.base_url}/{endpoint}"
+        url = url.replace("//", "/").replace(":/", "://")
         try:
             response = requests.get(url, params=params)
             response.raise_for_status()
@@ -20,6 +22,8 @@ class APIRequest:
 
     def post(self, endpoint, data=None):
         url = f"{self.base_url}/{endpoint}"
+
+        url = url.replace("//", "/").replace(":/", "://")  # Asegura que no haya dobles barras excepto en el esquema
 
         try:
             resp = requests.post(url, json=data, timeout=30)
@@ -44,6 +48,7 @@ class APIRequest:
         
     def delete(self, endpoint, data=None):
         url = f"{self.base_url}/{endpoint}"
+        url = url.replace("//", "/").replace(":/", "://")
         try:
             response = requests.delete(url, json=data)
             response.raise_for_status()
@@ -58,6 +63,7 @@ class APIRequest:
     
     def put(self, endpoint, data=None):
         url = f"{self.base_url}/{endpoint}"
+        url = url.replace("//", "/").replace(":/", "://")
         try:
             response = requests.put(url, json=data)
             response.raise_for_status()
@@ -72,17 +78,26 @@ class APIRequest:
                 "data": None
             }
     def patch(self, endpoint, data=None):
+        
         url = f"{self.base_url}/{endpoint}"
+        url = url.replace("//", "/").replace(":/", "://")
+
         try:
             response = requests.patch(url, json=data)
-            response.raise_for_status()
+
+            response_data = None
+            try:
+                response_data = response.json() if response.content else None
+            except Exception:
+                response_data = response.text
+
             return {
                 "http_status": response.status_code,
-                "data": response.json() if response.content else None
+                "data": response_data
             }
+
         except requests.RequestException as e:
-            # print(f"Error during PATCH request: {e}")
             return {
                 "http_status": None,
-                "data": None
+                "data": str(e)
             }
