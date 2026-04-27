@@ -128,6 +128,14 @@ class GestionAgricultorDialog(QDialog):
 
 
         try:
+            confirm = QMessageBox.question(
+                self,
+                "Confirmar asignación",
+                f"¿Asignar asesor {asesor.get('nombre', 'desconocido')} al agricultor {agricultor.get('persona', {}).get('nombre_completo', 'desconocido')}?"
+            )
+            if confirm != QMessageBox.Yes:
+                return
+            
             r = self.api.patch("gis/agricultores/update/asignar-asesor", data)
 
             if r.get("http_status") != 200:
