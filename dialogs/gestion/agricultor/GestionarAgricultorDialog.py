@@ -63,6 +63,14 @@ class GestionAgricultorDialog(QDialog):
         self.btn_asesor.setToolTip("Asignar Asesor al Agricultor Seleccionado")
         right_layout.addWidget(self.btn_asesor)
 
+        self.btn_edit = QPushButton()
+        self.btn_edit.setFixedSize(42, 42)
+        self.btn_edit.setIcon(agraeGUI().getIcon("edit"))
+        self.btn_edit.setIconSize(QSize(22, 22))
+        self.btn_edit.setToolTip("Editar agricultor seleccionado")
+        right_layout.addWidget(self.btn_edit)
+        
+
         self.btn_add = QPushButton()
         self.btn_add.setFixedSize(42, 42)
         self.btn_add.setIcon(agraeGUI().getIcon("add"))
