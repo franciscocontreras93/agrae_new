@@ -53,7 +53,7 @@ def map_agricultores(raw):
 class AgricultorSelectDialog(QDialog):
     agricultorSignal = pyqtSignal(int, dict)
 
-    def __init__(self, idexplotacion: int, idlotes:list ,parent=None):
+    def __init__(self, idexplotacion: int, idlotes:list | None = None, parent=None):
         super().__init__(parent)
 
         self.setWindowTitle("Seleccionar agricultor")

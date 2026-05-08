@@ -1,422 +1,1087 @@
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, ROUND_HALF_UP
 
 from qgis.PyQt import QtWidgets, QtCore
 from qgis.PyQt.QtCore import Qt
 
-from ..gui.components.CustomComboBox import SeriesComboBox
-from ..gui.components.CustomTreeWidget import FacturacionTreePanel
-
 from ..core.api import APIRequest
+from ..gui.components.CustomComboBox import PlanesComboBox, SeriesComboBox
+from ..dialogs.gestion.agricultor.agricultorSelectDialog import AgricultorSelectDialog
 
 
 class FacturacionDialog(QtWidgets.QDialog):
-    IVA_DEFAULT = Decimal("21.00")
+    """
+    Diálogo de facturación.
 
-    def __init__(self, idexplotacion: int, parent=None):
+    Permite:
+    - Seleccionar cliente.
+    - Editar datos fiscales.
+    - Seleccionar plan.
+    - Calcular importes.
+    - Emitir o generar borrador.
+    - Descargar el PDF devuelto por el backend.
+    """
+
+    def __init__(self, idexplotacion: int, lotes: list | None = None, parent=None):
         super().__init__(parent)
 
         self.idexplotacion = idexplotacion
-        self.api = APIRequest()
+        self.lotes = lotes or []
+        self._api_request = APIRequest()
+        self._agricultor_payer = None
+        self._current_plan = None
 
-        self.datos_contrato = {}
+        self.setWindowTitle("aGrae | Facturación")
+        self.resize(980, 680)
 
-        self.setWindowTitle("Facturación")
-        self.resize(980, 640)
-        self.setModal(True)
-
-
-        self._get_contrato_data()
-
-        self._setup_ui()
+        self._build_ui()
         self._connect_signals()
-
-        self._init_state()
         self._load_initial_data()
-    
-    # ============================
-    # CONFIGURACION DE LA API INICIAL
-    # ============================
 
-    
+    # ------------------------------------------------------------------
+    # Helpers UI
+    # ------------------------------------------------------------------
 
-    def _setup_ui(self):
-        main_layout = QtWidgets.QVBoxLayout(self)
-        main_layout.setContentsMargins(12, 12, 12, 12)
-        main_layout.setSpacing(10)
+    def _label(self, text: str):
+        return QtWidgets.QLabel(text)
 
-        # ===== Cabecera =====
-        header_layout = QtWidgets.QHBoxLayout()
+    def _line(self, placeholder: str = "", readonly: bool = False):
+        line = QtWidgets.QLineEdit()
+        line.setPlaceholderText(placeholder)
+        line.setReadOnly(readonly)
+        return line
 
-        self.lbl_title = QtWidgets.QLabel("Gestión de Facturación")
-        title_font = self.lbl_title.font()
-        title_font.setPointSize(12)
-        title_font.setBold(True)
-        self.lbl_title.setFont(title_font)
+    def _money_spin(self, suffix: str = "", enabled: bool = True, readonly: bool = False, maximum: float = 10_000_000):
+        spin = QtWidgets.QDoubleSpinBox()
+        spin.setDecimals(2)
+        spin.setMaximum(maximum)
+        spin.setSuffix(suffix)
+        spin.setEnabled(enabled)
+        spin.setReadOnly(readonly)
+        return spin
+
+    def _date_edit(self, date: QtCore.QDate):
+        edit = QtWidgets.QDateEdit(date)
+        edit.setCalendarPopup(True)
+        return edit
+
+    def _grid(self, parent):
+        layout = QtWidgets.QGridLayout(parent)
+        layout.setContentsMargins(8, 10, 8, 8)
+        layout.setHorizontalSpacing(8)
+        layout.setVerticalSpacing(5)
+        return layout
+
+    # ------------------------------------------------------------------
+    # UI
+    # ------------------------------------------------------------------
+
+    def _build_ui(self):
+        main = QtWidgets.QVBoxLayout(self)
+        main.setContentsMargins(8, 8, 8, 8)
+        main.setSpacing(6)
+
+        self._build_header(main)
+        self._build_cliente_group(main)
+        self._build_factura_group(main)
+        self._build_plan_group(main)
+        self._build_observaciones_group(main)
+        self._build_lotes_resumen_group(main)
+        self._build_bottom(main)
+
+    def _build_header(self, main):
+        header = QtWidgets.QHBoxLayout()
+
+        title = QtWidgets.QLabel("Facturación")
+        font = title.font()
+        font.setPointSize(12)
+        font.setBold(True)
+        title.setFont(font)
 
         self.lbl_explotacion = QtWidgets.QLabel(f"Explotación ID: {self.idexplotacion}")
         self.lbl_explotacion.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
-        header_layout.addWidget(self.lbl_title)
-        header_layout.addStretch()
-        header_layout.addWidget(self.lbl_explotacion)
+        header.addWidget(title)
+        header.addStretch()
+        header.addWidget(self.lbl_explotacion)
+        main.addLayout(header)
 
-        main_layout.addLayout(header_layout)
+    def _build_cliente_group(self, main):
+        gb = QtWidgets.QGroupBox("Datos del cliente")
+        layout = self._grid(gb)
 
-        # ===== Datos de facturación =====
-        gb_info = QtWidgets.QGroupBox("Datos de facturación")
-        info_layout = QtWidgets.QFormLayout(gb_info)
-        info_layout.setLabelAlignment(Qt.AlignLeft)
-        info_layout.setFormAlignment(Qt.AlignTop)
-        info_layout.setHorizontalSpacing(12)
-        info_layout.setVerticalSpacing(8)
+        payer_layout = QtWidgets.QHBoxLayout()
+        payer_layout.setSpacing(6)
 
-        self.le_num_factura = QtWidgets.QLineEdit()
-        self.le_num_factura.setReadOnly(True)
-        self.le_num_factura.setPlaceholderText("Se asignará al emitir")
-        self.le_num_factura.setText("Se asignará al emitir")
+        self.txt_facturar_a = self._line("Seleccione agricultor/persona a facturar", readonly=True)
+        self.btn_buscar_agricultor = QtWidgets.QPushButton("Buscar")
+        self.btn_buscar_agricultor.setMaximumWidth(90)
 
-        self.cb_serie = SeriesComboBox()
-        self.cb_serie.setMinimumWidth(180)
+        payer_layout.addWidget(self.txt_facturar_a)
+        payer_layout.addWidget(self.btn_buscar_agricultor)
 
-        self.de_fecha = QtWidgets.QDateEdit()
-        self.de_fecha.setCalendarPopup(True)
-        self.de_fecha.setDate(QtCore.QDate.currentDate())
-        self.de_fecha.setDisplayFormat("dd/MM/yyyy")
+        self.line_razon_social = self._line()
+        self.line_dni = self._line()
+        self.line_direccion = self._line()
+        self.line_provincia = self._line()
+        self.line_municipio = self._line()
+        self.line_cp = self._line()
+        self.line_pais = self._line()
+        self.line_pais.setText("ESP")
+        self.line_email = self._line()
+        self.line_telefono = self._line()
 
-        self.cb_estado = QtWidgets.QComboBox()
-        self.cb_estado.addItem("BORRADOR", "BORRADOR")
-        self.cb_estado.addItem("EMITIDA", "EMITIDA")
-        self.cb_estado.addItem("ANULADA", "ANULADA")
-        self.cb_estado.addItem("PAGADA", "PAGADA")
-        self.cb_estado.setCurrentIndex(0)
-        self.cb_estado.setEnabled(False)
+        self.combo_person_type = QtWidgets.QComboBox()
+        self.combo_person_type.addItems(["Seleccionar...", "F", "J"])
 
-        self.te_observaciones = QtWidgets.QPlainTextEdit()
-        self.te_observaciones.setPlaceholderText("Observaciones...")
-        self.te_observaciones.setMaximumHeight(90)
+        self.btn_guardar_cliente = QtWidgets.QPushButton("Guardar datos cliente")
+        self.btn_guardar_cliente.setMaximumWidth(160)
 
-        info_layout.addRow("Nº factura:", self.le_num_factura)
-        info_layout.addRow("Serie:", self.cb_serie)
-        info_layout.addRow("Fecha:", self.de_fecha)
-        info_layout.addRow("Estado:", self.cb_estado)
-        info_layout.addRow("Observaciones:", self.te_observaciones)
+        layout.addWidget(self._label("Facturar a:"), 0, 0)
+        layout.addLayout(payer_layout, 0, 1, 1, 5)
 
-        main_layout.addWidget(gb_info)
+        layout.addWidget(self._label("Razón social:"), 1, 0)
+        layout.addWidget(self.line_razon_social, 1, 1, 1, 3)
+        layout.addWidget(self._label("NIF/CIF:"), 1, 4)
+        layout.addWidget(self.line_dni, 1, 5)
 
-        # ===== Zona central =====
-        central_layout = QtWidgets.QHBoxLayout()
-        central_layout.setSpacing(10)
+        layout.addWidget(self._label("Tipo:"), 2, 0)
+        layout.addWidget(self.combo_person_type, 2, 1)
+        layout.addWidget(self._label("Dirección:"), 2, 2)
+        layout.addWidget(self.line_direccion, 2, 3, 1, 3)
 
-        # ---- Líneas ----
-        gb_lineas = QtWidgets.QGroupBox("Conceptos a facturar")
-        gb_lineas_layout = QtWidgets.QVBoxLayout(gb_lineas)
-        gb_lineas_layout.setContentsMargins(8, 10, 8, 8)
+        layout.addWidget(self._label("Provincia:"), 3, 0)
+        layout.addWidget(self.line_provincia, 3, 1)
+        layout.addWidget(self._label("Municipio:"), 3, 2)
+        layout.addWidget(self.line_municipio, 3, 3)
+        layout.addWidget(self._label("CP:"), 3, 4)
+        layout.addWidget(self.line_cp, 3, 5)
 
-        self.tree_facturacion = QtWidgets.QTreeWidget()
-        self.tree_facturacion.setColumnCount(5)
-        self.tree_facturacion.setHeaderLabels([
-            "Concepto",
-            "Cantidad",
-            "Precio Unit.",
-            "Importe",
-            "Estado"
-        ])
-        self.tree_facturacion.setRootIsDecorated(False)
-        self.tree_facturacion.setAlternatingRowColors(True)
-        self.tree_facturacion.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        self.tree_facturacion.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.tree_facturacion.setUniformRowHeights(True)
+        layout.addWidget(self._label("País:"), 4, 0)
+        layout.addWidget(self.line_pais, 4, 1)
+        layout.addWidget(self._label("Email:"), 4, 2)
+        layout.addWidget(self.line_email, 4, 3)
+        layout.addWidget(self._label("Teléfono:"), 4, 4)
+        layout.addWidget(self.line_telefono, 4, 5)
 
-        header = self.tree_facturacion.header()
-        header.setStretchLastSection(False)
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)
+        layout.addWidget(self.btn_guardar_cliente, 5, 4, 1, 2)
 
-        self.tree_facturacion = FacturacionTreePanel()
+        main.addWidget(gb)
 
+    def _build_factura_group(self, main):
+        gb = QtWidgets.QGroupBox("Datos de factura")
+        layout = self._grid(gb)
 
-        gb_lineas_layout.addWidget(self.tree_facturacion)
+        self.cmb_serie = SeriesComboBox(auto_enable_on_load=True)
+        self.date_fecha_emision = self._date_edit(QtCore.QDate.currentDate())
+        self.date_fecha_vencimiento = self._date_edit(QtCore.QDate.currentDate().addMonths(1))
 
-        lineas_btn_layout = QtWidgets.QHBoxLayout()
+        self.spin_iva = self._money_spin(" %", maximum=100)
+        self.spin_iva.setValue(21)
 
-        self.btn_add_linea = QtWidgets.QPushButton("Añadir")
-        self.btn_edit_linea = QtWidgets.QPushButton("Editar")
-        self.btn_remove_linea = QtWidgets.QPushButton("Quitar")
-        self.btn_refresh = QtWidgets.QPushButton("Recargar")
+        self.chk_area_minima = QtWidgets.QCheckBox("Aplicar mínimo por lote")
+        self.chk_area_minima.setChecked(True)
 
-        lineas_btn_layout.addWidget(self.btn_add_linea)
-        lineas_btn_layout.addWidget(self.btn_edit_linea)
-        lineas_btn_layout.addWidget(self.btn_remove_linea)
-        lineas_btn_layout.addStretch()
-        lineas_btn_layout.addWidget(self.btn_refresh)
+        self.spin_area_minima = self._money_spin(" ha", maximum=10_000)
+        self.spin_area_minima.setValue(5.00)
 
-        gb_lineas_layout.addLayout(lineas_btn_layout)
+        layout.addWidget(self._label("Serie:"), 0, 0)
+        layout.addWidget(self.cmb_serie, 0, 1)
+        layout.addWidget(self._label("Emisión:"), 0, 2)
+        layout.addWidget(self.date_fecha_emision, 0, 3)
+        layout.addWidget(self._label("Vencimiento:"), 0, 4)
+        layout.addWidget(self.date_fecha_vencimiento, 0, 5)
 
-        central_layout.addWidget(gb_lineas, 3)
+        layout.addWidget(self._label("IVA:"), 1, 0)
+        layout.addWidget(self.spin_iva, 1, 1)
+        layout.addWidget(self.chk_area_minima, 1, 2)
+        layout.addWidget(self.spin_area_minima, 1, 3)
 
-        # ---- Resumen ----
-        resumen_box_layout = QtWidgets.QVBoxLayout()
+        main.addWidget(gb)
 
-        gb_resumen = QtWidgets.QGroupBox("Resumen")
-        resumen_layout = QtWidgets.QFormLayout(gb_resumen)
-        resumen_layout.setLabelAlignment(Qt.AlignLeft)
-        resumen_layout.setFormAlignment(Qt.AlignTop)
-        resumen_layout.setHorizontalSpacing(12)
-        resumen_layout.setVerticalSpacing(10)
+    def _build_plan_group(self, main):
+        gb = QtWidgets.QGroupBox("Plan y precio")
+        layout = self._grid(gb)
+
+        self.cmb_plan = PlanesComboBox(auto_enable_on_load=True)
+
+        self.txt_concepto = self._line("Se tomará del nombre del plan", readonly=True)
+        self.txt_pricing_model = self._line(readonly=True)
+
+        self.spin_precio_ha_plan = self._money_spin(" €/ha", readonly=True)
+        self.spin_precio_ha_aplicado = self._money_spin(" €/ha", enabled=False)
+        self.spin_precio_paquete_aplicado = self._money_spin(" €", enabled=False)
+        self.spin_max_ha_paquete = self._money_spin(" ha", readonly=True)
+        self.spin_precio_ha_excedente = self._money_spin(" €/ha")
+        self.spin_precio_ha_excedente.setValue(0)
+
+        self.chk_precio_manual = QtWidgets.QCheckBox("Usar precio manual")
+
+        layout.addWidget(self._label("Plan:"), 0, 0)
+        layout.addWidget(self.cmb_plan, 0, 1, 1, 5)
+
+        layout.addWidget(self._label("Concepto:"), 1, 0)
+        layout.addWidget(self.txt_concepto, 1, 1, 1, 3)
+        layout.addWidget(self._label("Modelo:"), 1, 4)
+        layout.addWidget(self.txt_pricing_model, 1, 5)
+
+        layout.addWidget(self._label("Base plan:"), 2, 0)
+        layout.addWidget(self.spin_precio_ha_plan, 2, 1)
+        layout.addWidget(self._label("€/ha aplicado:"), 2, 2)
+        layout.addWidget(self.spin_precio_ha_aplicado, 2, 3)
+        layout.addWidget(self._label("Paquete:"), 2, 4)
+        layout.addWidget(self.spin_precio_paquete_aplicado, 2, 5)
+
+        layout.addWidget(self._label("Máx. paquete:"), 3, 0)
+        layout.addWidget(self.spin_max_ha_paquete, 3, 1)
+        layout.addWidget(self._label("€/ha excedente:"), 3, 2)
+        layout.addWidget(self.spin_precio_ha_excedente, 3, 3)
+        layout.addWidget(self.chk_precio_manual, 3, 4, 1, 2)
+
+        main.addWidget(gb)
+
+    def _build_observaciones_group(self, main):
+        gb = QtWidgets.QGroupBox("Observaciones")
+        layout = QtWidgets.QVBoxLayout(gb)
+        layout.setContentsMargins(8, 10, 8, 8)
+
+        self.txt_observaciones = QtWidgets.QPlainTextEdit()
+        self.txt_observaciones.setPlaceholderText("Observaciones...")
+        self.txt_observaciones.setMaximumHeight(40)
+
+        layout.addWidget(self.txt_observaciones)
+        main.addWidget(gb)
+
+    def _build_lotes_resumen_group(self, main):
+        body = QtWidgets.QHBoxLayout()
+        body.setSpacing(8)
+
+        self._build_lotes_group(body)
+        self._build_resumen_group(body)
+
+        main.addLayout(body, 1)
+
+    def _build_lotes_group(self, body):
+        gb = QtWidgets.QGroupBox("Lotes / items a facturar")
+        layout = QtWidgets.QVBoxLayout(gb)
+        layout.setContentsMargins(8, 10, 8, 8)
+        layout.setSpacing(5)
+
+        self.tree_lotes = QtWidgets.QTreeWidget()
+        self.tree_lotes.setColumnCount(6)
+        self.tree_lotes.setHeaderLabels(["iddata", "Lote", "Cultivo", "Ha reales", "Ha facturadas", "Norma"])
+        self.tree_lotes.setRootIsDecorated(False)
+        self.tree_lotes.setAlternatingRowColors(True)
+        self.tree_lotes.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.tree_lotes.setMinimumHeight(150)
+        self.tree_lotes.setEditTriggers(
+            QtWidgets.QAbstractItemView.DoubleClicked |
+            QtWidgets.QAbstractItemView.SelectedClicked |
+            QtWidgets.QAbstractItemView.EditKeyPressed
+        )
+
+        header = self.tree_lotes.header()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        for col in (2, 3, 4, 5):
+            header.setSectionResizeMode(col, QtWidgets.QHeaderView.ResizeToContents)
+
+        self.lbl_lotes_info = QtWidgets.QLabel(
+            "Doble clic en 'Ha facturadas' para ajustar manualmente la superficie facturada."
+        )
+        self.lbl_lotes_info.setStyleSheet("color: #666;")
+
+        layout.addWidget(self.tree_lotes)
+        layout.addWidget(self.lbl_lotes_info)
+
+        body.addWidget(gb, 3)
+
+    def _build_resumen_group(self, body):
+        gb = QtWidgets.QGroupBox("Resumen")
+        form = QtWidgets.QFormLayout(gb)
+        form.setContentsMargins(8, 10, 8, 8)
+        form.setHorizontalSpacing(8)
+        form.setVerticalSpacing(5)
 
         self.lbl_items = QtWidgets.QLabel("0")
-        self.lbl_subtotal = QtWidgets.QLabel("0.00 €")
-        self.lbl_iva = QtWidgets.QLabel("0.00 €")
-        self.lbl_total = QtWidgets.QLabel("0.00 €")
+        self.lbl_ha_real_total = QtWidgets.QLabel("0,00")
+        self.lbl_ha_fact_total = QtWidgets.QLabel("0,00")
+        self.lbl_ha_excedente = QtWidgets.QLabel("0,00")
+        self.lbl_precio_ha = QtWidgets.QLabel("0,00 €/ha")
+        self.lbl_precio_paquete = QtWidgets.QLabel("0,00 €")
+        self.lbl_precio_excedente = QtWidgets.QLabel("0,00 €/ha")
+        self.lbl_base_excedente = QtWidgets.QLabel("0,00 €")
+        self.lbl_base = QtWidgets.QLabel("0,00 €")
+        self.lbl_iva = QtWidgets.QLabel("0,00 €")
+        self.lbl_total = QtWidgets.QLabel("0,00 €")
 
-        total_font = self.lbl_total.font()
-        total_font.setBold(True)
-        self.lbl_total.setFont(total_font)
+        font = self.lbl_total.font()
+        font.setBold(True)
+        self.lbl_total.setFont(font)
 
-        resumen_layout.addRow("Ítems:", self.lbl_items)
-        resumen_layout.addRow("Subtotal:", self.lbl_subtotal)
-        resumen_layout.addRow("IVA:", self.lbl_iva)
-        resumen_layout.addRow("Total:", self.lbl_total)
+        for label, widget in [
+            ("Items:", self.lbl_items),
+            ("Ha reales:", self.lbl_ha_real_total),
+            ("Ha facturadas:", self.lbl_ha_fact_total),
+            ("Ha excedentes:", self.lbl_ha_excedente),
+            ("Precio ha:", self.lbl_precio_ha),
+            ("Precio paquete:", self.lbl_precio_paquete),
+            ("Precio excedente:", self.lbl_precio_excedente),
+            ("Base excedente:", self.lbl_base_excedente),
+            ("Base imponible:", self.lbl_base),
+            ("IVA:", self.lbl_iva),
+            ("Total:", self.lbl_total),
+        ]:
+            form.addRow(label, widget)
 
-        self.btn_generar = QtWidgets.QPushButton("Emitir factura")
-        self.btn_generar.setMinimumHeight(34)
+        resumen_box = QtWidgets.QVBoxLayout()
+        resumen_box.addWidget(gb)
 
-        resumen_box_layout.addWidget(gb_resumen)
-        resumen_box_layout.addWidget(self.btn_generar)
-        resumen_box_layout.addStretch()
+        self.btn_guardar_borrador = QtWidgets.QPushButton("Guardar borrador")
+        self.btn_emitir = QtWidgets.QPushButton("Emitir factura")
+        self.btn_guardar_borrador.setMinimumHeight(28)
+        self.btn_emitir.setMinimumHeight(30)
 
-        central_layout.addLayout(resumen_box_layout, 1)
+        resumen_box.addWidget(self.btn_guardar_borrador)
+        resumen_box.addWidget(self.btn_emitir)
+        resumen_box.addStretch()
 
-        main_layout.addLayout(central_layout)
+        body.addLayout(resumen_box, 1)
 
-        # ===== Botonera inferior =====
-        bottom_layout = QtWidgets.QHBoxLayout()
+    def _build_bottom(self, main):
+        bottom = QtWidgets.QHBoxLayout()
+        self.btn_cerrar = QtWidgets.QPushButton("Cerrar")
 
-        self.btn_guardar = QtWidgets.QPushButton("Guardar borrador")
-        self.btn_cancelar = QtWidgets.QPushButton("Cerrar")
+        bottom.addStretch()
+        bottom.addWidget(self.btn_cerrar)
 
-        bottom_layout.addStretch()
-        bottom_layout.addWidget(self.btn_guardar)
-        bottom_layout.addWidget(self.btn_cancelar)
+        main.addLayout(bottom)
 
-        main_layout.addLayout(bottom_layout)
+    # ------------------------------------------------------------------
+    # Signals
+    # ------------------------------------------------------------------
 
     def _connect_signals(self):
-        self.btn_cancelar.clicked.connect(self.reject)
-        self.btn_guardar.clicked.connect(self._guardar_factura)
-        self.btn_generar.clicked.connect(self._generar_factura)
+        self.btn_cerrar.clicked.connect(self.reject)
+        self.btn_buscar_agricultor.clicked.connect(self._buscar_agricultor)
+        self.btn_guardar_cliente.clicked.connect(self._guardar_datos_cliente)
 
-        self.btn_add_linea.clicked.connect(self._add_linea)
-        self.btn_edit_linea.clicked.connect(self._edit_linea)
-        self.btn_remove_linea.clicked.connect(self._remove_linea)
-        self.btn_refresh.clicked.connect(self._refresh_lineas)
+        self.date_fecha_emision.dateChanged.connect(
+            lambda date: self.date_fecha_vencimiento.setDate(date.addMonths(1))
+        )
 
-        self.cb_serie.currentIndexChanged.connect(self._update_numero_preview)
+        self.cmb_plan.plan_changed.connect(self._on_plan_changed)
+        self.chk_precio_manual.toggled.connect(self._on_precio_manual_toggled)
 
-    def _init_state(self):
-        self._set_factura_borrador_mode()
+        self.spin_precio_ha_aplicado.valueChanged.connect(self._recalcular_resumen)
+        self.spin_precio_paquete_aplicado.valueChanged.connect(self._recalcular_resumen)
+        self.spin_precio_ha_excedente.valueChanged.connect(self._recalcular_resumen)
+        self.spin_iva.valueChanged.connect(self._recalcular_resumen)
 
-    def _set_factura_borrador_mode(self):
-        self.cb_estado.setCurrentIndex(0)
-        self.le_num_factura.setText("Se asignará al emitir")
+        self.chk_area_minima.toggled.connect(self._reaplicar_area_minima)
+        self.spin_area_minima.valueChanged.connect(self._reaplicar_area_minima)
+
+        self.tree_lotes.itemChanged.connect(self._on_lote_item_changed)
+
+        self.btn_guardar_borrador.clicked.connect(self._guardar_borrador)
+        self.btn_emitir.clicked.connect(self._emitir_factura)
+
+    # ------------------------------------------------------------------
+    # Carga inicial
+    # ------------------------------------------------------------------
 
     def _load_initial_data(self):
-        # self._load_series()
-        self.datos_contrato = self._get_contrato_data()
-        self._load_demo_data()
-        self._recalcular_totales()
+        # self._load_serie()
+        self._load_lotes(self.lotes)
+        self._recalcular_resumen()
 
-    def _get_contrato_data(self):
+    def _load_serie(self):
+        self.cmb_serie.clear()
+        self.cmb_serie.addItem("Z", 1)
+
+    def _load_lotes(self, lotes: list | None = None):
+        self.tree_lotes.blockSignals(True)
+        self.tree_lotes.clear()
+
+        lotes = lotes or []
+
+        for lote in lotes:
+            lote_norm = self._normalizar_lote(lote)
+            ha_real = Decimal(str(lote_norm["area_ha"]))
+            ha_fact = self._calcular_ha_facturada_default(ha_real)
+
+            item = QtWidgets.QTreeWidgetItem([
+                str(lote_norm.get("iddata") or ""),
+                str(lote_norm.get("nombre", "-")),
+                str(lote_norm.get("cultivo", "-")),
+                self._fmt_number(ha_real),
+                self._fmt_number(ha_fact),
+                self._get_norma_text(ha_real),
+            ])
+
+            item.setData(0, Qt.UserRole, lote_norm)
+            item.setFlags(item.flags() | Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable)
+            self.tree_lotes.addTopLevelItem(item)
+
+        self.tree_lotes.blockSignals(False)
+        self._recalcular_resumen()
+
+    # ------------------------------------------------------------------
+    # Agricultor y cliente
+    # ------------------------------------------------------------------
+
+    def _buscar_agricultor(self):
+        dlg = AgricultorSelectDialog(idexplotacion=self.idexplotacion, parent=self)
+
         try:
-            response = self.api.get(f"billing/contratos?idexplotacion={self.idexplotacion}")
-            return response 
+            dlg.table.rowDoubleClicked.disconnect(dlg._on_selected)
+        except Exception:
+            pass
 
+        def on_selected(value, item):
+            dlg.selected_value = value
+            dlg.selected_item = item
+            self._set_agricultor_payer(item)
+            dlg.accept()
 
-        except Exception as e:
-            print(f"[FacturacionDialog] Error cargando datos de contrato: {e}")
-            return {}
-    def _update_numero_preview(self):
-        data = self.cb_serie.currentData()
-        if not data:
-            self.le_num_factura.setText("Se asignará al emitir")
+        dlg.table.rowDoubleClicked.connect(on_selected)
+        dlg.exec_()
+
+    def _set_agricultor_payer(self, agricultor):
+        self._agricultor_payer = agricultor
+        data = self._extract_cliente_data(agricultor)
+
+        self.txt_facturar_a.setText(f"{data['nif']} - {data['razon_social']}".strip(" -"))
+        self.line_razon_social.setText(data["razon_social"])
+        self.line_dni.setText(data["nif"])
+        self.line_direccion.setText(data["direccion"])
+        self.line_provincia.setText(data["provincia"])
+        self.line_municipio.setText(data["municipio"])
+        self.line_cp.setText(data["codigo_postal"])
+        self.line_email.setText(data["email"])
+        self.line_telefono.setText(data["telefono"])
+
+        if data["nif"] and data["nif"][0].isalpha() and data["nif"][0].upper() not in ("X", "Y", "Z"):
+            self.combo_person_type.setCurrentText("J")
+        elif data["nif"]:
+            self.combo_person_type.setCurrentText("F")
+
+    def _extract_cliente_data(self, agricultor) -> dict:
+        if not isinstance(agricultor, dict):
+            return {
+                "idagricultor": getattr(agricultor, "idagricultor", None) or getattr(agricultor, "id", None),
+                "razon_social": getattr(agricultor, "nombre_completo", "") or "",
+                "nif": getattr(agricultor, "dni", "") or "",
+                "direccion": getattr(agricultor, "direccion", "") or "",
+                "provincia": getattr(agricultor, "provincia", "") or "",
+                "municipio": getattr(agricultor, "municipio", "") or "",
+                "codigo_postal": getattr(agricultor, "codigo_postal", "") or getattr(agricultor, "cp", "") or "",
+                "email": getattr(agricultor, "email", "") or "",
+                "telefono": getattr(agricultor, "telefono", "") or getattr(agricultor, "movil", "") or "",
+            }
+
+        persona = agricultor.get("persona") or {}
+        explotacion = agricultor.get("explotacion") or {}
+
+        return {
+            "idagricultor": agricultor.get("idagricultor") or agricultor.get("id") or agricultor.get("idpersona"),
+            "razon_social": persona.get("nombre_completo") or agricultor.get("nombre_completo") or agricultor.get("nombre") or "",
+            "nif": persona.get("dni") or agricultor.get("dni") or "",
+            "direccion": persona.get("direccion") or explotacion.get("direccion") or "",
+            "provincia": persona.get("provincia") or explotacion.get("provincia") or "",
+            "municipio": persona.get("municipio") or explotacion.get("municipio") or "",
+            "codigo_postal": (
+                persona.get("codigo_postal")
+                or persona.get("cp")
+                or explotacion.get("codigo_postal")
+                or explotacion.get("cp")
+                or ""
+            ),
+            "email": persona.get("email") or agricultor.get("email") or "",
+            "telefono": (
+                persona.get("telefono")
+                or persona.get("movil")
+                or agricultor.get("telefono")
+                or agricultor.get("movil")
+                or ""
+            ),
+        }
+
+    def _get_idagricultor_payer(self):
+        data = self._extract_cliente_data(self._agricultor_payer) if self._agricultor_payer else {}
+        return data.get("idagricultor")
+
+    def _guardar_datos_cliente(self):
+        idagricultor = self._get_idagricultor_payer()
+
+        if not idagricultor:
+            QtWidgets.QMessageBox.warning(self, "Facturación", "Selecciona primero un agricultor/cliente.")
             return
 
-        activo = data.get("activo", True)
-        letra = data.get("letra")
-        anio = data.get("anio")
-        next_num = data.get("next_num")
+        payload = {"idagricultor": int(idagricultor), **self._cliente_payload()}
 
-        if not activo:
-            self.le_num_factura.setText("Serie inactiva")
+        if not payload["razon_social"] or not payload["nif"]:
+            QtWidgets.QMessageBox.warning(self, "Facturación", "Razón social y NIF/CIF son obligatorios.")
             return
 
-        if letra and anio and next_num is not None:
-            self.le_num_factura.setText(f"Próximo estimado: {letra}-{anio}-{int(next_num):06d}")
+        print("[GUARDAR DATOS CLIENTE]", payload)
+        QtWidgets.QMessageBox.information(self, "Facturación", "Datos del cliente preparados correctamente. Modo demo.")
+
+    # ------------------------------------------------------------------
+    # Lotes e items
+    # ------------------------------------------------------------------
+
+    def _normalizar_lote(self, lote):
+        if isinstance(lote, dict):
+            return {
+                "iddata": lote.get("iddata"),
+                "idlote": lote.get("idlote"),
+                "nombre": lote.get("nombre") or lote.get("lote") or lote.get("name") or "-",
+                "cultivo": lote.get("cultivo") or lote.get("nombre_cultivo") or "-",
+                "area_ha": float(lote.get("area_ha") or lote.get("ha") or lote.get("area") or 0),
+                "raw": lote,
+            }
+
+        attrs = lote.attributes()
+        fields = lote.fields()
+
+        def val(*names, default=None):
+            for name in names:
+                idx = fields.indexFromName(name)
+                if idx >= 0:
+                    return attrs[idx]
+            return default
+
+        return {
+            "iddata": val("iddata", "IDDATA", "id_data"),
+            "idlote": val("idlote", "IDLOTE", "id_lote"),
+            "nombre": val("lote", "nombre", "name", "LOTE", "NOMBRE", default="-"),
+            "cultivo": val("cultivo", "nombre_cultivo", "CULTIVO", default="-"),
+            "area_ha": float(val("area_ha", "ha", "sup_ha", "AREA_HA", "area", default=0) or 0),
+            "raw": None,
+        }
+
+    def _get_lotes_items(self):
+        items = []
+
+        for i in range(self.tree_lotes.topLevelItemCount()):
+            item = self.tree_lotes.topLevelItem(i)
+            lote = item.data(0, Qt.UserRole)
+
+            if not isinstance(lote, dict):
+                continue
+
+            iddata = lote.get("iddata")
+
+            items.append({
+                "iddata": int(iddata) if iddata is not None and str(iddata).strip() else None,
+                "area_ha_facturada": float(self._money_like(self._to_decimal(item.text(4)))),
+            })
+
+        return items
+
+    def _sum_lote_decimal(self, source: str) -> Decimal:
+        total = Decimal("0")
+
+        for i in range(self.tree_lotes.topLevelItemCount()):
+            item = self.tree_lotes.topLevelItem(i)
+
+            if source == "real":
+                lote = item.data(0, Qt.UserRole)
+                if isinstance(lote, dict):
+                    total += Decimal(str(lote.get("area_ha") or 0))
+            else:
+                total += self._to_decimal(item.text(4))
+
+        return total
+
+    # ------------------------------------------------------------------
+    # Norma de área mínima
+    # ------------------------------------------------------------------
+
+    def _calcular_ha_facturada_default(self, ha_real: Decimal) -> Decimal:
+        if not self.chk_area_minima.isChecked():
+            return ha_real
+
+        area_minima = Decimal(str(self.spin_area_minima.value()))
+        return area_minima if ha_real < area_minima else ha_real
+
+    def _get_norma_text(self, ha_real: Decimal) -> str:
+        if not self.chk_area_minima.isChecked():
+            return ""
+
+        area_minima = Decimal(str(self.spin_area_minima.value()))
+        return f"Mín. {self._fmt_number(area_minima)} ha" if ha_real < area_minima else ""
+
+    def _reaplicar_area_minima(self):
+        self.spin_area_minima.setEnabled(self.chk_area_minima.isChecked())
+        self.tree_lotes.blockSignals(True)
+
+        for i in range(self.tree_lotes.topLevelItemCount()):
+            item = self.tree_lotes.topLevelItem(i)
+            lote = item.data(0, Qt.UserRole)
+
+            if not isinstance(lote, dict):
+                continue
+
+            ha_real = Decimal(str(lote.get("area_ha") or 0))
+            item.setText(4, self._fmt_number(self._calcular_ha_facturada_default(ha_real)))
+            item.setText(5, self._get_norma_text(ha_real))
+
+        self.tree_lotes.blockSignals(False)
+        self._recalcular_resumen()
+
+    # ------------------------------------------------------------------
+    # Plan y precio
+    # ------------------------------------------------------------------
+
+    def _on_plan_changed(self, plan):
+        self._current_plan = plan if isinstance(plan, dict) else None
+
+        if isinstance(plan, dict):
+            nombre = plan.get("nombre", "")
+            pricing_model = plan.get("pricing_model") or "PER_HA"
+            precio_base = float(plan.get("precio_base") or 0)
+            max_ha = float(plan.get("max_ha") or 0)
+            precio_excedente = float(plan.get("precio_ha_excedente") or 0)
         else:
-            self.le_num_factura.setText("Se asignará al emitir")
+            nombre = self.cmb_plan.currentText() if plan else ""
+            pricing_model = "PER_HA"
+            precio_base = 0
+            max_ha = 0
+            precio_excedente = 0
 
-    def _load_demo_data(self):
-        self.tree_facturacion.clear()
+        self._set_plan_values(nombre, pricing_model, precio_base, max_ha, precio_excedente)
 
-        demo_items = [
-            ("Plan abonado variable", "1", "250.00", "250.00", "PENDIENTE"),
-            ("Muestreo de suelo", "2", "45.00", "90.00", "PENDIENTE"),
-            ("Procesado NDVI", "1", "75.00", "75.00", "PENDIENTE"),
+    def _set_plan_values(self, nombre: str, pricing_model: str, precio_base: float, max_ha: float = 0, precio_excedente: float = 0):
+        self.txt_concepto.setText(nombre)
+        self.txt_pricing_model.setText(pricing_model)
+
+        is_package = pricing_model == "PACKAGE"
+
+        self.spin_precio_ha_plan.setValue(0 if is_package else precio_base)
+        self.spin_precio_ha_aplicado.setValue(0 if is_package else precio_base)
+        self.spin_precio_paquete_aplicado.setValue(precio_base if is_package else 0)
+        self.spin_max_ha_paquete.setValue(max_ha if is_package else 0)
+        self.spin_precio_ha_excedente.setValue(precio_excedente if is_package else 0)
+
+        self.spin_max_ha_paquete.setEnabled(False)
+        self.spin_precio_ha_excedente.setEnabled(is_package)
+
+        self._aplicar_estado_precio_por_modelo()
+        self._recalcular_resumen()
+
+    def _on_precio_manual_toggled(self, checked: bool):
+        self._aplicar_estado_precio_por_modelo()
+
+        if checked:
+            return
+
+        plan = self._get_current_plan_dict()
+        pricing_model = self.txt_pricing_model.text() or "PER_HA"
+
+        precio_base = float((plan or {}).get("precio_base") or 0)
+        max_ha = float((plan or {}).get("max_ha") or 0)
+        precio_excedente = float((plan or {}).get("precio_ha_excedente") or 0)
+
+        if pricing_model == "PACKAGE":
+            self.spin_precio_paquete_aplicado.setValue(precio_base)
+            self.spin_max_ha_paquete.setValue(max_ha)
+            self.spin_precio_ha_excedente.setValue(precio_excedente)
+        else:
+            self.spin_precio_ha_aplicado.setValue(precio_base)
+
+        self._recalcular_resumen()
+
+    def _get_current_plan_dict(self):
+        if isinstance(self._current_plan, dict):
+            return self._current_plan
+
+        data = self.cmb_plan.currentData()
+        return data if isinstance(data, dict) else None
+
+    def _aplicar_estado_precio_por_modelo(self):
+        manual = self.chk_precio_manual.isChecked()
+        pricing_model = self.txt_pricing_model.text() or "PER_HA"
+
+        self.spin_precio_ha_aplicado.setEnabled(manual and pricing_model != "PACKAGE")
+        self.spin_precio_paquete_aplicado.setEnabled(manual and pricing_model == "PACKAGE")
+        self.spin_precio_ha_excedente.setEnabled(pricing_model == "PACKAGE")
+
+    # ------------------------------------------------------------------
+    # Edición de tabla
+    # ------------------------------------------------------------------
+
+    def _on_lote_item_changed(self, item: QtWidgets.QTreeWidgetItem, column: int):
+        if column != 4:
+            return
+
+        value = max(self._to_decimal(item.text(4)), Decimal("0"))
+
+        self.tree_lotes.blockSignals(True)
+        item.setText(4, self._fmt_number(value))
+
+        lote = item.data(0, Qt.UserRole)
+        if isinstance(lote, dict):
+            ha_real = Decimal(str(lote.get("area_ha") or 0))
+            item.setText(5, self._get_norma_text(ha_real))
+
+        self.tree_lotes.blockSignals(False)
+        self._recalcular_resumen()
+
+    # ------------------------------------------------------------------
+    # Cálculos
+    # ------------------------------------------------------------------
+
+    def _calcular_importes(self):
+        pricing_model = self.txt_pricing_model.text() or "PER_HA"
+
+        ha_reales = self._money_like(self._sum_lote_decimal("real"))
+        ha_facturadas = self._money_like(self._sum_lote_decimal("facturada"))
+
+        precio_ha = self._money_like(Decimal(str(self.spin_precio_ha_aplicado.value())))
+        precio_paquete = self._money_like(Decimal(str(self.spin_precio_paquete_aplicado.value())))
+        precio_excedente = self._money_like(Decimal(str(self.spin_precio_ha_excedente.value())))
+        max_ha = self._money_like(Decimal(str(self.spin_max_ha_paquete.value())))
+        iva_pct = self._money_like(Decimal(str(self.spin_iva.value())))
+
+        if pricing_model == "PACKAGE":
+            ha_excedente = max(Decimal("0"), ha_facturadas - max_ha)
+            base_excedente = ha_excedente * precio_excedente
+            base = precio_paquete + base_excedente
+        else:
+            ha_excedente = Decimal("0")
+            base_excedente = Decimal("0")
+            base = ha_facturadas * precio_ha
+
+        iva = base * iva_pct / Decimal("100")
+
+        return {
+            "pricing_model": pricing_model,
+            "ha_reales": self._money_like(ha_reales),
+            "ha_facturadas": self._money_like(ha_facturadas),
+            "ha_excedente": self._money_like(ha_excedente),
+            "max_ha_paquete": self._money_like(max_ha),
+            "precio_ha": self._money_like(precio_ha),
+            "precio_paquete": self._money_like(precio_paquete),
+            "precio_ha_excedente": self._money_like(precio_excedente),
+            "base_excedente": self._money_like(base_excedente),
+            "iva_pct": self._money_like(iva_pct),
+            "base": self._money_like(base),
+            "iva": self._money_like(iva),
+            "total": self._money_like(base + iva),
+        }
+
+    def _recalcular_resumen(self):
+        calc = self._calcular_importes()
+
+        self.lbl_items.setText(str(len(self._get_lotes_items())))
+        self.lbl_ha_real_total.setText(self._fmt_number(calc["ha_reales"]))
+        self.lbl_ha_fact_total.setText(self._fmt_number(calc["ha_facturadas"]))
+        self.lbl_ha_excedente.setText(self._fmt_number(calc["ha_excedente"]))
+        self.lbl_precio_ha.setText(f"{self._fmt_money(calc['precio_ha'])}/ha")
+        self.lbl_precio_paquete.setText(self._fmt_money(calc["precio_paquete"]))
+        self.lbl_precio_excedente.setText(f"{self._fmt_money(calc['precio_ha_excedente'])}/ha")
+        self.lbl_base_excedente.setText(self._fmt_money(calc["base_excedente"]))
+        self.lbl_base.setText(self._fmt_money(calc["base"]))
+        self.lbl_iva.setText(self._fmt_money(calc["iva"]))
+        self.lbl_total.setText(self._fmt_money(calc["total"]))
+
+    # ------------------------------------------------------------------
+    # Payload
+    # ------------------------------------------------------------------
+
+    def _cliente_payload(self) -> dict:
+        return {
+            "razon_social": self.line_razon_social.text().strip(),
+            "nif": self.line_dni.text().strip(),
+            "person_type": self.combo_person_type.currentText() if self.combo_person_type.currentIndex() > 0 else None,
+            "direccion": self.line_direccion.text().strip(),
+            "provincia": self.line_provincia.text().strip(),
+            "municipio": self.line_municipio.text().strip(),
+            "codigo_postal": self.line_cp.text().strip(),
+            "pais": self.line_pais.text().strip() or "ESP",
+            "email": self.line_email.text().strip(),
+            "telefono": self.line_telefono.text().strip(),
+        }
+
+    def _collect_data(self):
+        calc = self._calcular_importes()
+        pricing_model = calc["pricing_model"]
+
+        return {
+            "factura": {
+                "idempresa": 1,
+                "idexplotacion": int(self.idexplotacion),
+                "idagricultor_payer": self._get_idagricultor_payer(),
+                "modo": "UNICA",
+                "idserie": self.cmb_serie.currentData(),
+                "fecha_emision": self.date_fecha_emision.date().toString("yyyy-MM-dd"),
+                "fecha_vencimiento": self.date_fecha_vencimiento.date().toString("yyyy-MM-dd"),
+            },
+            "cliente": self._cliente_payload(),
+            "linea": {
+                "idplan": self.cmb_plan.get_current_plan_id(),
+                "concepto": self.txt_concepto.text().strip(),
+                "pricing_model": pricing_model,
+                "ha_facturadas": float(calc["ha_facturadas"]),
+                "precio_ha_aplicado": float(calc["precio_ha"]) if pricing_model == "PER_HA" else None,
+                "precio_paquete_aplicado": float(calc["precio_paquete"]) if pricing_model == "PACKAGE" else None,
+                "iva_pct": float(calc["iva_pct"]),
+                "anio_ipc_aplicado": None,
+                "factor_ipc_aplicado": None,
+            },
+            "items": self._get_lotes_items(),
+            "config": {
+                "aplicar_area_minima": self.chk_area_minima.isChecked(),
+                "area_minima_ha": float(Decimal(str(self.spin_area_minima.value()))),
+                "aplicar_exceso_paquete": pricing_model == "PACKAGE",
+                "max_ha_paquete": float(calc["max_ha_paquete"]) if pricing_model == "PACKAGE" else 0,
+                "precio_exceso_ha": float(calc["precio_ha_excedente"]) if pricing_model == "PACKAGE" else 0,
+            },
+        }
+
+    # ------------------------------------------------------------------
+    # Validaciones y acciones
+    # ------------------------------------------------------------------
+
+    def _validar_payload(self, payload: dict) -> bool:
+        factura = payload.get("factura") or {}
+        cliente = payload.get("cliente") or {}
+        linea = payload.get("linea") or {}
+        items = payload.get("items") or []
+
+        checks = [
+            (factura.get("idagricultor_payer"), "Selecciona el agricultor/persona a facturar."),
+            (factura.get("idserie"), "Selecciona una serie de facturación."),
+            (cliente.get("razon_social"), "La razón social/nombre del cliente es obligatoria."),
+            (cliente.get("nif"), "El NIF/CIF del cliente es obligatorio."),
+            (cliente.get("person_type"), "Selecciona el tipo de persona: F o J."),
+            (cliente.get("direccion"), "La dirección del cliente es obligatoria para FacturaE."),
+            (
+                cliente.get("provincia") and cliente.get("municipio") and cliente.get("codigo_postal"),
+                "Provincia, municipio y código postal son obligatorios para FacturaE."
+            ),
+            (linea.get("idplan"), "Selecciona un plan."),
+            (linea.get("concepto"), "El concepto está vacío."),
+            (items, "No hay lotes/items para facturar."),
         ]
 
-        for item_data in demo_items:
-            item = QtWidgets.QTreeWidgetItem(item_data)
-            self.tree_facturacion.addTopLevelItem(item)
+        for ok, message in checks:
+            if not ok:
+                QtWidgets.QMessageBox.warning(self, "Facturación", message)
+                return False
 
-    def _recalcular_totales(self):
-        subtotal = Decimal("0")
-        total_items = self.tree_facturacion.topLevelItemCount()
+        for item in items:
+            if not item.get("iddata"):
+                QtWidgets.QMessageBox.warning(self, "Facturación", "Hay un lote sin iddata. Revisa la capa seleccionada.")
+                return False
 
-        for i in range(total_items):
-            item = self.tree_facturacion.topLevelItem(i)
-            subtotal += self._to_decimal(item.text(3))
+            if float(item.get("area_ha_facturada") or 0) <= 0:
+                QtWidgets.QMessageBox.warning(self, "Facturación", "Hay un item con área facturada menor o igual a 0.")
+                return False
 
-        iva = (subtotal * self.IVA_DEFAULT) / Decimal("100")
-        total = subtotal + iva
+        if linea.get("pricing_model") == "PACKAGE":
+            if float(linea.get("precio_paquete_aplicado") or 0) <= 0:
+                QtWidgets.QMessageBox.warning(self, "Facturación", "El precio paquete debe ser mayor que 0.")
+                return False
+        else:
+            if float(linea.get("precio_ha_aplicado") or 0) <= 0:
+                QtWidgets.QMessageBox.warning(self, "Facturación", "El precio por hectárea debe ser mayor que 0.")
+                return False
 
-        self.lbl_items.setText(str(total_items))
-        self.lbl_subtotal.setText(self._format_eur(subtotal))
-        self.lbl_iva.setText(self._format_eur(iva))
-        self.lbl_total.setText(self._format_eur(total))
+        return True
 
-    def _to_decimal(self, value):
-        if value is None:
-            return Decimal("0")
+    def _guardar_borrador(self):
+        self._solicitar_factura_pdf(emitir=False)
 
-        txt = str(value).strip().replace("€", "").replace(",", ".")
-        if not txt:
-            return Decimal("0")
+    def _emitir_factura(self):
+        payload = self._collect_data()
+
+        if not self._validar_payload(payload):
+            return
+
+        calc = self._calcular_importes()
+
+        confirm = QtWidgets.QMessageBox.question(
+            self,
+            "Emitir factura",
+            (
+                "¿Confirma que desea emitir esta factura?\n\n"
+                f"Cliente: {payload['cliente']['razon_social']}\n"
+                f"Concepto: {payload['linea']['concepto']}\n"
+                f"Items: {len(payload['items'])}\n"
+                f"Ha facturadas: {payload['linea']['ha_facturadas']:.2f}\n"
+                f"Base: {float(calc['base']):.2f} €\n"
+                f"IVA: {float(calc['iva']):.2f} €\n"
+                f"Total: {float(calc['total']):.2f} €"
+            ),
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+
+        if confirm != QtWidgets.QMessageBox.Yes:
+            return
+
+        self._solicitar_factura_pdf(emitir=True)
+
+    # ------------------------------------------------------------------
+    # PDF
+    # ------------------------------------------------------------------
+
+    def _solicitar_factura_pdf(self, emitir: bool):
+        """
+        Genera/emite la factura y descarga posteriormente el PDF.
+        """
+
+        payload = self._collect_data()
+
+        if not self._validar_payload(payload):
+            return
+
+        endpoint = f"/billing/facturar_por_data?emitir={'true' if emitir else 'false'}"
+
+        # El endpoint devuelve JSON con idfactura
+        response = self._api_request.post(endpoint, payload)
+
+        print("[FACTURA RESPONSE]", response)
+
+        if not response:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Facturación",
+                "El backend no devolvió respuesta."
+            )
+            return
+
+        uid = response.get("uid")
+
+        if not uid:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Facturación",
+                f"No se recibió idfactura.\n\nRespuesta:\n{response}"
+            )
+            return
+
+        # Descargar PDF real
+        pdf_response = self._api_request.get_binary(
+            f"/billing/facturas/{uid}/pdf"
+        )
+
+        print("[PDF RESPONSE]", pdf_response)
+
+        self._guardar_pdf_factura(pdf_response, emitir)
+
+
+    def _guardar_pdf_factura(self, response: dict, emitir: bool):
+        """
+        Guarda el PDF devuelto por backend usando el filename enviado
+        en Content-Disposition.
+        """
+
+        if not response or not response.get("ok"):
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Facturación",
+                f"No se pudo descargar el PDF.\n\n{response}"
+            )
+            return
+
+        content = response.get("content")
+
+        if not content:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Facturación",
+                "El backend no devolvió contenido PDF."
+            )
+            return
+
+        filename = self._get_pdf_filename(
+            response.get("headers", {}) or {},
+            emitir
+        )
+
+        path, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self,
+            "Guardar factura PDF",
+            filename,
+            "PDF (*.pdf)"
+        )
+
+        if not path:
+            return
+
+        if not path.lower().endswith(".pdf"):
+            path += ".pdf"
+
+        try:
+            with open(path, "wb") as f:
+                f.write(content)
+
+            QtWidgets.QMessageBox.information(
+                self,
+                "Facturación",
+                f"Factura guardada correctamente:\n{path}"
+            )
+
+        except Exception as ex:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Facturación",
+                f"No se pudo guardar el PDF.\n\n{ex}"
+            )
+
+
+    def _get_pdf_filename(self, headers: dict, emitir: bool) -> str:
+        """
+        Obtiene el nombre del PDF desde Content-Disposition.
+        """
+
+        disposition = ""
+
+        for key, value in headers.items():
+            if key.lower() == "content-disposition":
+                disposition = value or ""
+                break
+
+        filename = None
+
+        try:
+            if "filename=" in disposition:
+                filename = disposition.split("filename=")[-1]
+                filename = filename.strip().strip('"').strip("'")
+        except Exception:
+            filename = None
+
+        if filename:
+            if not filename.lower().endswith(".pdf"):
+                filename += ".pdf"
+
+            return filename
+
+        tipo = "factura_emitida" if emitir else "factura_borrador"
+
+        return f"{tipo}.pdf"
+    
+    # ------------------------------------------------------------------
+    # Formato y decimales
+    # ------------------------------------------------------------------
+
+    def _to_decimal(self, value) -> Decimal:
+        txt = str(value or "0").strip()
+        txt = txt.replace("€", "").replace("/ha", "").replace("ha", "").strip()
+        txt = txt.replace(".", "").replace(",", ".")
 
         try:
             return Decimal(txt)
-        except (InvalidOperation, ValueError):
+        except Exception:
             return Decimal("0")
 
-    def _format_eur(self, value: Decimal) -> str:
-        return f"{value.quantize(Decimal('0.01'))} €"
+    def _money_like(self, value: Decimal) -> Decimal:
+        return Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-    def _get_selected_item(self):
-        items = self.tree_facturacion.selectedItems()
-        return items[0] if items else None
+    def _fmt_money(self, value: Decimal) -> str:
+        return f"{self._money_like(value):,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
-    def _add_linea(self):
-        item = QtWidgets.QTreeWidgetItem([
-            "Nuevo concepto",
-            "1",
-            "0.00",
-            "0.00",
-            "PENDIENTE"
-        ])
-        self.tree_facturacion.addTopLevelItem(item)
-        self.tree_facturacion.setCurrentItem(item)
-        self._recalcular_totales()
-
-    def _edit_linea(self):
-        item = self._get_selected_item()
-        if not item:
-            QtWidgets.QMessageBox.warning(self, "Facturación", "Selecciona una línea para editar.")
-            return
-
-        QtWidgets.QMessageBox.information(
-            self,
-            "Facturación",
-            f"Edición pendiente de implementar.\n\nConcepto actual: {item.text(0)}"
-        )
-
-    def _remove_linea(self):
-        item = self._get_selected_item()
-        if not item:
-            QtWidgets.QMessageBox.warning(self, "Facturación", "Selecciona una línea para quitar.")
-            return
-
-        index = self.tree_facturacion.indexOfTopLevelItem(item)
-        self.tree_facturacion.takeTopLevelItem(index)
-        self._recalcular_totales()
-
-    def _refresh_lineas(self):
-        QtWidgets.QMessageBox.information(
-            self,
-            "Facturación",
-            "Recarga pendiente de implementar."
-        )
-
-    def _guardar_factura(self):
-        payload = self._collect_data()
-        print("[GUARDAR BORRADOR]", payload)
-
-        QtWidgets.QMessageBox.information(
-            self,
-            "Facturación",
-            "Guardado como borrador pendiente de integración con API."
-        )
-
-    def _generar_factura(self):
-        serie_data = self.cb_serie.currentData()
-        if not serie_data or not serie_data.get("idserie"):
-            QtWidgets.QMessageBox.warning(
-                self,
-                "Facturación",
-                "Debes seleccionar una serie válida antes de emitir."
-            )
-            return
-
-        if not serie_data.get("activo", True):
-            QtWidgets.QMessageBox.warning(
-                self,
-                "Facturación",
-                "La serie seleccionada está inactiva."
-            )
-            return
-
-        if self.tree_facturacion.topLevelItemCount() == 0:
-            QtWidgets.QMessageBox.warning(
-                self,
-                "Facturación",
-                "La factura no tiene líneas."
-            )
-            return
-
-        payload = self._collect_data()
-        print("[EMITIR FACTURA]", payload)
-
-        QtWidgets.QMessageBox.information(
-            self,
-            "Facturación",
-            "Emisión pendiente de integrar con API."
-        )
-
-        # print(self.datos_contrato)
-
-    def _collect_data(self):
-        lineas = []
-
-        for i in range(self.tree_facturacion.topLevelItemCount()):
-            item = self.tree_facturacion.topLevelItem(i)
-            lineas.append({
-                "concepto": item.text(0),
-                "cantidad": item.text(1),
-                "precio_unitario": item.text(2),
-                "importe": item.text(3),
-                "estado": item.text(4),
-            })
-
-        serie_data = self.cb_serie.currentData() or {}
-
-        return {
-            "idexplotacion": self.idexplotacion,
-            "idserie": serie_data.get("idserie"),
-            "serie_label": self.cb_serie.currentText(),
-            "numero_factura_preview": self.le_num_factura.text().strip(),
-            "fecha": self.de_fecha.date().toString("yyyy-MM-dd"),
-            "estado": self.cb_estado.currentData(),
-            "observaciones": self.te_observaciones.toPlainText().strip(),
-            "lineas": lineas,
-        }
+    def _fmt_number(self, value: Decimal) -> str:
+        return f"{self._money_like(value):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")

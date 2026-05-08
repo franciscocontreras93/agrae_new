@@ -1093,7 +1093,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         pass
 
     def crearFacturaDialog(self):
-        dlg = FacturacionDialog(idexplotacion=self.combo_explotacion.get_current_id())
+        lotes = [f for f in self.layer.selectedFeatures()]
+        dlg = FacturacionDialog(idexplotacion=self.combo_explotacion.get_current_id(), lotes=lotes)
         dlg.exec_()
 
         pass

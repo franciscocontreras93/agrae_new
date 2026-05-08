@@ -33,12 +33,14 @@ from ...core.models import (
     ExplotacionesTableModel,
     AsesoresTableModel,
     DistribuidoresTableModel,
+    FacturasTableModel,
     # MAPPERS
     map_agricultores, 
     map_personas, 
     map_explotacion,
     map_asesores,
-    map_distribuidores
+    map_distribuidores,
+    map_facturas,
     )
 
 
@@ -423,7 +425,6 @@ class AsesorSearchTable(SearchTableWidget):
 
         self.table.setColumnHidden(0, True)  # ocultar columna ID
 
-
 class DistribuidorSearchTable(SearchTableWidget):
     def __init__(self ,parent=None):
         super().__init__(
@@ -439,6 +440,22 @@ class DistribuidorSearchTable(SearchTableWidget):
 
         self.table.setColumnHidden(0, True)  # ocultar columna ID
 
+# FACTURACION
 
+class FacturasSearchTable(SearchTableWidget):
+    def __init__(self ,parent=None):
+        super().__init__(
+            model=FacturasTableModel(),
+            endpoint='/billing/facturas/',
+            map_func=map_facturas,
+            placeholder="Buscar factura...",
+            local_filter=True,
+            emit_field="uid",
+            parent=parent
+        )
+
+
+        self.table.setColumnHidden(0, True)  # ocultar columna ID
+        self.table.setColumnHidden(1, True)  # ocultar columna UID
 
    

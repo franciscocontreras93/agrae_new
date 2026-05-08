@@ -35,11 +35,16 @@ class agraeDataBaseDriver():
                 'port': self.s.value('dbport')
             }
 
+    def getServiceName(self):
+        return 'agrae_local' if self.local else 'agrae_prod'
+
     def connection(self):
-        if self.local:
-            return psycopg2.connect(service='local' , user=self.dsn['user'] ,password=self.dsn['password'])
-        else :
-            return psycopg2.connect(service='production' , user=self.dsn['user'] ,password=self.dsn['password'])
+        # if self.local:
+        #     return psycopg2.connect(service='local' , user=self.dsn['user'] ,password=self.dsn['password'])
+        # else :
+        #     return psycopg2.connect(service='production' , user=self.dsn['user'] ,password=self.dsn['password'])
+        return psycopg2.connect(service=self.getServiceName() )
+    
     def getDSN(self):
         return self.dsn
     

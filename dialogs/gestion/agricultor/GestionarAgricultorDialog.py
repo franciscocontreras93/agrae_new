@@ -106,7 +106,7 @@ class GestionAgricultorDialog(QDialog):
         self.btn_asesor.clicked.connect(self._dialog_asesor)
 
     def _on_row_double_clicked(self, value, item):
-        self.idAgricultorSignal.emit(value)
+        self.idAgricultorSignal.emit(item)
 
     def _on_selection_changed(self, *args):
         item = self.search_table.selected_item()

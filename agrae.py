@@ -1,3 +1,5 @@
+import os
+
 from qgis.PyQt.QtWidgets import *
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QCoreApplication, Qt,QSize
@@ -11,12 +13,19 @@ from .dialogs.config_dialog import agraeConfigDialog
 from .dialogs.gee_dialog import aGraeGEEDialog
 from .dialogs.lab_dialog import GestionLaboratorioDialog
 
+from .dialogs.gestion_facturas_dialog import FacturasConsultaDialog
+
 
 from .db import agraeDataBaseDriver
 from .tools import aGraeTools
 
 from .dialogs import aGraeDialogs
 
+
+PLUGIN_DIR = os.path.dirname(__file__)
+PG_SERVICE_PATH = os.path.join(PLUGIN_DIR, 'pg_service.conf')
+
+os.environ['PGSERVICEFILE'] = PG_SERVICE_PATH
 
 
 class aGraeToolbox:
@@ -181,17 +190,33 @@ class aGraeToolbox:
     def agraeDock(self):
         try:
             self.lotesLayer = QgsProject.instance().mapLayersByName('aGrae Lotes')[0]
-        except IndexError:
-            dsn = agraeDataBaseDriver().getDSN()
-            uri = QgsDataSourceUri()
-            uri.setConnection(dsn['host'],dsn['port'],dsn['dbname'],dsn['user'],dsn['password'])
-            uri.setDataSource('public','lotes','geom','','id')
-            self.lotesLayer = QgsVectorLayer(uri.uri(),'aGrae Lotes','postgres')
-            QgsProject.instance().addMapLayer(self.lotesLayer)
-            pass
-        self.dock = agraeToolsDockwidget(self.lotesLayer)
 
-        # self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dock)
+        except IndexError:
+            db = agraeDataBaseDriver()
+            service_name = db.getServiceName()
+
+            uri = QgsDataSourceUri()
+            uri.setConnection(
+                f"service={service_name}",
+                "",
+                "",
+                "",
+                ""
+            )
+            uri.setDataSource('public', 'lotes', 'geom', '', 'id')
+
+            self.lotesLayer = QgsVectorLayer(
+                uri.uri(False),
+                'aGrae Lotes',
+                'postgres'
+            )
+
+            if not self.lotesLayer.isValid():
+                raise Exception(f"No se pudo cargar la capa aGrae Lotes usando service={service_name}")
+
+            QgsProject.instance().addMapLayer(self.lotesLayer)
+
+        self.dock = agraeToolsDockwidget(self.lotesLayer)
 
     def agraeConfig(self):
         dialog = agraeConfigDialog()
@@ -203,7 +228,11 @@ class aGraeToolbox:
         dialog.exec()
 
     def mapasSolares(self):
-        dialog = aGraeGEEDialog()
+        # dialog = aGraeGEEDialog()
+        # dialog.exec()
+
+        dialog = FacturasConsultaDialog()
         dialog.exec()
+        
 
     

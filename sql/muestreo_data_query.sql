@@ -9,6 +9,7 @@ muestras as (select
 	d.explotacion,
 	d.lote,
 	m.codigo,
+	m.fecha::text as fecha_muestreo,
 	cp.nombre as prioridad,
 	cs.nombre as tipo_muestra,
 	(case

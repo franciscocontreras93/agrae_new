@@ -350,9 +350,10 @@ class ContratosDialog(QtWidgets.QDialog):
     # ==================================================================================================
 
     def _on_plan_changed(self, plan: dict):
+        print(plan)
         if plan is None:
             return
-        self.spin_precio_plan.setValue(plan.get("precio_base", 0))
+        self.spin_precio_plan.setValue(float(plan.get("precio_base", 0)))
 
 
     def _on_fecha_desde_changed(self, Date: QtCore.QDate):
