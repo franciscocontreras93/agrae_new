@@ -22,10 +22,7 @@ from .tools import aGraeTools
 from .dialogs import aGraeDialogs
 
 
-PLUGIN_DIR = os.path.dirname(__file__)
-PG_SERVICE_PATH = os.path.join(PLUGIN_DIR, 'pg_service.conf')
 
-os.environ['PGSERVICEFILE'] = PG_SERVICE_PATH
 
 
 class aGraeToolbox:
@@ -187,22 +184,18 @@ class aGraeToolbox:
         # self.lotesDialog.show()
         self.tools.getLotesLayer()
 
+    
     def agraeDock(self):
         try:
             self.lotesLayer = QgsProject.instance().mapLayersByName('aGrae Lotes')[0]
 
         except IndexError:
             db = agraeDataBaseDriver()
-            service_name = db.getServiceName()
 
             uri = QgsDataSourceUri()
-            uri.setConnection(
-                f"service={service_name}",
-                "",
-                "",
-                "",
-                ""
-            )
+            uri.setParam("service", db.getServiceName())
+
+            # Igual que ayer: tabla directa public.lotes
             uri.setDataSource('public', 'lotes', 'geom', '', 'id')
 
             self.lotesLayer = QgsVectorLayer(
@@ -212,12 +205,15 @@ class aGraeToolbox:
             )
 
             if not self.lotesLayer.isValid():
-                raise Exception(f"No se pudo cargar la capa aGrae Lotes usando service={service_name}")
+                raise Exception(
+                    f"No se pudo cargar aGrae Lotes con service={db.getServiceName()}\n"
+                    f"Error QGIS: {self.lotesLayer.error().message()}\n"
+                    f"Source: {self.lotesLayer.source()}"
+                )
 
             QgsProject.instance().addMapLayer(self.lotesLayer)
 
         self.dock = agraeToolsDockwidget(self.lotesLayer)
-
     def agraeConfig(self):
         dialog = agraeConfigDialog()
         dialog.exec()

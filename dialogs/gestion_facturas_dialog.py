@@ -13,7 +13,7 @@ class FacturasConsultaDialog(QtWidgets.QDialog):
 
     ENDPOINT_LIST = "/billing/facturas"
     ENDPOINT_DETAIL = "/billing/facturas/{uid}"
-    ENDPOINT_PDF = "/billing/facturas/{idfactura}/pdf"
+    ENDPOINT_PDF = "/billing/facturas/{uid}/pdf"
     ENDPOINT_EMITIR = "/billing/facturas/{uid}/emitir"
 
     def __init__(self, idexplotacion: int | None = None, parent=None):
@@ -42,7 +42,7 @@ class FacturasConsultaDialog(QtWidgets.QDialog):
         main.addWidget(self._filters_group())
 
         self.facturas_table = FacturasSearchTable(parent=self)
-        self.facturas_table.endpoint = self.ENDPOINT_LIST
+        # self.facturas_table.endpoint = self.ENDPOINT_LIST
         main.addWidget(self.facturas_table)
 
         main.addLayout(self._actions_layout())

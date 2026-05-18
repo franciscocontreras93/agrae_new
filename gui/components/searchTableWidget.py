@@ -446,7 +446,7 @@ class FacturasSearchTable(SearchTableWidget):
     def __init__(self ,parent=None):
         super().__init__(
             model=FacturasTableModel(),
-            endpoint='/billing/facturas/',
+            endpoint='/billing/facturas/consulta',
             map_func=map_facturas,
             placeholder="Buscar factura...",
             local_filter=True,
@@ -456,6 +456,6 @@ class FacturasSearchTable(SearchTableWidget):
 
 
         self.table.setColumnHidden(0, True)  # ocultar columna ID
-        self.table.setColumnHidden(1, True)  # ocultar columna UID
+        # self.table.setColumnHidden(1, True)  # ocultar columna UID
 
    

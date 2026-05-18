@@ -1,77 +1,102 @@
-from numpy import dot
-import psycopg2
 import os
+import psycopg2
+
 from qgis.PyQt.QtCore import QSettings
+from qgis.core import QgsExpressionContextUtils
 
 from ..core.config import aGraeConfig
 
 
-class agraeDataBaseDriver():
+class agraeDataBaseDriver:
     def __init__(self) -> None:
-
         self.config = aGraeConfig()
         self.local = self.config.local
 
-        BASEDIR = os.path.abspath(os.path.dirname(__file__))
-        os.environ['PGSERVICEFILE'] = os.path.join(BASEDIR, 'pg_service.conf')
-
         self.conn = None
-        self.s = QSettings('agrae', 'dbConnection')
+        self.s = QSettings("agrae", "dbConnection")
 
-        if self.local:
-            self.dsn = {
-                'dbname': os.getenv('DBNAME'),
-                'user': os.getenv('DBUSER'),
-                'password': os.getenv('DBPASSWORD'),
-                'host': os.getenv('HOST'),
-                'port': os.getenv('DBPORT')
-            }
-        else:
-            self.dsn = {
-                'dbname': self.s.value('dbname'),
-                'user': self.s.value('dbuser'),
-                'password': self.s.value('dbpass'),
-                'host': self.s.value('dbhost'),
-                'port': self.s.value('dbport')
-            }
+        self.pg_service_file = self._setup_pgservicefile()
+        self.service_name = self.getServiceName()
 
-    def getServiceName(self):
-        return 'agrae_local' if self.local else 'agrae_prod'
+        self.dsn = {
+            "service": self.service_name,
+            "pgservicefile": self.pg_service_file,
+        }
+
+    def _setup_pgservicefile(self) -> str:
+        """
+        Configura la ruta del pg_service.conf para psycopg2 y QGIS.
+        El archivo debe estar en la misma carpeta que este driver:
+        agrae/db/pg_service.conf
+        """
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        pg_service_file = os.path.join(basedir, "pg_service.conf")
+
+        os.environ["PGSERVICEFILE"] = pg_service_file
+
+        QgsExpressionContextUtils.setGlobalVariable(
+            "PGSERVICEFILE",
+            pg_service_file
+        )
+
+        return pg_service_file
+
+    def getServiceName(self) -> str:
+        """
+        Devuelve el servicio PostgreSQL según el modo configurado.
+        """
+        return "agrae_local" if self.local else "agrae_prod"
 
     def connection(self):
-        # if self.local:
-        #     return psycopg2.connect(service='local' , user=self.dsn['user'] ,password=self.dsn['password'])
-        # else :
-        #     return psycopg2.connect(service='production' , user=self.dsn['user'] ,password=self.dsn['password'])
-        return psycopg2.connect(service=self.getServiceName() )
-    
-    def getDSN(self):
-        return self.dsn
-    
-    def read(self,query) : 
-        conn = self.connection() 
-
-        with conn.cursor() as cursor: 
-            cursor.execute(query)
-            data =  cursor.fetchall()
-            return data
-        
-    def cursor(self,connection,factory=None):
+        """
+        Crea una conexión usando pg_service.conf.
+        """
         try:
-            conn = connection
+            return psycopg2.connect(service=self.getServiceName())
+        except Exception as e:
+            raise ConnectionError(
+                f"No se pudo conectar usando service='{self.getServiceName()}'. "
+                f"PGSERVICEFILE='{self.pg_service_file}'. "
+                f"Error original: {e}"
+            )
+
+    def getDSN(self) -> dict:
+        """
+        Mantiene compatibilidad con código antiguo.
+        Ahora devuelve service y pgservicefile, no credenciales.
+        """
+        return self.dsn
+
+    def read(self, query):
+        """
+        Ejecuta una consulta SELECT y devuelve todos los resultados.
+        """
+        conn = self.connection()
+
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query)
+                return cursor.fetchall()
+        finally:
+            conn.close()
+
+    def cursor(self, connection, factory=None):
+        """
+        Devuelve un cursor. Si la conexión está cerrada, crea una nueva.
+        """
+        try:
+            if connection is None or connection.closed:
+                connection = self.connection()
+
             if factory:
-                cursor = conn.cursor(cursor_factory=factory)
-            else: 
-                cursor = conn.cursor()
+                return connection.cursor(cursor_factory=factory)
 
-        except psycopg2.InterfaceError as ie:
-            cursor.close()
-            connection.close()
+            return connection.cursor()
+
+        except psycopg2.InterfaceError:
+            connection = self.connection()
 
             if factory:
-                cursor = conn.cursor(cursor_factory=factory)
-            else: 
-                cursor = conn.cursor()
-            pass
+                return connection.cursor(cursor_factory=factory)
 
-        return cursor
+            return connection.cursor()

@@ -28,12 +28,12 @@ def map_facturas(raw):
             "idexplotacion" : r.get("explotacion", "").get("idexplotacion", ""),
             "explotacion": r.get("explotacion", {}).get("nombre", ""),
             "idagricultor": r.get("agricultor", {}).get("idagricultor", ""),
-            # "agricultor": r.get("agricultor", {}),
-            # "dni": r.get("agricultor", {}).get("dni", ""),
+            "agricultor": r.get("agricultor", {}).get("nombre_completo", ""),
+            "dni": r.get("agricultor", {}).get("dni", ""),
 
         })
 
-    print(items)
+    # print(items)
 
     return items
 
@@ -44,8 +44,8 @@ class FacturasTableModel(QAbstractTableModel):
         # ("ID Factura", "idfactura"),
         ("UID", "uid"),
         # ("ID Empresa", "idempresa"),
-        ("ID Explotación", "idexplotacion"),
-        ("ID Agricultor", "idagricultor"),
+        # ("ID Explotación", "idexplotacion"),
+        # ("ID Agricultor", "idagricultor"),
 
         ("Explotación", "explotacion"),
         ("Agricultor", "agricultor"),

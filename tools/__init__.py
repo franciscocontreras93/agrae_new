@@ -628,6 +628,168 @@ class aGraeTools():
                 lyrAmbientes.loadNamedStyle(styleUri)
                 return lyrAmbientes
 
+    def getDataBaseLayer(
+        self,
+        sql: str,
+        layername: str = 'Resultados',
+        styleName: str = '',
+        geometry: str = 'MultiPolygon',
+        memory=True,
+        save=False,
+        debug=False,
+        idlayer='id'
+    ) -> QgsVectorLayer:
+
+        col_types = {
+            20: QVariant.Int,
+            21: QVariant.Int,
+            23: QVariant.Int,
+            25: QVariant.String,
+            701: QVariant.Double,
+            1700: QVariant.Double,
+            1043: QVariant.String,
+            1082: QVariant.String,
+        }
+
+        db = agraeDataBaseDriver()
+        sql_clean = sql.strip().rstrip(";")
+
+        if styleName.lower() in ['fosforo', 'potasio']:
+            estilo = 'analisis_ppm'
+        else:
+            estilo = styleName
+
+        styleUri = os.path.join(
+            os.path.dirname(__file__),
+            'styles/{}.qml'.format(estilo)
+        )
+
+        try:
+            if memory:
+                cursor = db.cursor(db.connection(), extras.RealDictCursor)
+
+                with cursor:
+                    lyr = QgsVectorLayer(
+                        '{}?crs=epsg:4326&index=yes'.format(geometry),
+                        layername,
+                        'memory'
+                    )
+
+                    provider = lyr.dataProvider()
+                    lyr.startEditing()
+
+                    cursor.execute(sql_clean)
+
+                    coldesc = tuple(c for c in cursor.description if c[0] != 'geom')
+                    data = cursor.fetchall()
+
+                    if debug:
+                        print(data)
+                        print(coldesc)
+                        print(set([c[1] for c in coldesc]))
+
+                    fields = [
+                        QgsField(c[0], col_types.get(c[1], QVariant.String))
+                        for c in coldesc
+                    ]
+
+                    provider.addAttributes(fields)
+                    lyr.updateFields()
+
+                    features = []
+
+                    for r in data:
+                        feat = QgsFeature()
+                        feat.setFields(lyr.fields())
+
+                        for c in fields:
+                            feat.setAttribute(c.name(), r[c.name()])
+
+                        if r.get('geom'):
+                            feat.setGeometry(QgsGeometry.fromWkt(r['geom']))
+
+                        features.append(feat)
+
+                    provider.addFeatures(features)
+                    lyr.commitChanges()
+
+                    if os.path.exists(styleUri):
+                        lyr.loadNamedStyle(styleUri)
+
+                    if lyr.isValid():
+                        QgsMessageLog.logMessage(
+                            'Capa: <b>{}</b> CORRECTA'.format(lyr.name()),
+                            self.plugin_name,
+                            level=Qgis.Info
+                        )
+                        return lyr
+
+                    QgsMessageLog.logMessage(
+                        'Capa: <b>{}</b> INCORRECTA'.format(lyr.name()),
+                        self.plugin_name,
+                        level=Qgis.Warning
+                    )
+                    return QgsVectorLayer()
+
+            else:
+                uri = QgsDataSourceUri()
+                uri.setParam("service", db.getServiceName())
+                uri.setDataSource("", f"({sql_clean})", "geom", "", idlayer)
+
+                lyr = QgsVectorLayer(
+                    uri.uri(False),
+                    '{}'.format(layername),
+                    'postgres'
+                )
+
+                if not lyr.isValid():
+                    QgsMessageLog.logMessage(
+                        "Capa: <b>{}</b> INCORRECTA<br>Error: {}<br>Source: {}".format(
+                            layername,
+                            lyr.error().message(),
+                            lyr.source()
+                        ),
+                        self.plugin_name,
+                        level=Qgis.Critical
+                    )
+                    return QgsVectorLayer()
+
+                if os.path.exists(styleUri):
+                    lyr.loadNamedStyle(styleUri)
+
+                QgsMessageLog.logMessage(
+                    'Capa: <b>{}</b> CORRECTA'.format(lyr.name()),
+                    self.plugin_name,
+                    level=Qgis.Info
+                )
+
+                return lyr
+
+        except Exception as ex:
+            iface.messageBar().pushMessage(
+                "Error:",
+                "Ocurrió un error, revisa el panel de mensajes del Registro",
+                level=Qgis.Critical
+            )
+
+            print(ex)
+
+            QgsMessageLog.logMessage(
+                '{}'.format(ex),
+                self.plugin_name,
+                level=Qgis.Critical
+            )
+
+            try:
+                if hasattr(self, "conn") and self.conn:
+                    self.conn.rollback()
+            except Exception:
+                pass
+
+            return QgsVectorLayer()
+    
+    
+    
     def crearFormatoAnalitica(self,idcampania:int,idexplotacion:int,name:str):
         s = QSettings('agrae','dbConnection')
         path = s.value('analisis_path')
