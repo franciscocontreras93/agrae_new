@@ -28,7 +28,7 @@ from .explotacion_dialogs import CopyExplotacionDialog, CreateExplotacionDialog,
 from .campania_dialogs import CloneCampaniaDialog, CreateCampaniaDialog, UpdateCampaniaDialog
 from .lotes_dialog import LoteWeatherDialog
 from .analitica_dialogs import agraeAnaliticaDialog
-from .gestion_personas import GestionPersonasDialog
+from .gestion.personas import GestionarPersonasDialog
 from .gestion_distribuidor import GestionDistribuidorDialog
 from .gestion.explotacion import GestionarExplotacionDialog
 from .gestion.agricultor import GestionAgricultorDialog
@@ -874,7 +874,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         dlg.exec()
 
     def gestionPersonasDialog(self):
-        dlg = GestionPersonasDialog()
+        dlg = GestionarPersonasDialog()
+        dlg.search_table.rowDoubleClicked.disconnect()
         dlg.exec()
         pass
 

@@ -12,6 +12,8 @@ from ....gui import agraeGUI
 from ....gui.components.searchTableWidget import PersonaSearchTable
 from ....core.api import APIRequest
 
+from .personaFormDialog import PersonaFormDialog
+
 
 class GestionarPersonasDialog(QDialog):
     closingPlugin = pyqtSignal()
@@ -56,6 +58,14 @@ class GestionarPersonasDialog(QDialog):
         self.btn_add.setToolTip("Añadir nueva persona")
         right_layout.addWidget(self.btn_add)
 
+        self.btn_edit = QPushButton()
+        self.btn_edit.setFixedSize(42, 42)
+        self.btn_edit.setIcon(agraeGUI().getIcon("edit"))
+        self.btn_edit.setIconSize(QSize(22, 22))
+        self.btn_edit.setToolTip("Editar persona seleccionada")
+        right_layout.addWidget(self.btn_edit)
+
+
         self.btn_reload = QPushButton()
         self.btn_reload.setFixedSize(42, 42)
         self.btn_reload.setIcon(agraeGUI().getIcon("reload"))
@@ -81,6 +91,7 @@ class GestionarPersonasDialog(QDialog):
         self.btn_delete.clicked.connect(self._delete_selected)
         self.btn_reload.clicked.connect(self.search_table.reload)
         self.btn_add.clicked.connect(self._add_new_persona)
+        self.btn_edit.clicked.connect(self._edit_selected)
 
     def _on_row_double_clicked(self, value, item):
         self.PersonaSignal.emit(item)
@@ -91,7 +102,21 @@ class GestionarPersonasDialog(QDialog):
         self.btn_delete.setEnabled(bool(item))
 
     def _add_new_persona(self):
+        dlg = PersonaFormDialog(self)
+        if dlg.exec_() == QDialog.Accepted:
+            self.search_table.reload()
+            
         pass
+
+    def _edit_selected(self):
+        item = self.search_table.selected_item()
+        if not item:
+            QMessageBox.information(self, "aGrae", "Selecciona una persona para editar.")
+            return
+
+        dialog = PersonaFormDialog(self,item)
+        if dialog.exec_() == QDialog.Accepted:
+            self.search_table.reload()
 
     def _delete_selected(self):
         item = self.search_table.selected_item()
