@@ -13,7 +13,7 @@ from .dialogs.config_dialog import agraeConfigDialog
 from .dialogs.gee_dialog import aGraeGEEDialog
 from .dialogs.lab_dialog import GestionLaboratorioDialog
 
-from .dialogs.gestion_facturas_dialog import FacturasConsultaDialog
+from .dialogs.facturacion.gestion_facturas_dialog import FacturasConsultaDialog
 
 
 from .db import agraeDataBaseDriver
@@ -224,11 +224,11 @@ class aGraeToolbox:
         dialog.exec()
 
     def GEEDialog(self):
-        dialog = aGraeGEEDialog()
-        dialog.exec()
-
-        # dialog = FacturasConsultaDialog()
+        # dialog = aGraeGEEDialog()
         # dialog.exec()
+
+        dialog = FacturasConsultaDialog()
+        dialog.exec()
         
 
     

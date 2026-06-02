@@ -56,6 +56,10 @@ def map_agricultores(raw):
                 "direccion": persona.get("direccion", ""),
                 "telefono": persona.get("telefono", ""),
                 "email": persona.get("email", ""),
+                "provincia": persona.get("provincia", ""),
+                "municipio": persona.get("municipio", ""),
+                "codigo_postal": persona.get("codigo_postal", ""),
+                "alias": persona.get("alias", ""),
                 "nombre_completo": persona.get("nombre_completo", ""),
             },
 

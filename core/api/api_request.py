@@ -144,7 +144,38 @@ class APIRequest:
                 "ok": False,
                 "error": str(ex),
             }
-        
+
+    def post_file(self, endpoint: str, file_path: str, additional_data: dict = None) -> dict:
+        url = self._build_url(endpoint)
+
+        files = {
+            'file': open(file_path, 'rb')
+        }
+
+        data = additional_data if additional_data else {}
+
+        try:
+            r = requests.post(url, files=files, data=data, timeout=60)
+
+            try:
+                payload = r.json()
+            except Exception:
+                payload = None
+
+            return {
+                "http_status": r.status_code,
+                "data": payload,
+                "ok": r.ok,
+                "error": None if r.ok else r.text
+            }
+
+        except Exception as ex:
+            return {
+                "http_status": 0,
+                "data": None,
+                "ok": False,
+                "error": str(ex)
+            }  
         
     def delete(self, endpoint, data=None):
         url = self._build_url(endpoint)
@@ -162,19 +193,34 @@ class APIRequest:
     
     def put(self, endpoint, data=None):
         url = self._build_url(endpoint)
+
         try:
             response = requests.put(url, json=data)
-            response.raise_for_status()
+
+            try:
+                body = response.json() if response.content else None
+            except ValueError:
+                body = response.text
+
             return {
+                "ok": response.ok,
                 "http_status": response.status_code,
-                "data": response.json() if response.content else None
+                "data": body
             }
+
         except requests.RequestException as e:
-            # print(f"Error during PUT request: {e}")
             return {
+                "ok": False,
                 "http_status": None,
-                "data": None
+                "data": {
+                    "detail": {
+                        "code": "REQUEST_ERROR",
+                        "message": str(e)
+                    }
+                }
             }
+        
+
     def patch(self, endpoint, data=None):
         
         url = self._build_url(endpoint)

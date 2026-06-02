@@ -1,5 +1,7 @@
 from decimal import Decimal, ROUND_HALF_UP
 
+from sympy import Q
+
 from qgis.PyQt import QtWidgets, QtCore
 from qgis.PyQt.QtCore import Qt
 
@@ -28,6 +30,7 @@ class FacturacionDialog(QtWidgets.QDialog):
         self.lotes = lotes or []
         self._api_request = APIRequest()
         self._agricultor_payer = None
+        self.idpersona = None
         self._current_plan = None
 
         self.setWindowTitle("aGrae | Facturación")
@@ -35,6 +38,7 @@ class FacturacionDialog(QtWidgets.QDialog):
 
         self._build_ui()
         self._connect_signals()
+
         self._load_initial_data()
 
     # ------------------------------------------------------------------
@@ -172,8 +176,12 @@ class FacturacionDialog(QtWidgets.QDialog):
         layout = self._grid(gb)
 
         self.cmb_serie = SeriesComboBox(auto_enable_on_load=True)
-        self.date_fecha_emision = self._date_edit(QtCore.QDate.currentDate())
-        self.date_fecha_vencimiento = self._date_edit(QtCore.QDate.currentDate().addMonths(1))
+        # self.date_fecha_emision = self._date_edit(QtCore.QDate.currentDate())
+        self.date_fecha_emision = QtWidgets.QDateEdit()
+        # self.date_fecha_emision.setMinimumDate(self.cmb_serie.get_current_serie().get("ultima_fecha"))
+        self.date_fecha_vencimiento = QtWidgets.QDateEdit()
+
+        # self.date_fecha_vencimiento = self._date_edit(QtCore.QDate.currentDate().addMonths(1))
 
         self.spin_iva = self._money_spin(" %", maximum=100)
         self.spin_iva.setValue(21)
@@ -202,7 +210,7 @@ class FacturacionDialog(QtWidgets.QDialog):
         gb = QtWidgets.QGroupBox("Plan y precio")
         layout = self._grid(gb)
 
-        self.cmb_plan = PlanesComboBox(auto_enable_on_load=True)
+        self.cmb_plan = PlanesComboBox(endpoint=f"billing/planes?idexplotacion={self.idexplotacion}", auto_enable_on_load=True)
 
         self.txt_concepto = self._line("Se tomará del nombre del plan", readonly=True)
         self.txt_pricing_model = self._line(readonly=True)
@@ -369,6 +377,10 @@ class FacturacionDialog(QtWidgets.QDialog):
             lambda date: self.date_fecha_vencimiento.setDate(date.addMonths(1))
         )
 
+        self.cmb_serie.items_loaded.connect(self._on_series_loaded)
+        self.cmb_serie.current_value_changed.connect(self._on_serie_changed)
+
+
         self.cmb_plan.plan_changed.connect(self._on_plan_changed)
         self.chk_precio_manual.toggled.connect(self._on_precio_manual_toggled)
 
@@ -390,13 +402,9 @@ class FacturacionDialog(QtWidgets.QDialog):
     # ------------------------------------------------------------------
 
     def _load_initial_data(self):
-        # self._load_serie()
         self._load_lotes(self.lotes)
         self._recalcular_resumen()
 
-    def _load_serie(self):
-        self.cmb_serie.clear()
-        self.cmb_serie.addItem("Z", 1)
 
     def _load_lotes(self, lotes: list | None = None):
         self.tree_lotes.blockSignals(True)
@@ -425,6 +433,55 @@ class FacturacionDialog(QtWidgets.QDialog):
         self.tree_lotes.blockSignals(False)
         self._recalcular_resumen()
 
+    def _on_series_loaded(self, _items):
+        self._on_serie_changed(self.cmb_serie.currentData())
+
+
+    def _on_serie_changed(self, _value=None):
+        serie = self.cmb_serie.get_current_serie()
+
+        if not isinstance(serie, dict):
+            return
+
+        ultima_fecha = serie.get("ultima_fecha")
+
+        fecha_ultima = self._parse_qdate(ultima_fecha)
+        fecha_hoy = QtCore.QDate.currentDate()
+
+        if fecha_ultima and fecha_ultima.isValid():
+            fecha_base = fecha_ultima if fecha_ultima > fecha_hoy else fecha_hoy
+        else:
+            fecha_base = fecha_hoy
+
+        self.date_fecha_emision.setCalendarPopup(True)
+        self.date_fecha_vencimiento.setCalendarPopup(True)
+
+        self.date_fecha_emision.setMinimumDate(fecha_base)
+        self.date_fecha_emision.setDate(fecha_base)
+
+        self.date_fecha_vencimiento.setMinimumDate(fecha_base)
+        self.date_fecha_vencimiento.setDate(fecha_base.addMonths(1))
+
+
+    def _parse_qdate(self, value):
+        if value is None:
+            return None
+
+        if isinstance(value, QtCore.QDate):
+            return value if value.isValid() else None
+
+        # Si viene como date/datetime de Python
+        if hasattr(value, "year") and hasattr(value, "month") and hasattr(value, "day"):
+            return QtCore.QDate(value.year, value.month, value.day)
+
+        text = str(value).strip()
+
+        # Soporta "2026-06-01" o "2026-06-01T00:00:00"
+        if len(text) >= 10:
+            text = text[:10]
+
+        qdate = QtCore.QDate.fromString(text, "yyyy-MM-dd")
+        return qdate if qdate.isValid() else None
     # ------------------------------------------------------------------
     # Agricultor y cliente
     # ------------------------------------------------------------------
@@ -449,6 +506,8 @@ class FacturacionDialog(QtWidgets.QDialog):
     def _set_agricultor_payer(self, agricultor):
         self._agricultor_payer = agricultor
         data = self._extract_cliente_data(agricultor)
+
+        self.idpersona = data.get("idpersona")
 
         self.txt_facturar_a.setText(f"{data['nif']} - {data['razon_social']}".strip(" -"))
         self.line_razon_social.setText(data["razon_social"])
@@ -483,7 +542,8 @@ class FacturacionDialog(QtWidgets.QDialog):
         explotacion = agricultor.get("explotacion") or {}
 
         return {
-            "idagricultor": agricultor.get("idagricultor") or agricultor.get("id") or agricultor.get("idpersona"),
+            "idpersona": persona.get("idpersona"),
+            "idagricultor": agricultor.get("idagricultor"),
             "razon_social": persona.get("nombre_completo") or agricultor.get("nombre_completo") or agricultor.get("nombre") or "",
             "nif": persona.get("dni") or agricultor.get("dni") or "",
             "direccion": persona.get("direccion") or explotacion.get("direccion") or "",
@@ -517,14 +577,31 @@ class FacturacionDialog(QtWidgets.QDialog):
             QtWidgets.QMessageBox.warning(self, "Facturación", "Selecciona primero un agricultor/cliente.")
             return
 
-        payload = {"idagricultor": int(idagricultor), **self._cliente_payload()}
+        payload = self._cliente_payload()
 
-        if not payload["razon_social"] or not payload["nif"]:
-            QtWidgets.QMessageBox.warning(self, "Facturación", "Razón social y NIF/CIF son obligatorios.")
+        payload  = {
+            "idpersona": payload.get("idpersona"),
+            "dni": payload.get("nif"),
+            "direccion": payload.get("direccion"),
+            "provincia": payload.get("provincia"),
+            "municipio": payload.get("municipio"),
+            "codigo_postal": payload.get("codigo_postal"),
+            "email": payload.get("email"),
+            "telefono": payload.get("telefono")}
+
+        if not payload['dni']:
+            QtWidgets.QMessageBox.warning(self, "Facturación", "El DNI/CIF es obligatorio.")
             return
 
-        print("[GUARDAR DATOS CLIENTE]", payload)
-        QtWidgets.QMessageBox.information(self, "Facturación", "Datos del cliente preparados correctamente. Modo demo.")
+
+        r = self._api_request.put('/gis/personas/', payload)
+
+
+        if r['http_status'] != 200:
+            QtWidgets.QMessageBox.critical(self, f"Error: {r.get('http_status')}", f"Error al guardar datos del cliente: {r.get('data', {}).get('detail', 'Error desconocido')}")
+            return
+            
+        QtWidgets.QMessageBox.information(self, "Facturación", "Datos del cliente preparados correctamente.")
 
     # ------------------------------------------------------------------
     # Lotes e items
@@ -792,6 +869,7 @@ class FacturacionDialog(QtWidgets.QDialog):
 
     def _cliente_payload(self) -> dict:
         return {
+            "idpersona": self.idpersona,
             "razon_social": self.line_razon_social.text().strip(),
             "nif": self.line_dni.text().strip(),
             "person_type": self.combo_person_type.currentText() if self.combo_person_type.currentIndex() > 0 else None,
@@ -942,8 +1020,6 @@ class FacturacionDialog(QtWidgets.QDialog):
         # El endpoint devuelve JSON con idfactura
         response = self._api_request.post(endpoint, payload)
 
-        print("[FACTURA RESPONSE]", response)
-
         if not response:
             QtWidgets.QMessageBox.warning(
                 self,
@@ -967,9 +1043,8 @@ class FacturacionDialog(QtWidgets.QDialog):
             f"/billing/facturas/{uid}/pdf"
         )
 
-        print("[PDF RESPONSE]", pdf_response)
-
         self._guardar_pdf_factura(pdf_response, emitir)
+
 
 
     def _guardar_pdf_factura(self, response: dict, emitir: bool):
@@ -1023,6 +1098,8 @@ class FacturacionDialog(QtWidgets.QDialog):
                 "Facturación",
                 f"Factura guardada correctamente:\n{path}"
             )
+
+            self.cmb_serie.refresh()
 
         except Exception as ex:
             QtWidgets.QMessageBox.warning(

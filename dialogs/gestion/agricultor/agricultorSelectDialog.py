@@ -65,16 +65,6 @@ class AgricultorSelectDialog(QDialog):
 
         self.tools = aGraeTools()
 
-
-        # self.table = SearchTableWidget(
-        #     model=AgricultoresTableModel(),
-        #     endpoint='/gis/agricultores/exp/{}'.format(idexplotacion),
-        #     map_func=map_agricultores,
-        #     placeholder="Buscar agricultor...",
-        #     emit_field="idagricultor",
-        #     local_filter=True
-        # )
-
         self.table = AsignarAgricultorSearchTable(idexplotacion)
 
         self.table.rowDoubleClicked.connect(self._on_selected)

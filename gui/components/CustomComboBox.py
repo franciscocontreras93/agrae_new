@@ -1393,9 +1393,12 @@ class PlanesComboBox(CustomComboBox):
 
         # Emitir dict completo cuando cambie
         self.current_value_changed.connect(self._emit_plan_changed)
+        
+        self.items_loaded.connect(self._select_default_plan)
 
         # Al cargar items, también emitimos el plan actual
         self.items_loaded.connect(lambda _items: self._emit_plan_changed(self.currentData()))
+
 
     # ------------------- API pública -------------------
     def set_only_active(self, flag: bool, *, refresh: bool = True) -> None:
@@ -1409,6 +1412,20 @@ class PlanesComboBox(CustomComboBox):
         self.set_label_formatter(self._label_formatter_dynamic())
         if refresh:
             self.refresh()
+
+    def _select_default_plan(self, items):
+        if not isinstance(items, list):
+            return
+
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+
+            if it.get("default") is True:
+                plan_id = it.get("idplan")
+                if plan_id is not None:
+                    self.select_by_id(plan_id)
+                return
 
     def get_current_plan(self) -> dict | None:
         return self.get_current_item()
@@ -1463,6 +1480,7 @@ class PlanesComboBox(CustomComboBox):
         return _transform
 
 
+
 class SeriesComboBox(CustomComboBox):
     """
     Combo para Series de Facturación (/billing/series):
@@ -1495,12 +1513,36 @@ class SeriesComboBox(CustomComboBox):
 
     def get_current_serie(self) -> dict | None:
         return self.get_current_item()
+
+    def get_ultima_fecha_emision(self) -> QDate | None:
+        it = self.get_current_serie()
+
+        if not isinstance(it, dict):
+            return None
+
+        value = it.get("ultima_fecha")
+
+        if not value:
+            return None
+
+        if isinstance(value, QDate):
+            return value if value.isValid() else None
+
+        text = str(value).strip()
+
+        if len(text) >= 10:
+            text = text[:10]
+
+        qdate = QDate.fromString(text, "yyyy-MM-dd")
+        return qdate if qdate.isValid() else None
     
 
     def _custom_label_formatter(self, it: dict) -> str:
         letra = str(it.get("letra", "") or "").strip()
         anio = str(it.get("anio", "") or "").strip()
         return f"{letra} → {anio}" if anio else (letra or "-")
+    
+   
     
 
 class ContratosComboBox(CustomComboBox):
