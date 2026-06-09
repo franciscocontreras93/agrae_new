@@ -22,6 +22,21 @@ def map_facturas(raw):
             "idempresa": r.get("idempresa", ""),
             "fecha_emision": r.get("fecha_emision", ""),
             "fecha_vencimiento": r.get("fecha_vencimiento", ""),
+
+            # Snapshot fiscal de la factura.
+            # Se conserva en el item aunque no se muestre en la tabla,
+            # para que DetalleFacturaDialog tenga la dirección y datos fiscales.
+            "cliente_razon_social": r.get("cliente_razon_social", ""),
+            "cliente_nif": r.get("cliente_nif", ""),
+            "cliente_person_type": r.get("cliente_person_type", ""),
+            "cliente_direccion": r.get("cliente_direccion", ""),
+            "cliente_provincia": r.get("cliente_provincia", ""),
+            "cliente_municipio": r.get("cliente_municipio", ""),
+            "cliente_codigo_postal": r.get("cliente_codigo_postal", ""),
+            "cliente_pais": r.get("cliente_pais", ""),
+            "cliente_email": r.get("cliente_email", ""),
+            "cliente_telefono": r.get("cliente_telefono", ""),
+
             "base_total": r.get("base_total", ""),
             "iva_total": r.get("iva_total", ""),
             "total": r.get("total", ""),

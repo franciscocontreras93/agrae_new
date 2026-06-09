@@ -1,8 +1,9 @@
 import requests
 from ..config import aGraeConfig
 
+
 class APIRequest:
-    def __init__(self, base_url:str=None):
+    def __init__(self, base_url: str = None):
         self.config = aGraeConfig()
         self.base_url = self.config.backend_url if base_url is None else base_url
 
@@ -11,19 +12,61 @@ class APIRequest:
         url = url.replace("//", "/").replace(":/", "://")
         return url
 
+    def _parse_body(self, response):
+        """
+        Intenta devolver JSON y, si no se puede, devuelve texto.
+        Mantiene centralizada la lectura del body para GET/POST/PATCH/PUT.
+        """
+        try:
+            return response.json() if response.content else None
+        except ValueError:
+            return response.text
+        except Exception:
+            return None
 
-    def get(self, endpoint, params=None, raw = False):
+    def _response_envelope(self, response):
+        """
+        Estructura estándar para llamadas donde necesitamos saber si hubo error HTTP.
+        """
+        return {
+            "ok": response.ok,
+            "http_status": response.status_code,
+            "data": self._parse_body(response),
+            "headers": dict(response.headers),
+        }
+
+    def _request_error_envelope(self, exc):
+        return {
+            "ok": False,
+            "http_status": None,
+            "data": {
+                "detail": {
+                    "code": "REQUEST_ERROR",
+                    "message": str(exc),
+                }
+            },
+            "headers": {},
+        }
+
+    def get(self, endpoint, params=None, raw=False, full_response: bool = False):
         url = self._build_url(endpoint)
         try:
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, timeout=30)
+
+            if full_response:
+                return self._response_envelope(response)
+
             response.raise_for_status()
             if raw:
                 return response.content
-            return response.json()
+            return self._parse_body(response)
+
         except requests.RequestException as e:
             print(f"Error during GET request: {e}")
+            if full_response:
+                return self._request_error_envelope(e)
             return None
-    
+
     def get_binary(self, endpoint: str, headers: dict = None):
         """
         Realiza un GET esperando una respuesta binaria, por ejemplo PDF.
@@ -63,30 +106,42 @@ class APIRequest:
                 "error": str(ex),
             }
 
-    def post(self, endpoint, data=None):
+    def post(self, endpoint, data=None, full_response: bool = False):
+        """
+        POST compatible con el código antiguo.
+
+        - Por defecto devuelve el JSON directo del backend, como antes.
+        - Si full_response=True devuelve envelope con ok/http_status/data/headers.
+
+        Así podemos ir migrando pantallas poco a poco sin romper otros usos.
+        """
         url = self._build_url(endpoint)
 
         try:
-            resp = requests.post(url, json=data, timeout=30)
+            response = requests.post(url, json=data, timeout=30)
 
+            if full_response:
+                return self._response_envelope(response)
+
+            # Comportamiento legacy: devolver el body directo.
             try:
-                payload = resp.json()
-                return payload
+                return response.json()
             except Exception:
-                payload = None
+                return {
+                    "http_status": response.status_code,
+                    "data": response.text if response.content else None,
+                }
 
-            return {
-                "http_status": resp.status_code,
-                "data": payload
-            }
+        except requests.RequestException as e:
+            if full_response:
+                return self._request_error_envelope(e)
 
-        except Exception as e:
-            # print(f"Error during POST request: {e}")
+            # Comportamiento legacy.
             return {
                 "http_status": None,
-                "data": None
+                "data": None,
             }
-    
+
     def post_binary(self, endpoint: str, data: dict, headers: dict = None) -> dict:
         """
         Realiza un POST esperando una respuesta binaria, por ejemplo PDF.
@@ -175,71 +230,71 @@ class APIRequest:
                 "data": None,
                 "ok": False,
                 "error": str(ex)
-            }  
-        
-    def delete(self, endpoint, data=None):
+            }
+        finally:
+            try:
+                files['file'].close()
+            except Exception:
+                pass
+
+    def delete(self, endpoint, data=None, full_response: bool = False):
         url = self._build_url(endpoint)
         try:
-            response = requests.delete(url, json=data)
+            response = requests.delete(url, json=data, timeout=30)
+
+            if full_response:
+                return self._response_envelope(response)
+
             response.raise_for_status()
-            
-            return response.json() if response.content else {"http_status": response.status_code, "data": None}
+            return self._parse_body(response) if response.content else {"http_status": response.status_code, "data": None}
+
         except requests.RequestException as e:
-            # print(f"Error during DELETE request: {e}")
+            if full_response:
+                return self._request_error_envelope(e)
             return {
                 "http_status": None,
                 "data": None
             }
-    
+
     def put(self, endpoint, data=None):
         url = self._build_url(endpoint)
 
         try:
-            response = requests.put(url, json=data)
-
-            try:
-                body = response.json() if response.content else None
-            except ValueError:
-                body = response.text
+            response = requests.put(url, json=data, timeout=30)
 
             return {
                 "ok": response.ok,
                 "http_status": response.status_code,
-                "data": body
+                "data": self._parse_body(response),
+                "headers": dict(response.headers),
             }
 
         except requests.RequestException as e:
-            return {
-                "ok": False,
-                "http_status": None,
-                "data": {
-                    "detail": {
-                        "code": "REQUEST_ERROR",
-                        "message": str(e)
-                    }
-                }
-            }
-        
+            return self._request_error_envelope(e)
 
-    def patch(self, endpoint, data=None):
-        
+    def patch(self, endpoint, data=None, full_response: bool = True):
+        """
+        PATCH devuelve envelope por defecto porque normalmente se usa para ediciones
+        donde interesa conocer errores 409/422 del backend.
+
+        Si necesitas comportamiento legacy, llama con full_response=False.
+        """
         url = self._build_url(endpoint)
 
         try:
-            response = requests.patch(url, json=data)
+            response = requests.patch(url, json=data, timeout=30)
 
-            response_data = None
-            try:
-                response_data = response.json() if response.content else None
-            except Exception:
-                response_data = response.text
+            if full_response:
+                return self._response_envelope(response)
 
             return {
                 "http_status": response.status_code,
-                "data": response_data
+                "data": self._parse_body(response),
             }
 
         except requests.RequestException as e:
+            if full_response:
+                return self._request_error_envelope(e)
             return {
                 "http_status": None,
                 "data": str(e)

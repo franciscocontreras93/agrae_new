@@ -1,6 +1,5 @@
 from decimal import Decimal, ROUND_HALF_UP
 
-from sympy import Q
 
 from qgis.PyQt import QtWidgets, QtCore
 from qgis.PyQt.QtCore import Qt
@@ -23,17 +22,27 @@ class FacturacionDialog(QtWidgets.QDialog):
     - Descargar el PDF devuelto por el backend.
     """
 
-    def __init__(self, idexplotacion: int, lotes: list | None = None, parent=None):
+    def __init__(
+        self,
+        idexplotacion: int,
+        lotes: list | None = None,
+        uid_factura: str | None = None,
+        modo_edicion: bool = False,
+        parent=None,
+    ):
         super().__init__(parent)
 
         self.idexplotacion = idexplotacion
         self.lotes = lotes or []
+        self.uid_factura = uid_factura
+        self.modo_edicion = bool(modo_edicion)
+
         self._api_request = APIRequest()
         self._agricultor_payer = None
         self.idpersona = None
         self._current_plan = None
 
-        self.setWindowTitle("aGrae | Facturación")
+        self.setWindowTitle("aGrae | Editar factura" if self.modo_edicion else "aGrae | Facturación")
         self.resize(980, 680)
 
         self._build_ui()
@@ -95,7 +104,7 @@ class FacturacionDialog(QtWidgets.QDialog):
     def _build_header(self, main):
         header = QtWidgets.QHBoxLayout()
 
-        title = QtWidgets.QLabel("Facturación")
+        title = QtWidgets.QLabel("Editar factura" if self.modo_edicion else "Facturación")
         font = title.font()
         font.setPointSize(12)
         font.setBold(True)
@@ -345,9 +354,12 @@ class FacturacionDialog(QtWidgets.QDialog):
         resumen_box.addWidget(gb)
 
         self.btn_guardar_borrador = QtWidgets.QPushButton("Guardar borrador")
-        self.btn_emitir = QtWidgets.QPushButton("Emitir factura")
+        self.btn_emitir = QtWidgets.QPushButton("Guardar cambios" if self.modo_edicion else "Emitir factura")
         self.btn_guardar_borrador.setMinimumHeight(28)
         self.btn_emitir.setMinimumHeight(30)
+
+        if self.modo_edicion:
+            self.btn_guardar_borrador.setVisible(False)
 
         resumen_box.addWidget(self.btn_guardar_borrador)
         resumen_box.addWidget(self.btn_emitir)
@@ -395,7 +407,11 @@ class FacturacionDialog(QtWidgets.QDialog):
         self.tree_lotes.itemChanged.connect(self._on_lote_item_changed)
 
         self.btn_guardar_borrador.clicked.connect(self._guardar_borrador)
-        self.btn_emitir.clicked.connect(self._emitir_factura)
+
+        if self.modo_edicion:
+            self.btn_emitir.clicked.connect(self._guardar_cambios_factura)
+        else:
+            self.btn_emitir.clicked.connect(self._emitir_factura)
 
     # ------------------------------------------------------------------
     # Carga inicial
@@ -970,9 +986,17 @@ class FacturacionDialog(QtWidgets.QDialog):
         return True
 
     def _guardar_borrador(self):
+        if self.modo_edicion:
+            self._guardar_cambios_factura()
+            return
+
         self._solicitar_factura_pdf(emitir=False)
 
     def _emitir_factura(self):
+        if self.modo_edicion:
+            self._guardar_cambios_factura()
+            return
+
         payload = self._collect_data()
 
         if not self._validar_payload(payload):
@@ -1001,9 +1025,222 @@ class FacturacionDialog(QtWidgets.QDialog):
 
         self._solicitar_factura_pdf(emitir=True)
 
+    def _collect_edit_data(self):
+        """
+        Payload para PATCH /billing/facturas/{uid}/editar.
+        Usa la misma UI, pero adaptando la estructura al endpoint de edición.
+        """
+        calc = self._calcular_importes()
+        pricing_model = calc["pricing_model"]
+
+        factura = {
+            "idexplotacion": int(self.idexplotacion),
+            "idagricultor_payer": self._get_idagricultor_payer(),
+            "modo": "UNICA",
+            "fecha_vencimiento": self.date_fecha_vencimiento.date().toString("yyyy-MM-dd"),
+            "cliente_razon_social": self.line_razon_social.text().strip(),
+            "cliente_nif": self.line_dni.text().strip(),
+            "cliente_person_type": self.combo_person_type.currentText() if self.combo_person_type.currentIndex() > 0 else None,
+            "cliente_direccion": self.line_direccion.text().strip(),
+            "cliente_provincia": self.line_provincia.text().strip(),
+            "cliente_municipio": self.line_municipio.text().strip(),
+            "cliente_codigo_postal": self.line_cp.text().strip(),
+            "cliente_pais": self.line_pais.text().strip() or "ESP",
+            "cliente_email": self.line_email.text().strip(),
+            "cliente_telefono": self.line_telefono.text().strip(),
+            "aplicar_area_minima": self.chk_area_minima.isChecked(),
+            "area_minima_ha": float(Decimal(str(self.spin_area_minima.value()))),
+            "aplicar_exceso_paquete": pricing_model == "PACKAGE",
+            "max_ha_paquete": float(calc["max_ha_paquete"]) if pricing_model == "PACKAGE" else 0,
+            "precio_exceso_ha": float(calc["precio_ha_excedente"]) if pricing_model == "PACKAGE" else 0,
+        }
+
+        lineas = [
+            {
+                "idplan": self.cmb_plan.get_current_plan_id(),
+                "concepto": self.txt_concepto.text().strip(),
+                "pricing_model": pricing_model,
+                "ha_facturadas": float(calc["ha_facturadas"]),
+                "precio_ha_aplicado": float(calc["precio_ha"]) if pricing_model == "PER_HA" else None,
+                "precio_paquete_aplicado": float(calc["precio_paquete"]) if pricing_model == "PACKAGE" else None,
+                "iva_pct": float(calc["iva_pct"]),
+                "anio_ipc_aplicado": None,
+                "factor_ipc_aplicado": None,
+                "items": self._get_lotes_items(),
+            }
+        ]
+
+        # Si es paquete con excedente, enviamos una segunda línea sin items.
+        # Los iddata quedan vinculados a la línea principal del paquete.
+        if pricing_model == "PACKAGE" and calc["ha_excedente"] > Decimal("0"):
+            lineas.append(
+                {
+                    "idplan": self.cmb_plan.get_current_plan_id(),
+                    "concepto": f"EXCESO {self.txt_concepto.text().strip()} SOBRE {self._fmt_number(calc['max_ha_paquete'])} HA",
+                    "pricing_model": "PER_HA",
+                    "ha_facturadas": float(calc["ha_excedente"]),
+                    "precio_ha_aplicado": float(calc["precio_ha_excedente"]),
+                    "precio_paquete_aplicado": None,
+                    "iva_pct": float(calc["iva_pct"]),
+                    "anio_ipc_aplicado": None,
+                    "factor_ipc_aplicado": None,
+                    "items": [],
+                }
+            )
+
+        return {
+            "factura": factura,
+            "lineas": lineas,
+        }
+
+    def _guardar_cambios_factura(self):
+        if not self.uid_factura:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Facturación",
+                "No se recibió el uid de la factura que se quiere editar."
+            )
+            return
+
+        payload_validacion = self._collect_data()
+
+        if not self._validar_payload(payload_validacion):
+            return
+
+        calc = self._calcular_importes()
+
+        confirm = QtWidgets.QMessageBox.question(
+            self,
+            "Guardar cambios",
+            (
+                "¿Confirma que desea guardar los cambios de esta factura?\n\n"
+                f"Cliente: {payload_validacion['cliente']['razon_social']}\n"
+                f"Concepto: {payload_validacion['linea']['concepto']}\n"
+                f"Items: {len(payload_validacion['items'])}\n"
+                f"Ha facturadas: {payload_validacion['linea']['ha_facturadas']:.2f}\n"
+                f"Base: {float(calc['base']):.2f} €\n"
+                f"IVA: {float(calc['iva']):.2f} €\n"
+                f"Total: {float(calc['total']):.2f} €"
+            ),
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+        )
+
+        if confirm != QtWidgets.QMessageBox.Yes:
+            return
+
+        response = self._api_request.patch(
+            f"/billing/facturas/{self.uid_factura}/editar",
+            self._collect_edit_data(),
+        )
+
+        if not response or not response.get("ok"):
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Facturación",
+                f"No se pudo editar la factura.\n\n{self._format_api_error(response)}"
+            )
+            return
+
+        data = self._extract_response_data(response)
+
+        QtWidgets.QMessageBox.information(
+            self,
+            "Facturación",
+            (
+                "Factura actualizada correctamente.\n\n"
+                f"Código: {(data or {}).get('codigo', '-')}\n"
+                f"Total: {(data or {}).get('total', '-')}"
+            )
+        )
+
+        self.accept()
+
     # ------------------------------------------------------------------
     # PDF
     # ------------------------------------------------------------------
+
+    def _format_api_error(self, response) -> str:
+        if not response:
+            return "Sin respuesta del backend."
+
+        status = response.get("http_status") if isinstance(response, dict) else None
+        data = response.get("data") if isinstance(response, dict) else response
+
+        if isinstance(data, dict):
+            detail = data.get("detail")
+
+            if isinstance(detail, dict):
+                message = detail.get("message") or detail.get("detail") or str(detail)
+            elif isinstance(detail, list):
+                message = "\n".join(str(x) for x in detail)
+            else:
+                message = str(detail or data)
+
+            if status:
+                return f"HTTP {status}\n{message}"
+            return message
+
+        if status:
+            return f"HTTP {status}\n{data}"
+
+        return str(data)
+
+    def _extract_response_data(self, response):
+        """
+        Acepta las dos estructuras durante la transición:
+        1) JSON directo legacy: {"uid": ...}
+        2) Envelope nuevo: {"ok": True, "http_status": 200, "data": {...}}
+        """
+        if not isinstance(response, dict):
+            return None
+
+        if "ok" in response and "data" in response:
+            return response.get("data") or {}
+
+        return response
+
+    def _seleccionar_codigo_disponible(self):
+        """
+        Consulta códigos de facturas anuladas disponibles para la serie actual.
+        Devuelve idcodigo o None si el usuario no quiere reutilizar ninguno.
+        """
+        idserie = self.cmb_serie.currentData()
+
+        if not idserie:
+            return None
+
+        codigos = self._api_request.get(
+            "/billing/facturas/codigos_disponibles",
+            params={
+                "idserie": idserie,
+                "idempresa": 1,
+            },
+        )
+
+        if not codigos:
+            return None
+
+        opciones = ["No reutilizar código"]
+
+        for codigo in codigos:
+            opciones.append(
+                f"{codigo.get('codigo')} | fecha original: {codigo.get('fecha_emision_original', '-')}"
+            )
+
+        selected, ok = QtWidgets.QInputDialog.getItem(
+            self,
+            "Código disponible",
+            "Hay códigos de facturas anuladas disponibles para esta serie.\nSelecciona uno si quieres reutilizarlo:",
+            opciones,
+            0,
+            False,
+        )
+
+        if not ok or selected == "No reutilizar código":
+            return None
+
+        index = opciones.index(selected) - 1
+        return codigos[index].get("idcodigo")
 
     def _solicitar_factura_pdf(self, emitir: bool):
         """
@@ -1017,35 +1254,37 @@ class FacturacionDialog(QtWidgets.QDialog):
 
         endpoint = f"/billing/facturar_por_data?emitir={'true' if emitir else 'false'}"
 
-        # El endpoint devuelve JSON con idfactura
-        response = self._api_request.post(endpoint, payload)
+        if emitir:
+            idcodigo_disponible = self._seleccionar_codigo_disponible()
+            if idcodigo_disponible:
+                endpoint += f"&idcodigo_disponible={idcodigo_disponible}"
 
-        if not response:
+        response = self._api_request.post(endpoint, payload, full_response=True)
+
+        if not response or not response.get("ok"):
             QtWidgets.QMessageBox.warning(
                 self,
                 "Facturación",
-                "El backend no devolvió respuesta."
+                f"No se pudo crear la factura.\n\n{self._format_api_error(response)}"
             )
             return
 
-        uid = response.get("uid")
+        data = self._extract_response_data(response)
+        uid = (data or {}).get("uid")
 
         if not uid:
             QtWidgets.QMessageBox.warning(
                 self,
                 "Facturación",
-                f"No se recibió idfactura.\n\nRespuesta:\n{response}"
+                f"No se recibió uid de factura.\n\nRespuesta:\n{data}"
             )
             return
 
-        # Descargar PDF real
         pdf_response = self._api_request.get_binary(
             f"/billing/facturas/{uid}/pdf"
         )
 
         self._guardar_pdf_factura(pdf_response, emitir)
-
-
 
     def _guardar_pdf_factura(self, response: dict, emitir: bool):
         """

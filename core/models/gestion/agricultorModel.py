@@ -98,6 +98,7 @@ class AgricultoresTableModel(QAbstractTableModel):
         ("Explotación", "explotacion.nombre"),
         ("Dirección", "explotacion.direccion"),
         ("Asesor", "asesor.nombre_completo"),
+        ("Distribuidor", "distribuidor.nombre"),
     ]
 
     def __init__(self, parent=None):

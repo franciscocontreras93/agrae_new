@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-
-from sympy import Q, im
-
 from qgis.PyQt.QtWidgets import (
     QDialog,
     QVBoxLayout,

@@ -356,7 +356,7 @@ class AgricultorSearchTable(SearchTableWidget):
         )
 
 
-        self.table.setColumnHidden(0, True)  # ocultar columna ID
+        # self.table.setColumnHidden(0, True)  # ocultar columna ID
 
 class AsignarAgricultorSearchTable(SearchTableWidget):
     def __init__(self, idexplotacion: int ,parent=None):
