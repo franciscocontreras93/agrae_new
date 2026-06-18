@@ -911,6 +911,7 @@ class FacturacionDialog(QtWidgets.QDialog):
                 "idserie": self.cmb_serie.currentData(),
                 "fecha_emision": self.date_fecha_emision.date().toString("yyyy-MM-dd"),
                 "fecha_vencimiento": self.date_fecha_vencimiento.date().toString("yyyy-MM-dd"),
+                "observaciones": self.txt_observaciones.toPlainText().strip() or None,
             },
             "cliente": self._cliente_payload(),
             "linea": {
@@ -1038,6 +1039,7 @@ class FacturacionDialog(QtWidgets.QDialog):
             "idagricultor_payer": self._get_idagricultor_payer(),
             "modo": "UNICA",
             "fecha_vencimiento": self.date_fecha_vencimiento.date().toString("yyyy-MM-dd"),
+            "observaciones": self.txt_observaciones.toPlainText().strip() or None,
             "cliente_razon_social": self.line_razon_social.text().strip(),
             "cliente_nif": self.line_dni.text().strip(),
             "cliente_person_type": self.combo_person_type.currentText() if self.combo_person_type.currentIndex() > 0 else None,

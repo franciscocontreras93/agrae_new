@@ -15,6 +15,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from PyQt5.QtCore import QThread, pyqtSignal
 
+from ...core.config import aGraeConfig
+
 
 from ...tools import aGraeTools
 

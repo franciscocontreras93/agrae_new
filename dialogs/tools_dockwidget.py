@@ -1,5 +1,6 @@
 import os
 
+from matplotlib.pylab import f
 import psycopg2
 
 from qgis.PyQt import QtWidgets #type: ignore
@@ -248,6 +249,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.ndvi_radio = QtWidgets.QRadioButton("NDVI")
         self.ndre_radio = QtWidgets.QRadioButton("NDRE")
         self.savi_radio = QtWidgets.QRadioButton("SAVI")
+        self.ndmi_radio = QtWidgets.QRadioButton("NDMI")
+        self.ndwi_radio = QtWidgets.QRadioButton("NDWI")
+        self.ndmi_radio.setEnabled(False)
+        self.ndwi_radio.setEnabled(False)
         # self.natural_color_radio = QtWidgets.QRadioButton("Color Natural") #TODO
 
         # self.savi_radio.setEnabled(False) 
@@ -940,6 +945,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         canvas.setMapTool(self.copy_tool)
 
     def run_ndvi_processor(self):
+        import json
 
         radio_map = {
             self.ndvi_radio: 1,
@@ -961,14 +967,18 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         area_visible = 0.8
         mask_snow = True
         mask_shadow = True
+        geometry = [f.geometry().asJson() for f in self.layer.selectedFeatures()][0]
 
         payload = {
             "idlotes": idlotes,
+            # "geometry": json.loads(geometry),
             "fecha_inicio": fecha_inicio,
             "fecha_fin": fecha_fin,
             "index": index,
             "buffer":10
         }
+
+        # print(payload)
 
         if self.gee_parametros_avanzados_group.isChecked():
             payload["area_visible"] = round((self.area_visible_input.value()/100),1)
@@ -1012,6 +1022,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self._ndvi_worker.error.connect(lambda m: print(m))
 
         self._ndvi_worker.start()
+
+
 
     def _add_index_layer(self, fecha: str, path: str):
         # 1) presets: como la función pide self, pásale self

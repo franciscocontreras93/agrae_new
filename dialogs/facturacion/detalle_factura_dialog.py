@@ -267,6 +267,16 @@ class DetalleFacturaDialog(QtWidgets.QDialog):
             factura.get("cliente_telefono") or ""
         )
 
+        row += 1
+
+        layout.addWidget(QtWidgets.QLabel("Observaciones"), row, 0)
+        self.txt_observaciones = QtWidgets.QPlainTextEdit()
+        self.txt_observaciones.setPlainText(factura.get("observaciones") or "")
+        self.txt_observaciones.setMinimumHeight(60)
+        self.txt_observaciones.setEnabled(False)
+        self.txt_observaciones.setReadOnly(True)
+        layout.addWidget(self.txt_observaciones, row, 1, 1, 3)
+
         self._set_header_edit_mode(False)
         self._capture_header_original_values()
 
@@ -308,6 +318,7 @@ class DetalleFacturaDialog(QtWidgets.QDialog):
             self.cliente_pais_edit,
             self.cliente_email_edit,
             self.cliente_telefono_edit,
+            self.txt_observaciones,
         ]
 
     def _set_header_edit_mode(self, enabled: bool):
@@ -316,7 +327,7 @@ class DetalleFacturaDialog(QtWidgets.QDialog):
         for widget in self._get_header_edit_widgets():
             widget.setEnabled(enabled)
 
-            if isinstance(widget, QtWidgets.QLineEdit):
+            if isinstance(widget, (QtWidgets.QLineEdit, QtWidgets.QPlainTextEdit)):
                 widget.setReadOnly(not enabled)
 
         self.btn_editar_header.setVisible(not enabled)
@@ -344,6 +355,7 @@ class DetalleFacturaDialog(QtWidgets.QDialog):
             "cliente_pais": self.cliente_pais_edit.text(),
             "cliente_email": self.cliente_email_edit.text(),
             "cliente_telefono": self.cliente_telefono_edit.text(),
+            "observaciones": self.txt_observaciones.toPlainText().strip() or None,
         }
 
     def _restore_header_original_values(self):
@@ -379,6 +391,9 @@ class DetalleFacturaDialog(QtWidgets.QDialog):
         )
         self.cliente_telefono_edit.setText(
             values.get("cliente_telefono", "")
+        )
+        self.txt_observaciones.setPlainText(
+            values.get("observaciones", "")
         )
 
         person_type = values.get("cliente_person_type") or "F"
@@ -432,6 +447,7 @@ class DetalleFacturaDialog(QtWidgets.QDialog):
                 "cliente_telefono": self._line_text_or_none(
                     self.cliente_telefono_edit
                 ),
+                "observaciones": self.txt_observaciones.toPlainText().strip() or None,
             }
         }
 
