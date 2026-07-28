@@ -1,7 +1,10 @@
 from ast import main
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QCheckBox, QButtonGroup, QPushButton, QGridLayout, QGroupBox, QWidget, QHBoxLayout, QLabel, QComboBox, QProgressBar
+import hashlib
+
+from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QCheckBox, QButtonGroup, QPushButton, QGridLayout, QGroupBox, QWidget, QHBoxLayout, QLabel, QComboBox, QProgressBar, QSpinBox, QFileDialog
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QRunnable, QThreadPool, QObject
 from qgis.core import QgsProject, QgsMessageLog, Qgis,QgsVectorLayer
+from qgis.gui import QgsCollapsibleGroupBox
 from ..tools.composerTools import aGraeComposerTools
 from ..tools import aGraeTools, aGraeSQLTools
 from ..gui import agraeGUI
@@ -18,6 +21,7 @@ class WorkerSignals(QObject):
     result = pyqtSignal(object)
     progress = pyqtSignal(int)
     current_layer = pyqtSignal(str)  # Signal to emit the current layer name
+    cancelled = pyqtSignal()
 
 
 class LayerGeneratorWorker(QRunnable):
@@ -25,46 +29,57 @@ class LayerGeneratorWorker(QRunnable):
     Worker thread for generating layers.
     """
 
-    def __init__(self, queries, layers_dict, basic_mode):
+    def __init__(self, queries, layers_dict):
         super().__init__()
         self.queries = queries
         self.tools = aGraeTools()
         self.layers_dict = layers_dict
         self.signals = WorkerSignals()
-        self.basic_mode = basic_mode
+        self.cancel_requested = False
+
+    def cancel(self):
+        self.cancel_requested = True
 
     def run(self):
         """
         Your code goes in this function.
         """
         try:
-            if self.basic_mode:
-                selected_queries = {k: self.queries[k] for k in ['Ambientes', 'Segmentos','Fert Variable Intraparcelaria', 'Fert Variable Parcelaria', 'Ceap36 Textura', 'Ceap36 Infiltracion', 'Ceap90 Textura', 'Ceap90 Infiltracion']}
-            else:
-                selected_queries = self.queries
-
-            total_queries = len(selected_queries)
+            total_queries = len(self.queries)
             current_query = 0
 
-            for q in reversed(selected_queries):
+            for q in reversed(self.queries):
+                if self.cancel_requested:
+                    self.signals.cancelled.emit()
+                    return
+
                 current_query += 1
                 self.signals.progress.emit(int((current_query / total_queries) * 100))
                 self.signals.current_layer.emit('{}/{} {} '.format(current_query, total_queries,q))  # Emit the current layer name
 
                 if 'Textura' in q:
-                    layer = self.tools.getDataBaseLayer(selected_queries[q], q, 'ceap_textura')
+                    layer = self.tools.getDataBaseLayer(self.queries[q], q, 'ceap_textura')
                 elif 'Infiltracion' in q:
-                    layer = self.tools.getDataBaseLayer(selected_queries[q], q, 'ceap_infiltracion')
+                    layer = self.tools.getDataBaseLayer(self.queries[q], q, 'ceap_infiltracion')
                 elif 'Intraparcelaria' in q:
-                    layer = self.tools.getDataBaseLayer(selected_queries[q], q, q, debug=False)
+                    layer = self.tools.getDataBaseLayer(self.queries[q], q, q, debug=False)
                 else:
-                    layer = self.tools.getDataBaseLayer(selected_queries[q], q, q)
+                    layer = self.tools.getDataBaseLayer(self.queries[q], q, q)
 
                 if layer.isValid():
+                    layer.setCustomProperty(
+                        'agrae/report_query_hash',
+                        hashlib.sha256(
+                            self.queries[q].encode('utf-8')
+                        ).hexdigest()
+                    )
                     self.layers_dict[q] = layer
                     # QgsProject.instance().addMapLayer(layer)
 
-            self.signals.finished.emit()
+            if self.cancel_requested:
+                self.signals.cancelled.emit()
+            else:
+                self.signals.finished.emit()
 
         except Exception as e:
             self.signals.error.emit((type(e), e, None))
@@ -83,6 +98,10 @@ class new_Composer(QDialog):
         self.layers['Atlas'] = lotesLayer
         self.threadpool = QThreadPool()
         self.tools = aGraeTools()
+        self.automatic_export = False
+        self.output_directory = None
+        self.cancel_requested = False
+        self.layer_worker = None
 
         # Create the checkboxes
         self.check_basicos = QCheckBox("Mapas Basicos (Ambientes-Segmentos-Texturas)")
@@ -143,11 +162,38 @@ class new_Composer(QDialog):
         # create Basemap selector
         label_basemap = QLabel('Seleccionar un Basemap')
         self.combo_basemap = QComboBox()
-        self.combo_basemap.addItems([k for k in self.tools.getBasemapsDict()])
+        self.combo_basemap.addItems([
+            name
+            for name in self.tools.getBasemapsDict()
+            if name != 'Parcelas Catastro'
+        ])
+        self.combo_basemap.addItem('Sin mapa base')
+        self.check_catastro = QCheckBox("Superponer parcelas de Catastro")
 
         combo_layout = QHBoxLayout()
         combo_layout.addWidget(label_basemap)
         combo_layout.addWidget(self.combo_basemap)
+        combo_layout.addWidget(self.check_catastro)
+
+        # Advanced report export options
+        advanced_group = QgsCollapsibleGroupBox("Opciones avanzadas")
+        advanced_group.setCollapsed(True)
+        advanced_group.setLayout(QGridLayout())
+
+        self.spin_export_dpi = QSpinBox()
+        self.spin_export_dpi.setRange(72, 600)
+        self.spin_export_dpi.setValue(150)
+        self.spin_export_dpi.setSuffix(" DPI")
+        self.check_txt = QCheckBox("Generar archivo TXT")
+        self.check_txt.setChecked(True)
+
+        advanced_group.layout().addWidget(
+            QLabel("Resolución de exportación:"),
+            0,
+            0
+        )
+        advanced_group.layout().addWidget(self.spin_export_dpi, 0, 1)
+        advanced_group.layout().addWidget(self.check_txt, 1, 0, 1, 2)
 
         # Create progress bar
         self.progress_bar = QProgressBar()
@@ -157,17 +203,29 @@ class new_Composer(QDialog):
         self.current_layer_label = QLabel("Generando Capa: ")
 
         # Create buttons
-        self.btn_generar = QPushButton("Generar Reporte")
-        self.btn_imprimir = QPushButton("Imprimir Reporte")
-        self.btn_imprimir.setEnabled(False)
+        self.btn_generar_manual = QPushButton(
+            "Generar manualmente (abrir compositor)"
+        )
+        self.btn_generar_automatico = QPushButton(
+            "Generar automáticamente (PDF por lote)"
+        )
+        self.btn_detener = QPushButton("Detener proceso")
+        self.btn_detener.setEnabled(False)
         self.cancel_button = QPushButton("Cancel")
-        self.btn_generar.clicked.connect(self.on_generate_clicked)
+        self.btn_generar_manual.clicked.connect(
+            lambda: self.on_generate_clicked(False)
+        )
+        self.btn_generar_automatico.clicked.connect(
+            lambda: self.on_generate_clicked(True)
+        )
+        self.btn_detener.clicked.connect(self.stop_automatic_process)
         self.cancel_button.clicked.connect(self.reject)
 
         # Create a layout for buttons
         button_layout = QHBoxLayout()
-        button_layout.addWidget(self.btn_generar)
-        button_layout.addWidget(self.btn_imprimir)
+        button_layout.addWidget(self.btn_generar_manual)
+        button_layout.addWidget(self.btn_generar_automatico)
+        button_layout.addWidget(self.btn_detener)
         button_layout.addWidget(self.cancel_button)
 
         # Create a main layout and add the checkboxes and buttons
@@ -175,16 +233,44 @@ class new_Composer(QDialog):
         main_layout.addWidget(groupbox_checks_tipos)
         main_layout.addWidget(group_parametros)
         main_layout.addLayout(combo_layout)
+        main_layout.addWidget(advanced_group)
         main_layout.addWidget(self.progress_bar)
         main_layout.addWidget(self.current_layer_label)  # Add the label to the layout
         main_layout.addLayout(button_layout)
         main_layout.setSpacing(30)
         self.setLayout(main_layout)
 
-    def on_generate_clicked(self):
-        self.btn_generar.setEnabled(False)
+    def on_generate_clicked(self, automatic_export):
+        self.automatic_export = automatic_export
+        self.output_directory = None
+        self.cancel_requested = False
+
+        self.btn_generar_manual.setEnabled(False)
+        self.btn_generar_automatico.setEnabled(False)
+        self.btn_detener.setEnabled(automatic_export)
+        self.cancel_button.setEnabled(False)
         self.progress_bar.setValue(0)
         self.generateLayers()
+
+    def stop_automatic_process(self):
+        self.cancel_requested = True
+        self.btn_detener.setEnabled(False)
+        self.current_layer_label.setText(
+            "Deteniendo el proceso al finalizar la operación actual..."
+        )
+
+        if self.layer_worker is not None:
+            self.layer_worker.cancel()
+
+        QApplication.processEvents()
+
+    def on_generation_cancelled(self):
+        self.layer_worker = None
+        self.current_layer_label.setText("Proceso automático detenido")
+        self.btn_generar_manual.setEnabled(True)
+        self.btn_generar_automatico.setEnabled(True)
+        self.btn_detener.setEnabled(False)
+        self.cancel_button.setEnabled(True)
 
     def get_checked_button_text(self):
         """Returns the text of the currently checked button, or None if none are checked."""
@@ -501,12 +587,79 @@ class new_Composer(QDialog):
             ),
         }
 
-        # --- 4) Iniciar el worker en un hilo separado ---
-        worker = LayerGeneratorWorker(queries, self.layers, self.check_basicos.isChecked())
+        # --- 4) Reutilizar capas en memoria que correspondan a la consulta ---
+        if self.check_basicos.isChecked():
+            selected_names = [
+                'Ambientes',
+                'Segmentos',
+                'Fert Variable Intraparcelaria',
+                'Fert Variable Parcelaria',
+                'Ceap36 Textura',
+                'Ceap36 Infiltracion',
+                'Ceap90 Textura',
+                'Ceap90 Infiltracion'
+            ]
+            selected_queries = {
+                name: queries[name]
+                for name in selected_names
+            }
+        else:
+            selected_queries = queries
+
+        pending_queries = {}
+        reused_count = 0
+
+        for name, query in selected_queries.items():
+            query_hash = hashlib.sha256(
+                query.encode('utf-8')
+            ).hexdigest()
+            reusable_layer = next(
+                (
+                    layer
+                    for layer in QgsProject.instance().mapLayersByName(name)
+                    if (
+                        layer.isValid()
+                        and layer.providerType() == 'memory'
+                        and layer.customProperty(
+                            'agrae/report_query_hash',
+                            ''
+                        ) == query_hash
+                    )
+                ),
+                None
+            )
+
+            if reusable_layer is not None:
+                self.layers[name] = reusable_layer
+                reused_count += 1
+            else:
+                pending_queries[name] = query
+
+        if not pending_queries:
+            self.progress_bar.setValue(100)
+            self.current_layer_label.setText(
+                f"Capas reutilizadas: {reused_count}/{len(selected_queries)}"
+            )
+            self.on_layers_generated()
+            return
+
+        if reused_count:
+            self.current_layer_label.setText(
+                f"Capas reutilizadas: {reused_count}. "
+                f"Generando {len(pending_queries)} restantes..."
+            )
+
+        # --- 5) Generar únicamente las capas pendientes ---
+        worker = LayerGeneratorWorker(
+            pending_queries,
+            self.layers
+        )
+        self.layer_worker = worker
         worker.signals.progress.connect(self.update_progress)
         worker.signals.finished.connect(self.on_layers_generated)
         worker.signals.error.connect(self.on_error)
         worker.signals.current_layer.connect(self.update_current_layer_label)
+        worker.signals.cancelled.connect(self.on_generation_cancelled)
 
         self.threadpool.start(worker)
 
@@ -516,23 +669,108 @@ class new_Composer(QDialog):
     def update_current_layer_label(self, layer_name):
         self.current_layer_label.setText(f"Generando Capa: {layer_name}")
 
+    def update_report_progress(
+        self,
+        current,
+        total,
+        report_name,
+        completed=False
+    ):
+        if total <= 0 or current <= 0:
+            progress = 0
+        elif completed:
+            progress = int((current / total) * 100)
+        else:
+            progress = int(((current - 1) / total) * 100)
+
+        self.progress_bar.setValue(progress)
+
+        if current <= 0:
+            self.current_layer_label.setText(
+                "Preparando generación de informes..."
+            )
+        elif completed and current == total:
+            self.current_layer_label.setText(
+                f"Informes generados: {current}/{total}"
+            )
+        else:
+            self.current_layer_label.setText(
+                f"Generando informe {current}/{total}: {report_name}"
+            )
+
+        QApplication.processEvents()
+
     def on_layers_generated(self):
+        self.layer_worker = None
+
+        if self.cancel_requested:
+            self.on_generation_cancelled()
+            return
+
         # self.tools.messages('aGrae GIS','Capas Generadas Correctamente',3,alert=True)
         self.current_layer_label.setText('Capas Generadas Correctamente')
         for layer in self.layers:
             QgsProject.instance().addMapLayer(self.layers[layer])
 
-        if self.check_basicos.isChecked():
-            aGraeComposerTools(self.layers,self.idcampania,self.idexplotacion).generateComposer(self.combo_basemap.currentText(),basic=True)
-        else:
-            aGraeComposerTools(self.layers,self.idcampania,self.idexplotacion).generateComposer(self.combo_basemap.currentText(),materia_organica=self.check_preescripcion_materia_organica.isChecked())
-        # print(self.layers)
+        if self.automatic_export:
+            self.output_directory = QFileDialog.getExistingDirectory(
+                self,
+                "Seleccionar carpeta para los informes"
+            )
+            if not self.output_directory:
+                self.current_layer_label.setText(
+                    'Generación automática cancelada'
+                )
+                self.btn_generar_manual.setEnabled(True)
+                self.btn_generar_automatico.setEnabled(True)
+                self.btn_detener.setEnabled(False)
+                self.cancel_button.setEnabled(True)
+                return
 
-        # self.btn_generar.setEnabled(True)
-        # self.accept()
+        if self.check_basicos.isChecked():
+            aGraeComposerTools(
+                self.layers,
+                self.idcampania,
+                self.idexplotacion
+            ).generateComposer(
+                self.combo_basemap.currentText(),
+                basic=True,
+                catastro=self.check_catastro.isChecked(),
+                automatic_export=self.automatic_export,
+                export_dpi=self.spin_export_dpi.value(),
+                output_directory=self.output_directory,
+                progress_callback=self.update_report_progress,
+                generate_txt=self.check_txt.isChecked(),
+                cancel_callback=lambda: self.cancel_requested
+            )
+        else:
+            aGraeComposerTools(
+                self.layers,
+                self.idcampania,
+                self.idexplotacion
+            ).generateComposer(
+                self.combo_basemap.currentText(),
+                materia_organica=self.check_preescripcion_materia_organica.isChecked(),
+                catastro=self.check_catastro.isChecked(),
+                automatic_export=self.automatic_export,
+                export_dpi=self.spin_export_dpi.value(),
+                output_directory=self.output_directory,
+                progress_callback=self.update_report_progress,
+                generate_txt=self.check_txt.isChecked(),
+                cancel_callback=lambda: self.cancel_requested
+            )
+
+        self.btn_generar_manual.setEnabled(True)
+        self.btn_generar_automatico.setEnabled(True)
+        self.btn_detener.setEnabled(False)
+        self.cancel_button.setEnabled(True)
 
     def on_error(self, error):
+        self.layer_worker = None
         self.tools.messages('aGrae GIS',f'Error: {error}',2,alert=True)
         QgsMessageLog.logMessage(f'Error: {error}', 'aGrae GIS', Qgis.Critical)
-        self.btn_generar.setEnabled(True)
+        self.btn_generar_manual.setEnabled(True)
+        self.btn_generar_automatico.setEnabled(True)
+        self.btn_detener.setEnabled(False)
+        self.cancel_button.setEnabled(True)
         self.progress_bar.setValue(0)

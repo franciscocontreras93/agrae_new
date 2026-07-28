@@ -1,4 +1,5 @@
 import os
+import re
 import tempfile
 
 from qgis.PyQt.QtXml import QDomDocument
@@ -38,6 +39,13 @@ class aGraeComposerTools():
         self.designer = None
         self.layout = None
         self.atlas = None
+        self.catastro_layer = None
+        self.export_dpi = 150
+        self.automatic_export = False
+        self.output_directory = None
+        self.progress_callback = None
+        self.generate_txt = True
+        self.cancel_callback = None
 
         self.temp_logo_path = os.path.join(
             tempfile.gettempdir(),
@@ -66,14 +74,25 @@ class aGraeComposerTools():
         self.panels_path = self.settings.value('paneles_path')
         self.reportes_path = self.settings.value('reporte_path')
 
-    def setLayersToMap(self, mapItems, layers, basemap):
+    def setLayersToMap(self, mapItems, layers, basemap, catastro=None):
         """
         Asigna capas a uno o dos mapas del layout.
+
+        Catastro, cuando está habilitado, se coloca por encima de todas
+        las capas del mapa.
         """
+        if catastro is None:
+            catastro = self.catastro_layer
+
         map_1 = mapItems[0]
         map_1_settings = QgsMapSettings()
-        map_1_settings.setLayers([layers[1], layers[0], basemap])
-        map_1.setLayers([layers[1], layers[0], basemap])
+        map_1_layers = [layers[1], layers[0]]
+        if basemap is not None:
+            map_1_layers.append(basemap)
+        if catastro is not None:
+            map_1_layers.insert(0, catastro)
+        map_1_settings.setLayers(map_1_layers)
+        map_1.setLayers(map_1_layers)
 
         clippingSettings = QgsLayoutItemMapAtlasClippingSettings(map_1)
         clippingSettings.setEnabled(True)
@@ -83,8 +102,13 @@ class aGraeComposerTools():
         if len(mapItems) >= 2:
             map_2 = mapItems[1]
             map_2_settings = QgsMapSettings()
-            map_2_settings.setLayers([layers[2], layers[0], basemap])
-            map_2.setLayers([layers[2], layers[0], basemap])
+            map_2_layers = [layers[2], layers[0]]
+            if basemap is not None:
+                map_2_layers.append(basemap)
+            if catastro is not None:
+                map_2_layers.insert(0, catastro)
+            map_2_settings.setLayers(map_2_layers)
+            map_2.setLayers(map_2_layers)
 
             clippingSettings = QgsLayoutItemMapAtlasClippingSettings(map_2)
             clippingSettings.setEnabled(True)
@@ -268,10 +292,46 @@ class aGraeComposerTools():
         if self.designer is not None:
             self.designer.destroyed.connect(self.clearFilter)
 
+    def adjustHtmlItemsForDpi(self, layout):
+        """
+        Compensa el escalado que aplica QGIS a los marcos HTML cuando
+        la resolución del layout es distinta de los 300 DPI de la plantilla.
+        """
+        scale_factor = self.export_dpi / 300.0
+        if abs(scale_factor - 1.0) < 0.001:
+            return
+
+        for multiframe in layout.multiFrames():
+            if not isinstance(multiframe, QgsLayoutItemHtml):
+                continue
+
+            stylesheet = multiframe.userStylesheet()
+            stylesheet = re.sub(
+                r'font-size:\s*([0-9.]+)px',
+                lambda match: (
+                    f'font-size: '
+                    f'{float(match.group(1)) * scale_factor:.4f}px'
+                ),
+                stylesheet
+            )
+            stylesheet = re.sub(
+                r'margin:\s*([0-9.]+)\s+([0-9.]+);',
+                lambda match: (
+                    f'margin: '
+                    f'{float(match.group(1)) * scale_factor:.4f} '
+                    f'{float(match.group(2)) * scale_factor:.4f};'
+                ),
+                stylesheet
+            )
+
+            multiframe.setUserStylesheet(stylesheet)
+            multiframe.loadHtml(False)
+
     def layoutGeneratorPreescripcion(
         self,
         basemap,
         materia_organica=False,
+        catastro=False,
         preview=False,
         printer=False
     ):
@@ -295,8 +355,8 @@ class aGraeComposerTools():
         legend_style_subGroup = QgsLegendStyle()
         legend_style_subGroup.setFont(subGroupFont)
 
-        basemap = self.tools.getBaseMap(basemap, self.basemaps)
-        QgsProject.instance().addMapLayer(basemap, False)
+        basemap = self.getBasemapLayer(basemap)
+        self.catastro_layer = self.getCatastroLayer() if catastro else None
         self.getDistData(idcampania=self.idcampania, idexplotacion=self.idexplotacion)
 
         project = QgsProject.instance()
@@ -310,6 +370,7 @@ class aGraeComposerTools():
 
         layout = QgsPrintLayout(project)
         layout.initializeDefaults()
+        layout.renderContext().setDpi(self.export_dpi)
         layout.setName(layoutName)
         manager.addLayout(layout)
         self.layout = layout
@@ -335,6 +396,7 @@ class aGraeComposerTools():
         doc = QDomDocument()
         doc.setContent(template_content)
         items, _ = layout.loadFromTemplate(doc, QgsReadWriteContext(), False)
+        self.adjustHtmlItemsForDpi(layout)
 
         logos_agrae = [i for i in items if isinstance(i, QgsLayoutItemPicture) and i.id() == 'Logo Agrae']
         logos_exp = [i for i in items if isinstance(i, QgsLayoutItemPicture) and i.id() == 'exp_logo']
@@ -396,7 +458,15 @@ class aGraeComposerTools():
             table_item,
         ))
 
-        self.txt_export_path = self.askTxtSavePath()
+        self.txt_export_path = (
+            None
+            if self.automatic_export
+            else (
+                self.askTxtSavePath()
+                if self.generate_txt
+                else None
+            )
+        )
 
         if preview or not printer:
             self.connectDesignerClose()
@@ -407,6 +477,7 @@ class aGraeComposerTools():
     def layoutGeneratorBasico(
         self,
         basemap,
+        catastro=False,
         preview=False,
         printer=False
     ) -> None:
@@ -430,8 +501,8 @@ class aGraeComposerTools():
         legend_style_subGroup = QgsLegendStyle()
         legend_style_subGroup.setFont(subGroupFont)
 
-        basemap = self.tools.getBaseMap(basemap, self.basemaps)
-        QgsProject.instance().addMapLayer(basemap, False)
+        basemap = self.getBasemapLayer(basemap)
+        self.catastro_layer = self.getCatastroLayer() if catastro else None
         self.getDistData(idcampania=self.idcampania, idexplotacion=self.idexplotacion)
 
         project = QgsProject.instance()
@@ -445,6 +516,7 @@ class aGraeComposerTools():
 
         layout = QgsPrintLayout(project)
         layout.initializeDefaults()
+        layout.renderContext().setDpi(self.export_dpi)
         layout.setName(layoutName)
         manager.addLayout(layout)
         self.layout = layout
@@ -470,6 +542,7 @@ class aGraeComposerTools():
         doc = QDomDocument()
         doc.setContent(template_content)
         items, _ = layout.loadFromTemplate(doc, QgsReadWriteContext(), False)
+        self.adjustHtmlItemsForDpi(layout)
 
         logos_agrae = [i for i in items if isinstance(i, QgsLayoutItemPicture) and i.id() == 'Logo Agrae']
         logos_exp = [i for i in items if isinstance(i, QgsLayoutItemPicture) and i.id() == 'exp_logo']
@@ -501,7 +574,15 @@ class aGraeComposerTools():
             self.layers
         ))
 
-        self.txt_export_path = self.askTxtSavePath()
+        self.txt_export_path = (
+            None
+            if self.automatic_export
+            else (
+                self.askTxtSavePath()
+                if self.generate_txt
+                else None
+            )
+        )
 
         if preview or not printer:
             self.connectDesignerClose()
@@ -556,44 +637,240 @@ class aGraeComposerTools():
         """
         Exporta el atlas a PDF y limpia filtros al finalizar.
         """
-        directory = list(set([f['explotacion'] for f in self.atlas.coverageLayer().getFeatures()]))[0]
-        directory = directory.replace(' ', '_')
-        path = os.path.join(self.reportes_path, directory + '_' + QDateTime.currentDateTime().toString('yyyyMMddHHmmss'))
-        zipper = AgraeZipper()
-
+        render_started = False
+        export_succeeded = False
+        export_cancelled = False
         try:
+            reports_base_path = (
+                self.output_directory
+                or self.reportes_path
+            )
+            if not reports_base_path:
+                raise RuntimeError(
+                    'No se ha configurado el directorio de reportes.'
+                )
+
+            explotaciones = {
+                str(feature['explotacion'])
+                for feature in self.atlas.coverageLayer().getFeatures()
+                if feature['explotacion']
+            }
+            if not explotaciones:
+                raise RuntimeError(
+                    'No hay explotaciones disponibles para generar el informe.'
+                )
+
+            directory = sorted(explotaciones)[0].replace(' ', '_')
+            timestamp = QDateTime.currentDateTime().toString(
+                'yyyyMMddHHmmss'
+            )
+            path = os.path.join(
+                reports_base_path,
+                f'{directory}_{timestamp}'
+            )
+
             os.makedirs(path)
             self.atlas.beginRender()
+            render_started = True
 
             settings = QgsLayoutExporter.PdfExportSettings()
             settings.appendGeoreference = False
             settings.simplifyGeometries = True
+            settings.dpi = self.export_dpi
 
             exporter = QgsLayoutExporter(self.atlas.layout())
+            total_reports = self.atlas.count()
 
-            for i in range(0, self.atlas.count()):
+            if self.progress_callback:
+                self.progress_callback(
+                    0,
+                    total_reports,
+                    '',
+                    False
+                )
+
+            for i in range(0, total_reports):
+                if self.cancel_callback and self.cancel_callback():
+                    export_cancelled = True
+                    break
+
                 self.atlas.seekTo(i)
-                name = self.atlas.currentFilename().replace(' ', '_')
-                name = name + '_' + QDateTime.currentDateTime().toString('yyyyMMddHHmmss') + ".pdf"
-                exporter.exportToPdf(path + r'\\' + name, settings)
+                report_name = self.atlas.currentFilename()
+                current_feature = (
+                    self.atlas.layout()
+                    .reportContext()
+                    .feature()
+                )
+                cultivo = ''
+                if (
+                    current_feature.isValid()
+                    and current_feature.fields().indexOf('cultivo') >= 0
+                    and current_feature['cultivo'] is not None
+                ):
+                    cultivo = str(current_feature['cultivo'])
+
+                filename_parts = [
+                    self.safeFilenamePart(report_name)
+                ]
+                if cultivo:
+                    filename_parts.append(
+                        self.safeFilenamePart(cultivo)
+                    )
+                filename_parts.append(
+                    QDateTime.currentDateTime().toString(
+                        'yyyyMMddHHmmss'
+                    )
+                )
+                name = '_'.join(filename_parts) + '.pdf'
+
+                if self.progress_callback:
+                    self.progress_callback(
+                        i + 1,
+                        total_reports,
+                        report_name,
+                        False
+                    )
+
+                result = exporter.exportToPdf(
+                    os.path.join(path, name),
+                    settings
+                )
+                if result != QgsLayoutExporter.Success:
+                    raise RuntimeError(
+                        f'No se pudo exportar el PDF {name}. '
+                        f'Código de error: {result}'
+                    )
+
+                if self.progress_callback:
+                    self.progress_callback(
+                        i + 1,
+                        total_reports,
+                        report_name,
+                        True
+                    )
 
             self.atlas.endRender()
-            zipper.zipFiles(path, True)
+            render_started = False
+
+            if export_cancelled:
+                iface.messageBar().pushMessage(
+                    'aGrae GIS',
+                    'Generación automática detenida. '
+                    'Se conservan los PDF ya creados.',
+                    level=Qgis.Warning
+                )
+            else:
+                export_succeeded = True
+                self.txt_export_path = (
+                    os.path.join(path, 'informes_lotes.txt')
+                    if self.generate_txt
+                    else None
+                )
+
+                iface.messageBar().pushMessage(
+                    'aGrae GIS',
+                    f'Informes generados correctamente en {path}',
+                    level=Qgis.Success
+                )
 
         except Exception as ex:
-            print(ex)
+            QgsMessageLog.logMessage(
+                str(ex),
+                'aGrae GIS',
+                level=Qgis.Critical
+            )
+            iface.messageBar().pushMessage(
+                'aGrae GIS',
+                f'Error generando informes: {ex}',
+                level=Qgis.Critical
+            )
 
         finally:
+            if render_started:
+                self.atlas.endRender()
+
+            if export_succeeded and self.txt_export_path:
+                self.writeLotesTxt(self.txt_export_path)
+
+            # Evita que clearFilter vuelva a escribir el TXT.
+            self.txt_export_path = None
             self.clearFilter()
 
-    def generateComposer(self, basemap, basic=False, materia_organica=False):
+    def safeFilenamePart(self, value):
+        """
+        Limpia un texto para utilizarlo como parte de un nombre de archivo.
+        """
+        value = str(value).strip().replace(' ', '_')
+        value = re.sub(r'[<>:"/\\|?*]+', '_', value)
+        return value.strip('._') or 'sin_nombre'
+
+    def getBasemapLayer(self, basemap_name):
+        """
+        Crea el mapa base seleccionado o devuelve None si no se solicita fondo.
+        """
+        if basemap_name == 'Sin mapa base':
+            return None
+
+        basemap = self.tools.getBaseMap(basemap_name, self.basemaps)
+        QgsProject.instance().addMapLayer(basemap, False)
+        return basemap
+
+    def getCatastroLayer(self):
+        """
+        Crea la capa WMS catastral utilizada como superposición.
+        """
+        catastro = self.tools.getBaseMap(
+            'Parcelas Catastro',
+            self.basemaps
+        )
+
+        if not catastro.isValid():
+            QgsMessageLog.logMessage(
+                'No se pudo cargar la capa WMS Parcelas Catastro.',
+                'aGrae GIS',
+                level=Qgis.Warning
+            )
+            return None
+
+        QgsProject.instance().addMapLayer(catastro, False)
+        return catastro
+
+    def generateComposer(
+        self,
+        basemap,
+        basic=False,
+        materia_organica=False,
+        catastro=False,
+        automatic_export=False,
+        export_dpi=150,
+        output_directory=None,
+        progress_callback=None,
+        generate_txt=True,
+        cancel_callback=None
+    ):
         """
         Lanza la generación del layout.
         """
+        self.export_dpi = export_dpi
+        self.automatic_export = automatic_export
+        self.output_directory = output_directory
+        self.progress_callback = progress_callback
+        self.generate_txt = generate_txt
+        self.cancel_callback = cancel_callback
+
         if basic:
-            self.layoutGeneratorBasico(basemap=basemap)
+            self.layoutGeneratorBasico(
+                basemap=basemap,
+                catastro=catastro,
+                printer=automatic_export
+            )
         else:
-            self.layoutGeneratorPreescripcion(basemap=basemap, materia_organica=materia_organica)
+            self.layoutGeneratorPreescripcion(
+                basemap=basemap,
+                materia_organica=materia_organica,
+                catastro=catastro,
+                printer=automatic_export
+            )
 
     def clearFilter(self):
         """
