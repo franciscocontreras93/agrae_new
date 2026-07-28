@@ -153,7 +153,7 @@ class NDVIListDownloadWorker(QThread):
             if self._cancel:
                 return
 
-            self.status.emit("Procesando en servidor…")  # <-- ANTES del POST
+            self.status.emit("Procesando imagenes, esta operacion puede tardar unos minutos...")  # <-- ANTES del POST
             raw_items = self.processor.fetch_list(self.payload)
 
             self.status.emit("Preparando descargas…")     # <-- tras respuesta

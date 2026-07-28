@@ -56,7 +56,34 @@ def _index_presets() -> dict[int, _IndexStylePreset]:
                 (0.75, QColor("#91cf60"), "0.7500"),  # verde oliva: buena cobertura
                 (1.00, QColor("#1a9850"), "1.0000"),  # verde intenso: densa
             ],
-        )
+        ),
+        4: _IndexStylePreset(
+            name="NDMI",
+            vmin=-1.0,
+            vmax=1.0,
+            stops=[
+                (-1.00, QColor("#8c510a"), "Muy seco"),
+                (-0.50, QColor("#d8b365"), "Seco"),
+                (0.00, QColor("#f6e8c3"), "Neutro"),
+                (0.25, QColor("#c7eae5"), "Humedad baja"),
+                (0.50, QColor("#5ab4ac"), "Húmedo"),
+                (1.00, QColor("#01665e"), "Muy húmedo"),
+            ],
+        ),
+
+        5: _IndexStylePreset(
+            name="NDWI",
+            vmin=-1.0,
+            vmax=1.0,
+            stops=[
+                (-1.00, QColor("#a6611a"), "Muy seco / sin agua"),
+                (-0.50, QColor("#dfc27d"), "Seco"),
+                (0.00, QColor("#f5f5f5"), "Transición"),
+                (0.25, QColor("#c7eae5"), "Humedad / posible agua"),
+                (0.50, QColor("#80cdc1"), "Agua probable"),
+                (1.00, QColor("#018571"), "Agua / humedad alta"),
+            ],
+        ),
     }
 
 

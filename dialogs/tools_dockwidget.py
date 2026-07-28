@@ -2,6 +2,7 @@ import os
 
 from matplotlib.pylab import f
 import psycopg2
+from torch import ge
 
 from qgis.PyQt import QtWidgets #type: ignore
 from qgis.PyQt.QtCore import pyqtSignal, Qt,QDate,QSize,QSettings #type: ignore
@@ -251,8 +252,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.savi_radio = QtWidgets.QRadioButton("SAVI")
         self.ndmi_radio = QtWidgets.QRadioButton("NDMI")
         self.ndwi_radio = QtWidgets.QRadioButton("NDWI")
-        self.ndmi_radio.setEnabled(False)
-        self.ndwi_radio.setEnabled(False)
+
         # self.natural_color_radio = QtWidgets.QRadioButton("Color Natural") #TODO
 
         # self.savi_radio.setEnabled(False) 
@@ -262,6 +262,9 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.analisis_gee_layout.addWidget(self.ndvi_radio)
         self.analisis_gee_layout.addWidget(self.ndre_radio)
         self.analisis_gee_layout.addWidget(self.savi_radio)
+        self.analisis_gee_layout.addWidget(self.ndmi_radio)
+        self.analisis_gee_layout.addWidget(self.ndwi_radio)
+        
         # self.analisis_gee_layout.addWidget(self.natural_color_radio)
         self.ndvi_radio.setChecked(True)
         # self.analisis_gee_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins for a cleaner look
@@ -951,6 +954,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
             self.ndvi_radio: 1,
             self.ndre_radio: 2,
             self.savi_radio: 3,
+            self.ndmi_radio: 4,
+            self.ndwi_radio: 5,
         }
 
         index = next((value for radio, value in radio_map.items() if radio.isChecked()), None)
@@ -967,11 +972,11 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         area_visible = 0.8
         mask_snow = True
         mask_shadow = True
-        geometry = [f.geometry().asJson() for f in self.layer.selectedFeatures()][0]
+        geometry = [json.loads(f.geometry().asJson()) for f in self.layer.selectedFeatures()]
 
         payload = {
             "idlotes": idlotes,
-            # "geometry": json.loads(geometry),
+            "geometry": geometry,
             "fecha_inicio": fecha_inicio,
             "fecha_fin": fecha_fin,
             "index": index,
@@ -993,7 +998,7 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         
 
         
-        processor = NDVIProcessor("/gee/index_by_idlotes")
+        processor = NDVIProcessor("/gee/index_by_geometry")
 
         self._ndvi_worker = NDVIListDownloadWorker(
             processor=processor,
@@ -2090,7 +2095,7 @@ FROM
         # self.subMenu.addAction(self.polygonSelection)
 
     def _validate_date_range(self):
-        max_months = 6
+        max_months = 12
 
         desde = self.date_edit_desde.date()
         hasta = self.date_edit_hasta.date()
