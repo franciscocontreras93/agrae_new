@@ -224,11 +224,11 @@ class aGraeToolbox:
         dialog.exec()
 
     def GEEDialog(self):
-        # dialog = aGraeGEEDialog()
-        # dialog.exec()
-
-        dialog = FacturasConsultaDialog()
+        dialog = aGraeGEEDialog()
         dialog.exec()
+
+        # dialog = FacturasConsultaDialog()
+        # dialog.exec()
         
 
     

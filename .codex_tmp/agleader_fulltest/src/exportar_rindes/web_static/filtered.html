@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exportar Rindes · Limpieza CNH</title>
+  <link rel="stylesheet" href="/app.css"><link rel="stylesheet" href="/filtered.css">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/"><span class="brand-mark">ER</span><span><strong>Exportar Rindes</strong><small>Limpieza CNH</small></span></a><div class="local-badge"><span></span> Aplicación local</div></header>
+  <main class="shell">
+    <section class="intro"><p class="eyebrow">CNH · CORREGIR · FILTRAR · SHP</p><h1>Un mapa limpio,<br><em>sin perder el original.</em></h1><p>Normaliza el rendimiento al 12%, aplica controles inspirados en USDA-ARS Yield Editor y conserva el motivo de cada descarte.</p></section>
+    <div class="workspace">
+      <nav class="steps" aria-label="Pasos">
+        <button class="step active"><b>01</b><span>Archivo<small>ZIP CNH</small></span></button>
+        <button class="step"><b>02</b><span>Variables<small>Hipótesis</small></span></button>
+        <button class="step"><b>03</b><span>Limpiar<small>Filtros</small></span></button>
+        <button class="step"><b>04</b><span>Salida<small>SHP y CRS</small></span></button>
+        <button class="step"><b>05</b><span>Exportar<small>Resultado</small></span></button>
+      </nav>
+      <section class="panels">
+        <article class="panel active" data-step="0">
+          <div class="panel-head"><span class="panel-number">01</span><div><p>ORIGEN</p><h2>Selecciona la exportación CNH</h2></div></div>
+          <label class="dropzone" id="dropzone" for="source-file"><input id="source-file" type="file" accept=".zip"><span class="upload-icon">↑</span><strong>Arrastra aquí el ZIP</strong><span>o pulsa para buscarlo</span><small>El original nunca se modifica.</small></label>
+          <div class="file-card hidden" id="file-card"><div class="file-icon">ZIP</div><div><strong id="file-name"></strong><span id="file-size"></span></div><button id="remove-file" type="button">×</button></div>
+          <div class="panel-actions"><span></span><button class="primary next">Continuar →</button></div>
+        </article>
+        <article class="panel" data-step="1">
+          <div class="panel-head"><span class="panel-number">02</span><div><p>VARIABLES</p><h2>Correcciones que podemos justificar</h2></div></div>
+          <div class="correction-card"><span>Corrección aplicada</span><h3>Rendimiento a humedad estándar del 12%</h3><code>R₁₂ = R bruto × (100 − humedad) ÷ 88</code></div>
+          <div class="field-grid"><div class="field-item"><span class="status strong">Candidato fuerte</span><b>Rendimiento</b><code>yld12_th · t/ha</code></div><div class="field-item"><span class="status strong">Candidato fuerte</span><b>Humedad</b><code>moist_hyp · %</code></div><div class="field-item"><span class="status strong">Candidato fuerte</span><b>Velocidad</b><code>speed_hyp · m/s</code></div><div class="field-item"><span class="status strong">Candidato fuerte</span><b>Ancho</b><code>width_hyp · m</code></div></div>
+          <label class="check-row"><input id="accept" type="checkbox"><span><b>Comprendo que los campos CNH y la geometría siguen siendo hipótesis</b><small>Los filtros mejoran la consistencia; no demuestran la descodificación.</small></span></label>
+          <div class="panel-actions"><button class="secondary back">← Atrás</button><button class="primary next">Configurar filtros →</button></div>
+        </article>
+        <article class="panel" data-step="2">
+          <div class="panel-head"><span class="panel-number">03</span><div><p>YIELD EDITOR · CONCEPTOS USDA-ARS</p><h2>Limpieza automática y auditable</h2></div></div>
+          <div class="notice"><b>Perfil recomendado para esta muestra</b><span>Cada control puede desactivarse. Los puntos rechazados quedan trazados en CSV y el informe contabiliza todos los motivos.</span></div>
+          <div class="filters">
+            <section class="filter-card"><label class="switch"><input id="yield-range" type="checkbox" checked><i></i><span><b>Rendimiento mínimo / máximo</b><small>MINY · MAXY</small></span></label><div class="inputs"><label>Mínimo<input id="min-yield" type="number" value="0" step="0.1"><small>t/ha</small></label><label>Máximo<input id="max-yield" type="number" value="11" step="0.1"><small>t/ha</small></label></div></section>
+            <section class="filter-card"><label class="switch"><input id="speed-range" type="checkbox" checked><i></i><span><b>Velocidad de cosecha</b><small>MINV · MAXV</small></span></label><div class="inputs"><label>Mínima<input id="min-speed" type="number" value="0.5" step="0.1"><small>m/s</small></label><label>Máxima<input id="max-speed" type="number" value="4" step="0.1"><small>m/s</small></label></div></section>
+            <section class="filter-card"><label class="switch"><input id="smooth-speed" type="checkbox" checked><i></i><span><b>Cambio brusco de velocidad</b><small>SMV</small></span></label><div class="inputs single"><label>Cambio máximo<input id="speed-change" type="number" value="20" step="1"><small>%</small></label></div></section>
+            <section class="filter-card"><label class="switch"><input id="minimum-width" type="checkbox" checked><i></i><span><b>Ancho mínimo de labor</b><small>MINS</small></span></label><div class="inputs single"><label>Ancho mínimo<input id="min-width" type="number" value="2.7" step="0.1"><small>m</small></label></div></section>
+            <section class="filter-card"><label class="switch"><input id="moisture-range" type="checkbox" checked><i></i><span><b>Humedad físicamente válida</b><small>Control CNH adicional</small></span></label><div class="inputs"><label>Mínima<input id="min-moisture" type="number" value="0" step="1"><small>%</small></label><label>Máxima<input id="max-moisture" type="number" value="40" step="1"><small>%</small></label></div></section>
+            <section class="filter-card"><label class="switch"><input id="standard-deviation" type="checkbox"><i></i><span><b>Valores extremos estadísticos</b><small>STDY · segunda lectura</small></span></label><div class="inputs single"><label>Desviaciones<input id="stddev" type="number" value="3" step="0.5"><small>σ</small></label></div></section>
+          </div>
+          <details class="pending"><summary>Filtros pendientes de validación CNH</summary><p><b>DELAY:</b> falta confirmar la alineación temporal. <b>START/END:</b> falta identificar pasadas o estado de cabezal. <b>POS:</b> requiere límite real de parcela. <b>MAN:</b> requerirá selección sobre mapa.</p></details>
+          <div class="panel-actions"><button class="secondary back">← Atrás</button><button class="primary next">Configurar salida →</button></div>
+        </article>
+        <article class="panel" data-step="3">
+          <div class="panel-head"><span class="panel-number">04</span><div><p>SALIDA</p><h2>Decide qué conservar</h2></div></div>
+          <div class="settings-grid"><div class="setting"><label for="output-mode">Contenido del SHP</label><select id="output-mode"><option value="clean">Solo puntos que superan todos los filtros</option><option value="all">Todos los puntos con marcas QC</option></select><small class="help">El CSV de rechazados se incluye en ambos modos.</small></div><div class="setting"><label for="crs">Sistema de coordenadas</label><select id="crs"><option value="EPSG:25830">ETRS89 / UTM 30N · EPSG:25830</option><option value="EPSG:4326">WGS 84 · EPSG:4326</option></select></div></div>
+          <div class="audit-note"><b>Salida trazable</b><span>SHP + componentes · informe JSON · CSV de puntos rechazados</span></div>
+          <div class="panel-actions"><button class="secondary back">← Atrás</button><button class="primary next">Revisar y ejecutar →</button></div>
+        </article>
+        <article class="panel" data-step="4">
+          <div class="panel-head"><span class="panel-number">05</span><div><p>PROCESO</p><h2>Genera el mapa ajustado</h2></div></div>
+          <div class="summary-card"><div><span>Archivo</span><b id="summary-file">—</b></div><div><span>Rendimiento</span><b>t/ha al 12%</b></div><div><span>Salida</span><b id="summary-mode">Solo puntos válidos</b></div><div><span>CRS</span><b id="summary-crs">EPSG:25830</b></div></div>
+          <button class="export-button" id="export"><span>Corregir, filtrar y generar SHP</span><small>STDY puede requerir dos lecturas completas</small><i>→</i></button>
+          <div class="progress-card hidden" id="progress"><div class="progress-top"><b id="stage">Preparando…</b><strong id="percent">0%</strong></div><div class="progress-track"><span id="bar"></span></div></div>
+          <div class="result-card hidden" id="result"><div class="result-check">✓</div><div class="result-copy"><p>MAPA AJUSTADO</p><h3>Proceso completado</h3><div class="metrics"><span><b id="input-count">—</b> entrada</span><span><b id="kept-count">—</b> conservados</span><span><b id="kept-pct">—</b> aceptados</span></div></div><a class="download" id="download" href="#">Descargar ZIP ↓</a></div>
+          <div class="error-card hidden" id="error"><b>No se pudo completar</b><span id="error-text"></span></div>
+          <div class="panel-actions"><button class="secondary back">← Revisar</button><span></span></div>
+        </article>
+      </section>
+    </div>
+  </main>
+  <footer><span>Exportar Rindes · limpieza auditable</span><span>Procesamiento exclusivamente local</span></footer>
+  <script src="/filtered.js" defer></script>
+</body></html>
