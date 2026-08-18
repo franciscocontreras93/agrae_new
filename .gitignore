@@ -70,3 +70,6 @@ tools/img/tf2.png
 tools/img/tf3.png
 
 *.conf
+
+*.codex_tmp
+.codex_tmp/
