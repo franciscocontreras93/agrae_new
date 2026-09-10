@@ -1,5 +1,4 @@
 import os
-import csv
 import traceback # Para el manejo de excepciones
 import time
 from datetime import datetime, timedelta # <--- Añadir timedelta
@@ -45,7 +44,6 @@ from ..gui import agraeGUI
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..tools import aGraeTools
-from ..tools.analisis_tools import aGraeResamplearMuestras
 
 from ..gui.CustomLineEdit import CustomLineEdit
 from ..gui.CustomLineSearch import CustomLineSearch
@@ -260,6 +258,10 @@ class GestionLaboratorioDialog(QDialog):
         self.GenerarReporteAnalitica.triggered.connect(self.generarReporteAnalitica)
         self.DerivarMuestrasPendientes = QAction(agraeGUI().getIcon('pois'),'Derivar Parcelas cercanas',self)
         self.DerivarMuestrasPendientes.triggered.connect(self.derivar_muestras_cercanas)
+        # LEGACY: se conserva la acción y su implementación, pero la derivación
+        # vigente es exclusivamente la del backend mediante DerivarAnalitica.
+        self.DerivarMuestrasPendientes.setEnabled(False)
+        self.DerivarMuestrasPendientes.setVisible(False)
 
         self.toolMenu.addAction(self.GenerarArchivoLaboratorio)
         self.toolMenu.addAction(self.ImportarArchivoAnalisis)
@@ -437,9 +439,12 @@ class GestionLaboratorioDialog(QDialog):
     
     def cargarAnalitica(self):
         try:
-            data = self.tools.cargarReporteAnalitica()
+            file_path = self.tools.cargarReporteAnalitica(dataframe=False)
+            if not file_path:
+                return
+            data = self.tools.leerReporteAnalitica(file_path)
             if data is not None and not data.empty:
-                dlg = agraeAnaliticaDialog(data)
+                dlg = agraeAnaliticaDialog(data, file_path=file_path)
                 dlg.exec()
         except Exception as e:
             QgsMessageLog.logMessage(f"Error al cargar analítica: {e}\n{traceback.format_exc()}", "aGrae Lab", Qgis.Critical) # type: ignore
@@ -448,14 +453,43 @@ class GestionLaboratorioDialog(QDialog):
     
     def DerivarAnalitica(self):
         try:
-            file = self.tools.cargarReporteAnalitica(dataframe=False)
-            if file:
-                modulo = aGraeResamplearMuestras(file)
-                modulo.processing()
-                self.tools.messages('aGrae GIS','Archivo procesado Correctamente', Qgis.Success, True) # type: ignore
+            input_path = self.tools.cargarReporteAnalitica(dataframe=False)
+            if not isinstance(input_path, str) or not input_path:
+                return
+
+            input_dir = os.path.dirname(input_path)
+            input_name = os.path.basename(input_path)
+            name, extension = os.path.splitext(input_name)
+            default_output = os.path.join(input_dir, f'{name}_derivado{extension or ".csv"}')
+
+            output_path, _ = QFileDialog.getSaveFileName(
+                self,
+                'Guardar analítica derivada',
+                default_output,
+                'Archivos CSV (*.csv)'
+            )
+            if not output_path:
+                return
+            if not output_path.lower().endswith('.csv'):
+                output_path += '.csv'
+
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            QApplication.processEvents()
+
+            total_muestras = self.tools.derivarAnaliticaCsv(input_path, output_path)
+
+            self.tools.messages(
+                'aGrae GIS',
+                f'Analítica derivada correctamente: {total_muestras} muestras.\n{output_path}',
+                Qgis.Success,
+                True
+            ) # type: ignore
         except Exception as e:
             QgsMessageLog.logMessage(f"Error al derivar analítica: {e}\n{traceback.format_exc()}", "aGrae Lab", Qgis.Critical) # type: ignore
             self.tools.messages('aGrae GIS',f'Error: {e}', Qgis.Critical) # type: ignore
+        finally:
+            while QApplication.overrideCursor() is not None:
+                QApplication.restoreOverrideCursor()
 
     
     def generarReporteAnalitica(self):

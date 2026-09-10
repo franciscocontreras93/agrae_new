@@ -47,12 +47,13 @@ class PandasModel(QtCore.QAbstractTableModel):
 
 
 class agraeAnaliticaDialog(QtWidgets.QDialog):
-    def __init__(self, data: pd.DataFrame, parent=None):
+    def __init__(self, data: pd.DataFrame, file_path: str = None, parent=None):
         super().__init__(parent)
         self.df = data if data is not None else pd.DataFrame()
+        self.file_path = file_path
         self.tools = aGraeTools()
 
-        self.setWindowTitle('aGrae Tools | Guardar Datos de Analiticas al Sistema')
+        self.setWindowTitle('aGrae Tools | Importar o actualizar analíticas')
         self.setModal(False)
         self.setMinimumSize(900, 600)
 
@@ -86,7 +87,7 @@ class agraeAnaliticaDialog(QtWidgets.QDialog):
     def UIComponents(self):
         self.GuardarDatosAnalisis = QtWidgets.QAction(
             agraeGUI().getIcon('upload'),
-            'Guardar datos de Analitica',
+            'Importar o actualizar analíticas',
             self
         )
         self.GuardarDatosAnalisis.triggered.connect(self.guardarAnalitica)
@@ -105,4 +106,57 @@ class agraeAnaliticaDialog(QtWidgets.QDialog):
         self._tableView.horizontalHeader().setStretchLastSection(True)
 
     def guardarAnalitica(self):
-        self.tools.guardarReporteAnalitica(self.df)
+        total = len(self.df.index)
+        if total == 0:
+            self.tools.messages(
+                'aGrae GIS',
+                'No hay analíticas para importar.',
+                Qgis.Warning
+            )
+            return
+
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            'aGrae GIS | Importar analíticas',
+            f'¿Quieres importar o actualizar {total} analíticas?',
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.No
+        )
+        if reply != QtWidgets.QMessageBox.Yes:
+            return
+
+        self.GuardarDatosAnalisis.setEnabled(False)
+        self.toolButton.setEnabled(False)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        QtWidgets.QApplication.processEvents()
+
+        try:
+            imported = (
+                self.tools.importarAnaliticaCsv(self.file_path)
+                if self.file_path
+                else self.tools.importarAnalitica(self.df)
+            )
+            self.tools.messages(
+                'aGrae GIS',
+                f'{imported} analíticas cargadas correctamente.',
+                Qgis.Success,
+                True
+            )
+            self.accept()
+        except Exception as error:
+            QgsMessageLog.logMessage(
+                f'Error al importar analíticas: {error}',
+                'aGrae Lab',
+                Qgis.Critical
+            )
+            self.tools.messages(
+                'aGrae GIS',
+                f'Error al importar las analíticas: {error}',
+                Qgis.Critical,
+                True
+            )
+        finally:
+            while QtWidgets.QApplication.overrideCursor() is not None:
+                QtWidgets.QApplication.restoreOverrideCursor()
+            self.GuardarDatosAnalisis.setEnabled(True)
+            self.toolButton.setEnabled(True)

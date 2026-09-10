@@ -12,7 +12,7 @@ from ..dialogs import aGraeGEEDialog
 from ..dialogs.integral_termica_detail_dialog import IntegralTermicaDialog
 
 
-from ..core import APIRequest 
+from ..core.api import APIRequest
 
 
 class aGraeSelectTool(QgsMapToolIdentify):

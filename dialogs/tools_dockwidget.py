@@ -2,7 +2,6 @@ import os
 
 from matplotlib.pylab import f
 import psycopg2
-from torch import ge
 
 from qgis.PyQt import QtWidgets #type: ignore
 from qgis.PyQt.QtCore import pyqtSignal, Qt,QDate,QSize,QSettings #type: ignore
@@ -720,12 +719,10 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
         self.CrearArchivoAnalisis.triggered.connect(self.crearFormatoAnalitica)
         self.ImportarArchivoAnalisis = QtWidgets.QAction(agraeGUI().getIcon('import'),'Cargar Archivo de Laboratorio',self)
         self.ImportarArchivoAnalisis.triggered.connect(self.cargarAnalitica)
-        self.DerivarDatosAnalisis = QtWidgets.QAction(agraeGUI().getIcon('csv'),'Derivar datos de Analitica',self)
-        self.DerivarDatosAnalisis.triggered.connect(self.DerivarAnalitica)
         self.CopiarDatosAnaliticos = QtWidgets.QAction(agraeGUI().getIcon('clone'),'Copiar Datos de Analiticas',self)
         self.CopiarDatosAnaliticos.triggered.connect(self.copiarDatosAnaliticos)
 
-        actions_lab = [self.GestionarMuestras,self.GenerarPuntosMuestreo,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis,self.DerivarDatosAnalisis,self.CopiarDatosAnaliticos]
+        actions_lab = [self.GestionarMuestras,self.GenerarPuntosMuestreo,self.CrearArchivoAnalisis,self.ImportarArchivoAnalisis,self.CopiarDatosAnaliticos]
         self.tools.settingsToolsButtons(self.tool_lab,actions_lab,icon=agraeGUI().getIcon('matraz'),setMainIcon=True)
         
         # TOOL_DATA
@@ -1897,16 +1894,45 @@ FROM
             dlg.exec()
     
     def DerivarAnalitica(self):
-        file = self.tools.cargarReporteAnalitica(dataframe=False)
-        if file:
-            try:
-                print(file)
-                modulo = aGraeResamplearMuestras(file)
-                modulo.processing()
-                self.tools.messages('aGrae GIS','Archivo procesado Correctamente',3,True)
-            except Exception as ex:
-                self.tools.messages('aGrae GIS',ex,2)
-            
+        try:
+            input_path = self.tools.cargarReporteAnalitica(dataframe=False)
+            if not isinstance(input_path, str) or not input_path:
+                return
+
+            input_dir = os.path.dirname(input_path)
+            input_name = os.path.basename(input_path)
+            name, extension = os.path.splitext(input_name)
+            default_output = os.path.join(input_dir, f'{name}_derivado{extension or ".csv"}')
+
+            output_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+                self,
+                'Guardar analítica derivada',
+                default_output,
+                'Archivos CSV (*.csv)'
+            )
+            if not output_path:
+                return
+            if not output_path.lower().endswith('.csv'):
+                output_path += '.csv'
+
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            QApplication.processEvents()
+
+            total_muestras = self.tools.derivarAnaliticaCsv(input_path, output_path)
+
+            self.tools.messages(
+                'aGrae GIS',
+                f'Analítica derivada correctamente: {total_muestras} muestras.\n{output_path}',
+                Qgis.Success,
+                True
+            ) # type: ignore
+        except Exception as e:
+            QgsMessageLog.logMessage(f"Error al derivar analítica: {e}\n{traceback.format_exc()}", "aGrae Lab", Qgis.Critical) # type: ignore
+            self.tools.messages('aGrae GIS',f'Error: {e}', Qgis.Critical) # type: ignore
+        finally:
+            while QApplication.overrideCursor() is not None:
+                QApplication.restoreOverrideCursor()
+    
 
     
     def new_generarCapasExplotacion(self):
@@ -2126,13 +2152,3 @@ FROM
             self.date_edit_desde.setDate(min_desde)
             self.date_edit_desde.blockSignals(False)
 
-
-
-
-
-
-
-
-    
-
-        

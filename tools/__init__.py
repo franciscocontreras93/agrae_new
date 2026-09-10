@@ -821,24 +821,206 @@ class aGraeTools():
         
     def cargarReporteAnalitica(self,dataframe=True):
         file = self.openFileDialog()
-        # print(file)
-        if file != None:
-            try:
-                df = pd.read_csv(file,delimiter=';')
-                df = df.astype(object).replace(np.nan, 'NULL')
-            except UnicodeDecodeError:
-                df = pd.read_csv(file,delimiter=';',encoding='windows-1252')
-                df = df.astype(object).replace(np.nan, 'NULL')
-            # print(df)
-            
-            # print(data)
-            if dataframe: return df
+        if file is None:
+            return pd.DataFrame() if dataframe else None
+        return self.leerReporteAnalitica(file) if dataframe else file
 
-            else : return file
-        else: 
-            return pd.DataFrame()
+    def leerReporteAnalitica(self, file_path: str) -> pd.DataFrame:
+        """Lee un CSV sólo para su previsualización en la interfaz."""
+        try:
+            df = pd.read_csv(file_path, delimiter=';')
+        except UnicodeDecodeError:
+            df = pd.read_csv(file_path, delimiter=';', encoding='windows-1252')
+        return df.astype(object).replace(np.nan, 'NULL')
+
+    def derivarAnaliticaCsv(self, input_path: str, output_path: str, timeout: int = 300) -> int:
+        """Deriva una analítica mediante el backend y guarda el CSV completo.
+
+        Devuelve el número total de muestras escritas. No modifica el CSV de
+        entrada ni persiste resultados analíticos en la base de datos.
+        """
+        input_name = os.path.basename(input_path)
+        endpoint = f'{self.backend_url.rstrip("/")}/analitica/derive-csv'
+
+        try:
+            with open(input_path, 'rb') as source:
+                response = requests.post(
+                    endpoint,
+                    files={'file': (input_name, source, 'text/csv')},
+                    timeout=timeout
+                )
+        except requests.Timeout as error:
+            raise RuntimeError(
+                f'La derivación superó el tiempo máximo de espera ({timeout} segundos).'
+            ) from error
+        except requests.ConnectionError as error:
+            raise RuntimeError(
+                f'No se pudo conectar con el backend: {self.backend_url}'
+            ) from error
+
+        if not response.ok:
+            try:
+                detail = response.json().get('detail', response.text)
+                if isinstance(detail, (dict, list)):
+                    detail = json.dumps(detail, ensure_ascii=False)
+            except (ValueError, AttributeError):
+                detail = response.text
+            raise RuntimeError(
+                f'El backend no pudo derivar la analítica '
+                f'(HTTP {response.status_code}): {detail or "respuesta vacía"}'
+            )
+
+        content = response.content
+        if not content:
+            raise RuntimeError('El backend devolvió un archivo vacío.')
+
+        try:
+            decoded = content.decode('utf-8-sig')
+            rows = list(csv.reader(decoded.splitlines(), delimiter=';'))
+        except UnicodeDecodeError as error:
+            raise RuntimeError(
+                'El backend devolvió un CSV con una codificación no válida.'
+            ) from error
+
+        header = [column.strip().upper() for column in rows[0]] if rows else []
+        if len(rows) < 2 or 'COD' not in header:
+            raise RuntimeError(
+                'La respuesta del backend no tiene el formato de analítica esperado.'
+            )
+
+        temporary_path = f'{output_path}.part'
+        try:
+            with open(temporary_path, 'wb') as destination:
+                destination.write(content)
+            os.replace(temporary_path, output_path)
+        finally:
+            if os.path.exists(temporary_path):
+                os.remove(temporary_path)
+
+        return len(rows) - 1
         
-    def guardarReporteAnalitica(self,df):
+    def importarAnalitica(self, df: pd.DataFrame, timeout: int = 300) -> int:
+        """Importa un DataFrame de analíticas mediante el upsert del backend."""
+        if df is None or df.empty:
+            raise RuntimeError('No hay analíticas para importar.')
+
+        clean_df = df.copy()
+        clean_df = clean_df.applymap(
+            lambda value: None
+            if pd.isna(value) or (
+                isinstance(value, str)
+                and value.strip().upper() in ('', 'NULL', 'NAN')
+            )
+            else value
+        )
+        # La conversión de pandas normaliza también escalares numpy a tipos JSON.
+        payload = json.loads(clean_df.to_json(orient='records'))
+        endpoint = f'{self.backend_url.rstrip("/")}/analitica/import'
+
+        try:
+            response = requests.post(endpoint, json=payload, timeout=timeout)
+        except requests.Timeout as error:
+            raise RuntimeError(
+                f'La importación superó el tiempo máximo de espera ({timeout} segundos).'
+            ) from error
+        except requests.ConnectionError as error:
+            raise RuntimeError(
+                f'No se pudo conectar con el backend: {self.backend_url}'
+            ) from error
+
+        if not response.ok:
+            try:
+                detail = response.json().get('detail', response.text)
+                if isinstance(detail, (dict, list)):
+                    detail = json.dumps(detail, ensure_ascii=False)
+            except (ValueError, AttributeError):
+                detail = response.text
+            raise RuntimeError(
+                f'El backend no pudo importar la analítica '
+                f'(HTTP {response.status_code}): {detail or "respuesta vacía"}'
+            )
+
+        try:
+            result = response.json()
+            rows = int(result['rows'])
+        except (ValueError, KeyError, TypeError) as error:
+            raise RuntimeError(
+                'El backend confirmó la petición con una respuesta no válida.'
+            ) from error
+
+        if result.get('status') != 'ok' or rows != len(payload):
+            raise RuntimeError(
+                f'El backend confirmó {rows} de {len(payload)} analíticas.'
+            )
+        return rows
+
+    def importarAnaliticaCsv(self, input_path: str, timeout: int = 300) -> int:
+        """Sube el CSV original para que el backend lo procese e importe."""
+        input_name = os.path.basename(input_path)
+        endpoint = f'{self.backend_url.rstrip("/")}/analitica/import-csv'
+
+        try:
+            with open(input_path, 'rb') as source:
+                response = requests.post(
+                    endpoint,
+                    files={'file': (input_name, source, 'text/csv')},
+                    timeout=timeout
+                )
+        except requests.Timeout as error:
+            raise RuntimeError(
+                f'La importación superó el tiempo máximo de espera ({timeout} segundos).'
+            ) from error
+        except requests.ConnectionError as error:
+            raise RuntimeError(
+                f'No se pudo conectar con el backend: {self.backend_url}'
+            ) from error
+
+        if not response.ok:
+            try:
+                detail = response.json().get('detail', response.text)
+                if isinstance(detail, (dict, list)):
+                    detail = json.dumps(detail, ensure_ascii=False)
+            except (ValueError, AttributeError):
+                detail = response.text
+            raise RuntimeError(
+                f'El backend no pudo importar el CSV '
+                f'(HTTP {response.status_code}): {detail or "respuesta vacía"}'
+            )
+
+        try:
+            result = response.json()
+            rows = int(result['rows'])
+        except (ValueError, KeyError, TypeError) as error:
+            raise RuntimeError(
+                'El backend confirmó la petición con una respuesta no válida.'
+            ) from error
+
+        if result.get('status') != 'ok':
+            raise RuntimeError('El backend no confirmó la importación del CSV.')
+        return rows
+
+    def guardarReporteAnalitica(self, df):
+        """Compatibilidad: importa analíticas usando el backend, no PostgreSQL."""
+        try:
+            rows = self.importarAnalitica(df)
+            self.messages(
+                'aGrae GIS',
+                f'{rows} analíticas cargadas correctamente.',
+                Qgis.Success,
+                alert=True
+            )
+            return rows
+        except Exception as ex:
+            QMessageBox.about(
+                None,
+                self.plugin_name,
+                'Ocurrió un error al cargar las analíticas. Revisa el panel de registros.'
+            )
+            QgsMessageLog.logMessage(str(ex), self.plugin_name, level=Qgis.Critical)
+            raise
+
+    def guardarReporteAnaliticaLegacy(self,df):
+        """LEGACY: guardado directo en PostgreSQL, conservado pero sin llamadas."""
         df1 = df
         columns = [c for c in df1.columns]
         _VALUES = list()
@@ -1349,6 +1531,8 @@ class aGraeTools():
         segmento_remuestreo: list,
         segmento_derivar: list,
         tipo: int = 1,
+        prioridad: int = 1,
+        comentario: str = "",
         dist_min_m: int = 50
     ) -> dict[str, Any]:
         """
@@ -1362,13 +1546,19 @@ class aGraeTools():
         }
         """
         endpoint = "/gis/muestreo/crear_muestreo"
-        payload = {
-            "ids": ids,
-            "segmentos_muestreo": segmento_remuestreo,
-            "segmentos_derivar": segmento_derivar,
-            "tipo": tipo,
-            'dist_min_m': dist_min_m
-        }
+
+        payload = {}
+
+        payload["ids"] = ids
+        payload["segmentos_muestreo"] = segmento_remuestreo
+        payload["segmentos_derivar"] = segmento_derivar
+        payload["tipo"] = tipo
+        payload["prioridad"] = prioridad
+        if comentario != "":
+            payload["comentario"] = comentario
+            
+        payload["dist_min_m"] = dist_min_m
+
         return await self._post_json(endpoint, payload, timeout_sec=300)
 
     async def crearPuntosRemuestreo(

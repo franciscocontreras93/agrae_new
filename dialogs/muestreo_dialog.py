@@ -14,7 +14,7 @@ from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 from ..tools import aGraeTools
 
-from ..core.workers import WorkerGenerarPuntosMuestreo
+from ..core.workers.network import _AsyncRunner
 
 import asyncio
 
@@ -24,14 +24,18 @@ class MuestreoDialog(QDialog):
         super().__init__()
         self.agraeSql = aGraeSQLTools()
         self.tools = aGraeTools()
+        self._muestreo_runner = None
         self.setWindowTitle('aGrae | Generar Puntos de Muestreo')
-        self.resize(720, 520)
+        self.setMinimumSize(640, 420)
+        self.resize(720, 460)
+        self.setSizeGripEnabled(True)
 
         self.UIComponents()
 
     def UIComponents(self): 
         # ====== MAIN LAYOUT + TABS ======
         main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(12, 12, 12, 12)
         self.tab_widget = QTabWidget(self)
 
         # -- Pestañas
@@ -40,14 +44,16 @@ class MuestreoDialog(QDialog):
 
         # ====== TAB: MUESTREO ======
         tab_muestreo_v = QVBoxLayout(self.tab_muestreo)
-        tab_muestreo_v.setContentsMargins(8, 8, 8, 8)
-        tab_muestreo_v.setSpacing(10)
+        tab_muestreo_v.setContentsMargins(12, 12, 12, 12)
+        tab_muestreo_v.setSpacing(12)
 
         group_muestreo = QGroupBox('Generar Puntos de Muestreo en Lotes', self.tab_muestreo)
         group_muestreo_g = QGridLayout(group_muestreo)
-        group_muestreo_g.setContentsMargins(10, 10, 10, 10)
-        group_muestreo_g.setHorizontalSpacing(8)
-        group_muestreo_g.setVerticalSpacing(6)
+        group_muestreo_g.setContentsMargins(14, 16, 14, 14)
+        group_muestreo_g.setHorizontalSpacing(16)
+        group_muestreo_g.setVerticalSpacing(12)
+        group_muestreo_g.setColumnStretch(0, 0)
+        group_muestreo_g.setColumnStretch(1, 1)
 
         # Controles principales
         self.combo_layer_lotes = QgsMapLayerComboBox(self.tab_muestreo)
@@ -74,36 +80,77 @@ class MuestreoDialog(QDialog):
         group_segmentos_h.addWidget(self.check_segmento_3)
         group_segmentos_h.addStretch(1)
 
+
+        # Una muestra solo puede tener una prioridad.
+        self.combo_prioridad = QComboBox(group_muestreo)
+        self.combo_prioridad.addItem('Normal', 1)
+        self.combo_prioridad.addItem('Alta', 2)
+        self.combo_prioridad.addItem('Urgente', 3)
+        self.combo_prioridad.setToolTip('Prioridad que se asignará a los puntos generados')
+        self.combo_prioridad.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+        self.input_comentario = QPlainTextEdit(group_muestreo)
+        self.input_comentario.setPlaceholderText('Añade una observación opcional')
+        self.input_comentario.setMaximumHeight(72)
+        self.input_comentario.setTabChangesFocus(True)
+
         # Botón MUestreo
-        self.btn_create_muestreo = QPushButton('Generar', self.tab_muestreo)
+        self.btn_create_muestreo = QPushButton('Generar muestreo', group_muestreo)
+        self.btn_create_muestreo.setMinimumWidth(160)
+        self.progress_muestreo = QProgressBar(group_muestreo)
+        self.progress_muestreo.setRange(0, 0)
+        self.progress_muestreo.setTextVisible(False)
+        self.progress_muestreo.setMaximumWidth(160)
+        self.progress_muestreo.setVisible(False)
         # Importante: conectar al slot correcto (no a self.create)
         self.btn_create_muestreo.clicked.connect(self.createMuestreoPoints)
 
         # Colocar en la grilla del group principal
         row = 0
-        group_muestreo_g.addWidget(QLabel('Selecciona la Capa con los Lotes'), row, 0, 1, 1)
+        group_muestreo_g.addWidget(QLabel('Capa de lotes'), row, 0, 1, 1)
         group_muestreo_g.addWidget(self.combo_layer_lotes, row, 1, 1, 1)
         row += 1
-        group_muestreo_g.addWidget(self.check_seleccionados, row, 0, 1, 1)
-        group_muestreo_g.addWidget(self.check_seguimiento, row, 1, 1, 1)
+        opciones_muestreo = QWidget(group_muestreo)
+        opciones_muestreo_h = QHBoxLayout(opciones_muestreo)
+        opciones_muestreo_h.setContentsMargins(0, 0, 0, 0)
+        opciones_muestreo_h.setSpacing(24)
+        opciones_muestreo_h.addWidget(self.check_seleccionados)
+        opciones_muestreo_h.addWidget(self.check_seguimiento)
+        opciones_muestreo_h.addStretch(1)
+        group_muestreo_g.addWidget(QLabel('Opciones'), row, 0)
+        group_muestreo_g.addWidget(opciones_muestreo, row, 1)
         row += 1
         group_muestreo_g.addWidget(group_segmentos, row, 0, 1, 2)
         row += 1
-        group_muestreo_g.addWidget(self.btn_create_muestreo, row, 0, 1, 2)
+        group_muestreo_g.addWidget(QLabel('Prioridad'), row, 0)
+        group_muestreo_g.addWidget(self.combo_prioridad, row, 1)
+        row += 1
+        etiqueta_comentario = QLabel('Comentario')
+        etiqueta_comentario.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        group_muestreo_g.addWidget(etiqueta_comentario, row, 0)
+        group_muestreo_g.addWidget(self.input_comentario, row, 1)
+        row += 1
+        acciones_muestreo = QHBoxLayout()
+        acciones_muestreo.addWidget(self.progress_muestreo)
+        acciones_muestreo.addStretch(1)
+        acciones_muestreo.addWidget(self.btn_create_muestreo)
+        group_muestreo_g.addLayout(acciones_muestreo, row, 0, 1, 2)
 
         tab_muestreo_v.addWidget(group_muestreo)
         tab_muestreo_v.addStretch(1)
 
         # ====== TAB: REMUESTREO ======
         tab_remuestreo_v = QVBoxLayout(self.tab_remuestreo)
-        tab_remuestreo_v.setContentsMargins(8, 8, 8, 8)
-        tab_remuestreo_v.setSpacing(10)
+        tab_remuestreo_v.setContentsMargins(12, 12, 12, 12)
+        tab_remuestreo_v.setSpacing(12)
 
         group_remuestreo = QGroupBox('Generar Puntos de Remuestreo', self.tab_remuestreo)
         group_remuestreo_g = QGridLayout(group_remuestreo)
-        group_remuestreo_g.setContentsMargins(10, 10, 10, 10)
-        group_remuestreo_g.setHorizontalSpacing(8)
-        group_remuestreo_g.setVerticalSpacing(6)
+        group_remuestreo_g.setContentsMargins(14, 16, 14, 14)
+        group_remuestreo_g.setHorizontalSpacing(16)
+        group_remuestreo_g.setVerticalSpacing(12)
+        group_remuestreo_g.setColumnStretch(0, 0)
+        group_remuestreo_g.setColumnStretch(1, 1)
 
         # Controles Remuestreo
         self.combo_campania = CampaniasComboBox(parent=group_remuestreo,exclude_latest=True)
@@ -118,21 +165,25 @@ class MuestreoDialog(QDialog):
         self.combo_segmentos_remuestreo.setFilters(QgsMapLayerProxyModel.PolygonLayer)
 
         # Botón Remuestreo
-        self.btn_create_remuestreo = QPushButton('Generar', self.tab_remuestreo)
+        self.btn_create_remuestreo = QPushButton('Generar remuestreo', group_remuestreo)
+        self.btn_create_remuestreo.setMinimumWidth(160)
         self.btn_create_remuestreo.clicked.connect(self.createRemuestreoPoints)
 
         # Distribución Remuestreo con contador local
         row_r = 0
-        group_remuestreo_g.addWidget(QLabel('Remuestrear desde la Campaña'), row_r, 0)
+        group_remuestreo_g.addWidget(QLabel('Campaña de origen'), row_r, 0)
         group_remuestreo_g.addWidget(self.combo_campania, row_r, 1); row_r += 1
 
-        group_remuestreo_g.addWidget(QLabel('Remuestrear desde  la Explotación'), row_r, 0)
+        group_remuestreo_g.addWidget(QLabel('Explotación'), row_r, 0)
         group_remuestreo_g.addWidget(self.combo_explotacion, row_r, 1); row_r += 1
 
-        group_remuestreo_g.addWidget(QLabel('Remuestrear desde  la capa de\nSegmentos de Remuestreo'), row_r, 0)
+        group_remuestreo_g.addWidget(QLabel('Capa de segmentos'), row_r, 0)
         group_remuestreo_g.addWidget(self.combo_segmentos_remuestreo, row_r, 1); row_r += 1
 
-        group_remuestreo_g.addWidget(self.btn_create_remuestreo, row_r, 0, 1, 2)
+        acciones_remuestreo = QHBoxLayout()
+        acciones_remuestreo.addStretch(1)
+        acciones_remuestreo.addWidget(self.btn_create_remuestreo)
+        group_remuestreo_g.addLayout(acciones_remuestreo, row_r, 0, 1, 2)
 
         tab_remuestreo_v.addWidget(group_remuestreo)
         tab_remuestreo_v.addStretch(1)
@@ -164,30 +215,40 @@ class MuestreoDialog(QDialog):
 
     # ================== LÓGICA ==================
     def createMuestreoPoints(self):
-        """
-        Mantiene tu lógica tal cual, pero con una mejora de UX:
-        si está marcado 'Lotes seleccionados' y no hay selección,
-        ofrece procesar todos los lotes o cancelar para que seleccione.
-        """
+        """Valida la entrada y lanza la creación sin bloquear la interfaz."""
+        if self._muestreo_runner is not None:
+            return
+
         layer = self.combo_layer_lotes.currentLayer()
-        if layer is None:
+        if layer is None or not isinstance(layer, QgsVectorLayer):
             QMessageBox.warning(self, 'aGrae Toolbox', 'Selecciona una capa de lotes válida.')
             return
 
-        segmentos = [1, 2, 3]
-        selected = []
+        if 'iddata' not in {field.name() for field in layer.fields()}:
+            QMessageBox.warning(
+                self,
+                'aGrae Toolbox',
+                "La capa seleccionada no contiene el campo requerido 'iddata'."
+            )
+            return
 
-        if self.check_segmento_1.isChecked():
-            selected.append(1)
-        if self.check_segmento_2.isChecked():
-            selected.append(2)
-        if self.check_segmento_3.isChecked():
-            selected.append(3)
+        segmentos_muestreo = [
+            numero
+            for numero, check in (
+                (1, self.check_segmento_1),
+                (2, self.check_segmento_2),
+                (3, self.check_segmento_3),
+            )
+            if check.isChecked()
+        ]
+        if not segmentos_muestreo:
+            QMessageBox.warning(self, 'aGrae Toolbox', 'Selecciona al menos un segmento.')
+            return
 
-        # UX mejorada para "Lotes seleccionados"
+        alcance = 'todos los lotes de la capa'
         if self.check_seleccionados.isChecked():
-            sel_feats = list(layer.getSelectedFeatures())
-            if not sel_feats:
+            features = list(layer.getSelectedFeatures())
+            if not features:
                 ask = QMessageBox.question(
                     self,
                     'aGrae Toolbox',
@@ -196,67 +257,154 @@ class MuestreoDialog(QDialog):
                     QMessageBox.No
                 )
                 if ask == QMessageBox.Yes:
-                    ids = [f['iddata'] for f in layer.getFeatures()]
+                    features = list(layer.getFeatures())
                 else:
                     QMessageBox.information(self, 'aGrae Toolbox', 'Debes seleccionar uno o más lotes y volver a intentarlo.')
                     return
             else:
-                ids = [f['iddata'] for f in sel_feats]
+                alcance = 'los lotes seleccionados'
         else:
-            ids = [f['iddata'] for f in layer.getFeatures()]
+            features = list(layer.getFeatures())
 
-        # Calcular segmentos a derivar (MISMA LÓGICA)
-        for x in selected:
-            if x in segmentos:
-                segmentos.remove(x)
-        if len(selected) == 3:
-            segmentos = [0]
-
-        segmento_derivar = segmentos
-        segmento_remuestreo = selected
+        ids = []
+        ids_vistos = set()
+        for feature in features:
+            try:
+                iddata = int(feature.attribute('iddata'))
+            except (TypeError, ValueError):
+                QMessageBox.warning(
+                    self,
+                    'aGrae Toolbox',
+                    "Se ha encontrado un valor 'iddata' vacío o no numérico. Revisa la capa antes de continuar."
+                )
+                return
+            if iddata not in ids_vistos:
+                ids.append(iddata)
+                ids_vistos.add(iddata)
 
         tipo = 3 if self.check_seguimiento.isChecked() else 1
+        prioridad = int(self.combo_prioridad.currentData())
+        comentario = self.input_comentario.toPlainText().strip()
 
         if not ids:
             QMessageBox.information(self, 'aGrae Toolbox', 'No hay lotes para procesar.')
             return
 
+        segmentos_derivar = [
+            numero for numero in (1, 2, 3) if numero not in segmentos_muestreo
+        ] or [0]
+        tipo_texto = 'Seguimiento' if tipo == 3 else 'Normal'
+        comentario_texto = 'Sí' if comentario else 'No'
+
         reply = QMessageBox.question(
             self,
             'aGrae Toolbox',
-            f'¿Quieres generar los puntos de muestreo para:\n{len(ids)} lotes?',
-            QMessageBox.Yes, QMessageBox.No
+            'Vas a generar puntos de muestreo con esta configuración:\n\n'
+            f' · Alcance: {alcance}\n'
+            f' · Lotes: {len(ids)}\n'
+            f' · Segmentos: {", ".join(map(str, segmentos_muestreo))}\n'
+            f' · Tipo: {tipo_texto}\n'
+            f' · Prioridad: {self.combo_prioridad.currentText()}\n'
+            f' · Comentario: {comentario_texto}\n\n'
+            '¿Continuar?',
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
         )
 
-        if reply == QMessageBox.Yes:
-            data = asyncio.run(self.tools.crearPuntosMuestreo(ids, segmento_remuestreo, segmento_derivar, tipo))
-            if data:
-                # Acepta contrato nuevo (ok/status_code/message) o el anterior
-                ok = data.get('ok', None)
-                status = data.get('status_code')
-                message = data.get('message', '')
+        if reply != QMessageBox.Yes:
+            return
 
-                if ok is True or status == 200:
-                    self.tools.messages(
-                        'Puntos de Muestreo',
-                        f'Se han generado los puntos de muestreo correctamente.\n{message}',
-                        3,
-                        alert=True
-                    )
-                elif status == 409:
-                    self.tools.messages(
-                        'Puntos de Muestreo',
-                        f'No se han podido generar los puntos de muestreo.\n{message}',
-                        1,
-                        alert=True
-                    )
-                else:
-                    self.tools.messages(
-                        'Puntos de Muestreo',
-                        f'Respuesta del servidor ({status}).\n{message}',
-                        2,
-                        alert=True
-                    )
+        runner = _AsyncRunner(
+            self.tools.crearPuntosMuestreo(
+                ids,
+                segmentos_muestreo,
+                segmentos_derivar,
+                tipo,
+                prioridad=prioridad,
+                comentario=comentario,
+            )
+        )
+        runner.signals.done.connect(self._on_muestreo_done)
+        runner.signals.error.connect(self._on_muestreo_error)
+        self._muestreo_runner = runner
+        self._set_muestreo_busy(True)
+        QThreadPool.globalInstance().start(runner)
+
+    def _set_muestreo_busy(self, busy):
+        """Bloquea los controles de muestreo mientras existe una petición activa."""
+        for control in (
+            self.combo_layer_lotes,
+            self.check_seleccionados,
+            self.check_seguimiento,
+            self.check_segmento_1,
+            self.check_segmento_2,
+            self.check_segmento_3,
+            self.combo_prioridad,
+            self.input_comentario,
+        ):
+            control.setEnabled(not busy)
+        self.btn_create_muestreo.setEnabled(not busy)
+        self.btn_create_muestreo.setText('Generando…' if busy else 'Generar muestreo')
+        self.progress_muestreo.setVisible(busy)
+
+    def _on_muestreo_done(self, data):
+        """Procesa en el hilo de interfaz la respuesta normalizada del backend."""
+        self._set_muestreo_busy(False)
+        self._muestreo_runner = None
+
+        if not isinstance(data, dict):
+            self.tools.messages('Puntos de Muestreo', 'Respuesta no válida del servidor.', 1, alert=True)
+            return
+
+        status = data.get('status_code')
+        message = data.get('message', '')
+        if data.get('ok') is True:
+            self.input_comentario.clear()
+            self.tools.messages(
+                'Puntos de Muestreo',
+                f'Se han generado los puntos de muestreo correctamente.\n{message}',
+                3,
+                alert=True
+            )
+        elif status == 409:
+            self.tools.messages(
+                'Puntos de Muestreo',
+                f'No se han podido generar los puntos de muestreo.\n{message}',
+                1,
+                alert=True
+            )
+        elif status in (400, 422):
+            self.tools.messages(
+                'Puntos de Muestreo',
+                f'El servidor ha rechazado los datos enviados.\n{message}',
+                1,
+                alert=True
+            )
+        elif status in (401, 403):
+            self.tools.messages(
+                'Puntos de Muestreo',
+                f'No tienes autorización para realizar esta operación.\n{message}',
+                1,
+                alert=True
+            )
+        else:
+            self.tools.messages(
+                'Puntos de Muestreo',
+                f'Error de comunicación con el servidor ({status}).\n{message}',
+                2,
+                alert=True
+            )
+
+    def _on_muestreo_error(self, message):
+        """Restaura la interfaz cuando el ejecutor falla fuera de la petición HTTP."""
+        self._set_muestreo_busy(False)
+        self._muestreo_runner = None
+        self.tools.messages(
+            'Puntos de Muestreo',
+            f'No se ha podido ejecutar la operación.\n{message}',
+            1,
+            alert=True
+        )
 
     def createRemuestreoPoints(self):
         """
