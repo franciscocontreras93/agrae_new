@@ -28,7 +28,6 @@ from qgis.PyQt.QtCore import  Qt,QVariant, QSettings, QSize,QDateTime,pyqtSignal
 from ..db import agraeDataBaseDriver
 from ..sql import aGraeSQLTools
 
-from .agraeQR import aGraeLabelGenerator
 
 from ..core.config import aGraeConfig
 
@@ -46,6 +45,7 @@ class aGraeTools():
         self.plugin_name = 'aGrae Toolbox'
 
         self.config = aGraeConfig()
+        self.api_headers = self.config.api_headers
 
         try:
            
@@ -1285,15 +1285,7 @@ class aGraeTools():
             self.messages('aGrae GIS','Ocurrio un error al actualizar las fechas de siembra.\n {}'.format(ex),2,alert=True)
             print(ex)
 
-    def cargarLabelsDRIVE(self,file_path:str):
-        from .gdriveCore import GDrive
-        # file_path = r"D:\GeoSIG\aGrae\test\test_labels\label_A410201.pdf"
-        core = aGraeLabelGenerator()
-        qr,code = core.generateQR('A410205')
-        label = core.generateLabel(qr,code)
-
-        drive = GDrive()
-        url = drive.upload_file(label)
+    
 
     def getBasemapsDict(self) -> dict:
         return  {
@@ -1379,7 +1371,7 @@ class aGraeTools():
         
         try:
             timeout = aiohttp.ClientTimeout(total=timeout_sec)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with aiohttp.ClientSession(timeout=timeout, headers=self.api_headers) as session:
                 async with session.post(url, json=payload) as resp:
                     status = resp.status
                     # Intenta parsear JSON (aunque falte content-type)
@@ -1424,7 +1416,7 @@ class aGraeTools():
 
         try:
             timeout = aiohttp.ClientTimeout(total=timeout_sec)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with aiohttp.ClientSession(timeout=timeout, headers=self.api_headers) as session:
                 async with session.patch(url, json=payload, allow_redirects=False) as resp:
                     status = resp.status
 

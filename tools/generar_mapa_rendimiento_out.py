@@ -1081,9 +1081,30 @@ for source_polygon in prescription_layer.getFeatures():
         prescription_extent.combineExtentWith(geometry.boundingBox())
 
 if prescription_extent is None:
+    polygon_ids = {
+        base_iddata(feature[PRESCRIPTION_FIELDS["iddata"]])
+        for feature in prescription_layer.getFeatures()
+    }
+    polygon_ids.discard(None)
+    matching_ids = polygon_ids.intersection(lot_quality)
+    print(f"Lotes de rendimiento con metadatos: {len(lot_quality):,}")
+    print(f"Lotes que superan calidad: {len(accepted_yield_ids):,}")
+    print(f"Códigos base distintos en mapa SIG: {len(polygon_ids):,}")
+    print(f"Códigos coincidentes antes de calidad: {len(matching_ids):,}")
+    for iddata in sorted(matching_ids)[:20]:
+        quality = lot_quality[iddata]
+        print(
+            f"  iddata {iddata}: {quality['reason'] or 'aceptado'}; "
+            f"válidos {quality['valid_percent']:.1f}%; "
+            f"cobertura {quality['coverage']:.1f}%; "
+            f"muestras {len(lot_basic_samples[iddata]):,}"
+        )
+    if not matching_ids:
+        print("Ejemplos de iddata de rinde:", sorted(lot_quality)[:10])
+        print("Ejemplos de iddata base SIG:", sorted(polygon_ids)[:10])
     raise RuntimeError(
-        "No hay unidades del mapa SIG relacionadas con lotes de rendimiento "
-        "que hayan superado los controles de calidad."
+        "No hay unidades SIG con rendimiento aceptado. Revise el diagnóstico "
+        "anterior: coincidencia de iddata y motivos de rechazo por lote."
     )
 
 print(

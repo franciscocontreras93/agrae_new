@@ -5,8 +5,26 @@ from qgis.PyQt import QtWidgets, QtCore
 from qgis.PyQt.QtCore import Qt
 
 from ..core.api import APIRequest
+from ..gui import agraeGUI
 from ..gui.components.CustomComboBox import PlanesComboBox, SeriesComboBox
 from ..dialogs.gestion.agricultor.agricultorSelectDialog import AgricultorSelectDialog
+
+
+LOTES_SORT_ROLE = Qt.UserRole + 1
+
+
+class FacturacionLoteItem(QtWidgets.QTreeWidgetItem):
+    """Item con ordenacion numerica para ids y superficies."""
+
+    def __lt__(self, other):
+        column = self.treeWidget().sortColumn() if self.treeWidget() else 0
+        left = self.data(column, LOTES_SORT_ROLE)
+        right = other.data(column, LOTES_SORT_ROLE)
+
+        if left is not None and right is not None:
+            return left < right
+
+        return self.text(column).casefold() < other.text(column).casefold()
 
 
 class FacturacionDialog(QtWidgets.QDialog):
@@ -38,6 +56,7 @@ class FacturacionDialog(QtWidgets.QDialog):
         self.modo_edicion = bool(modo_edicion)
 
         self._api_request = APIRequest()
+        self._gui = agraeGUI()
         self._agricultor_payer = None
         self.idpersona = None
         self._current_plan = None
@@ -284,10 +303,11 @@ class FacturacionDialog(QtWidgets.QDialog):
         layout.setSpacing(5)
 
         self.tree_lotes = QtWidgets.QTreeWidget()
-        self.tree_lotes.setColumnCount(6)
-        self.tree_lotes.setHeaderLabels(["iddata", "Lote", "Cultivo", "Ha reales", "Ha facturadas", "Norma"])
+        self.tree_lotes.setColumnCount(7)
+        self.tree_lotes.setHeaderLabels(["iddata", "Lote", "Cultivo", "Ha reales", "Ha facturadas", "Norma", "Acciones"])
         self.tree_lotes.setRootIsDecorated(False)
         self.tree_lotes.setAlternatingRowColors(True)
+        self.tree_lotes.setSortingEnabled(True)
         self.tree_lotes.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.tree_lotes.setMinimumHeight(150)
         self.tree_lotes.setEditTriggers(
@@ -299,11 +319,11 @@ class FacturacionDialog(QtWidgets.QDialog):
         header = self.tree_lotes.header()
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
-        for col in (2, 3, 4, 5):
+        for col in (2, 3, 4, 5, 6):
             header.setSectionResizeMode(col, QtWidgets.QHeaderView.ResizeToContents)
 
         self.lbl_lotes_info = QtWidgets.QLabel(
-            "Doble clic en 'Ha facturadas' para ajustar manualmente la superficie facturada."
+            "Pulsa una cabecera para ordenar. Doble clic en 'Ha facturadas' para ajustar la superficie."
         )
         self.lbl_lotes_info.setStyleSheet("color: #666;")
 
@@ -423,30 +443,79 @@ class FacturacionDialog(QtWidgets.QDialog):
 
 
     def _load_lotes(self, lotes: list | None = None):
+        sorting_enabled = self.tree_lotes.isSortingEnabled()
+        self.tree_lotes.setSortingEnabled(False)
         self.tree_lotes.blockSignals(True)
         self.tree_lotes.clear()
 
         lotes = lotes or []
+        barbechos_omitidos = 0
 
         for lote in lotes:
             lote_norm = self._normalizar_lote(lote)
+
+            if lote_norm.get("idcultivo") == -1:
+                barbechos_omitidos += 1
+                continue
+
             ha_real = Decimal(str(lote_norm["area_ha"]))
             ha_fact = self._calcular_ha_facturada_default(ha_real)
 
-            item = QtWidgets.QTreeWidgetItem([
+            item = FacturacionLoteItem([
                 str(lote_norm.get("iddata") or ""),
                 str(lote_norm.get("nombre", "-")),
                 str(lote_norm.get("cultivo", "-")),
                 self._fmt_number(ha_real),
                 self._fmt_number(ha_fact),
                 self._get_norma_text(ha_real),
+                "",
             ])
 
             item.setData(0, Qt.UserRole, lote_norm)
+            iddata_sort = str(lote_norm.get("iddata") or "")
+            item.setData(0, LOTES_SORT_ROLE, iddata_sort.zfill(20) if iddata_sort.isdigit() else iddata_sort.casefold())
+            item.setData(1, LOTES_SORT_ROLE, str(lote_norm.get("nombre", "-")).casefold())
+            item.setData(2, LOTES_SORT_ROLE, str(lote_norm.get("cultivo", "-")).casefold())
+            item.setData(3, LOTES_SORT_ROLE, float(ha_real))
+            item.setData(4, LOTES_SORT_ROLE, float(ha_fact))
+            item.setData(5, LOTES_SORT_ROLE, self._get_norma_text(ha_real).casefold())
             item.setFlags(item.flags() | Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable)
             self.tree_lotes.addTopLevelItem(item)
 
+            btn_quitar = QtWidgets.QToolButton()
+            btn_quitar.setIcon(self._gui.getIcon("minus"))
+            btn_quitar.setIconSize(QtCore.QSize(14, 14))
+            btn_quitar.setFixedSize(26, 24)
+            btn_quitar.setAutoRaise(True)
+            btn_quitar.setToolTip("Quitar este lote de la factura")
+            btn_quitar.setAccessibleName("Quitar lote")
+            btn_quitar.clicked.connect(lambda _checked=False, row=item: self._quitar_lote(row))
+
+            action_widget = QtWidgets.QWidget()
+            action_layout = QtWidgets.QHBoxLayout(action_widget)
+            action_layout.setContentsMargins(2, 0, 2, 0)
+            action_layout.setAlignment(Qt.AlignCenter)
+            action_layout.addWidget(btn_quitar)
+            self.tree_lotes.setItemWidget(item, 6, action_widget)
+
         self.tree_lotes.blockSignals(False)
+        self.tree_lotes.setSortingEnabled(sorting_enabled)
+        if sorting_enabled:
+            self.tree_lotes.sortItems(1, Qt.AscendingOrder)
+
+        info = "Pulsa una cabecera para ordenar. Doble clic en 'Ha facturadas' para ajustar la superficie."
+        if barbechos_omitidos:
+            info += f" Se han excluido {barbechos_omitidos} lote(s) de barbecho."
+        self.lbl_lotes_info.setText(info)
+
+        self._recalcular_resumen()
+
+    def _quitar_lote(self, item: QtWidgets.QTreeWidgetItem):
+        index = self.tree_lotes.indexOfTopLevelItem(item)
+        if index < 0:
+            return
+
+        self.tree_lotes.takeTopLevelItem(index)
         self._recalcular_resumen()
 
     def _on_series_loaded(self, _items):
@@ -628,6 +697,7 @@ class FacturacionDialog(QtWidgets.QDialog):
             return {
                 "iddata": lote.get("iddata"),
                 "idlote": lote.get("idlote"),
+                "idcultivo": lote.get("idcultivo"),
                 "nombre": lote.get("nombre") or lote.get("lote") or lote.get("name") or "-",
                 "cultivo": lote.get("cultivo") or lote.get("nombre_cultivo") or "-",
                 "area_ha": float(lote.get("area_ha") or lote.get("ha") or lote.get("area") or 0),
@@ -647,6 +717,7 @@ class FacturacionDialog(QtWidgets.QDialog):
         return {
             "iddata": val("iddata", "IDDATA", "id_data"),
             "idlote": val("idlote", "IDLOTE", "id_lote"),
+            "idcultivo": val("idcultivo", "IDCULTIVO", "id_cultivo"),
             "nombre": val("lote", "nombre", "name", "LOTE", "NOMBRE", default="-"),
             "cultivo": val("cultivo", "nombre_cultivo", "CULTIVO", default="-"),
             "area_ha": float(val("area_ha", "ha", "sup_ha", "AREA_HA", "area", default=0) or 0),
@@ -717,7 +788,9 @@ class FacturacionDialog(QtWidgets.QDialog):
                 continue
 
             ha_real = Decimal(str(lote.get("area_ha") or 0))
-            item.setText(4, self._fmt_number(self._calcular_ha_facturada_default(ha_real)))
+            ha_facturada = self._calcular_ha_facturada_default(ha_real)
+            item.setText(4, self._fmt_number(ha_facturada))
+            item.setData(4, LOTES_SORT_ROLE, float(ha_facturada))
             item.setText(5, self._get_norma_text(ha_real))
 
         self.tree_lotes.blockSignals(False)
@@ -812,6 +885,7 @@ class FacturacionDialog(QtWidgets.QDialog):
 
         self.tree_lotes.blockSignals(True)
         item.setText(4, self._fmt_number(value))
+        item.setData(4, LOTES_SORT_ROLE, float(value))
 
         lote = item.data(0, Qt.UserRole)
         if isinstance(lote, dict):
@@ -1204,12 +1278,13 @@ class FacturacionDialog(QtWidgets.QDialog):
     def _seleccionar_codigo_disponible(self):
         """
         Consulta códigos de facturas anuladas disponibles para la serie actual.
-        Devuelve idcodigo o None si el usuario no quiere reutilizar ninguno.
+        Devuelve si se debe continuar y el codigo seleccionado, si lo hay.
+        Cancelar el dialogo aborta por completo la emision.
         """
         idserie = self.cmb_serie.currentData()
 
         if not idserie:
-            return None
+            return {"continuar": True, "codigo": None}
 
         codigos = self._api_request.get(
             "/billing/facturas/codigos_disponibles",
@@ -1220,7 +1295,7 @@ class FacturacionDialog(QtWidgets.QDialog):
         )
 
         if not codigos:
-            return None
+            return {"continuar": True, "codigo": None}
 
         opciones = ["No reutilizar código"]
 
@@ -1232,17 +1307,25 @@ class FacturacionDialog(QtWidgets.QDialog):
         selected, ok = QtWidgets.QInputDialog.getItem(
             self,
             "Código disponible",
-            "Hay códigos de facturas anuladas disponibles para esta serie.\nSelecciona uno si quieres reutilizarlo:",
+            (
+                "Hay códigos de facturas anuladas disponibles para esta serie.\n"
+                "Si reutilizas uno, la factura conservará su fecha original.\n"
+                "Selecciona 'No reutilizar código' para continuar con la fecha actual, "
+                "o pulsa Cancelar para no emitir."
+            ),
             opciones,
             0,
             False,
         )
 
-        if not ok or selected == "No reutilizar código":
-            return None
+        if not ok:
+            return {"continuar": False, "codigo": None}
+
+        if selected == "No reutilizar código":
+            return {"continuar": True, "codigo": None}
 
         index = opciones.index(selected) - 1
-        return codigos[index].get("idcodigo")
+        return {"continuar": True, "codigo": codigos[index]}
 
     def _solicitar_factura_pdf(self, emitir: bool):
         """
@@ -1257,9 +1340,25 @@ class FacturacionDialog(QtWidgets.QDialog):
         endpoint = f"/billing/facturar_por_data?emitir={'true' if emitir else 'false'}"
 
         if emitir:
-            idcodigo_disponible = self._seleccionar_codigo_disponible()
+            seleccion_codigo = self._seleccionar_codigo_disponible()
+            if not seleccion_codigo.get("continuar"):
+                return
+
+            codigo_disponible = seleccion_codigo.get("codigo") or {}
+            idcodigo_disponible = codigo_disponible.get("idcodigo")
             if idcodigo_disponible:
                 endpoint += f"&idcodigo_disponible={idcodigo_disponible}"
+
+                fecha_original = codigo_disponible.get("fecha_emision_original")
+                if not fecha_original:
+                    QtWidgets.QMessageBox.warning(
+                        self,
+                        "Facturación",
+                        "El código seleccionado no tiene una fecha original válida. No se emitió la factura."
+                    )
+                    return
+
+                payload["factura"]["fecha_emision"] = str(fecha_original)[:10]
 
         response = self._api_request.post(endpoint, payload, full_response=True)
 

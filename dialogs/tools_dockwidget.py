@@ -23,6 +23,7 @@ from ..sql import aGraeSQLTools
 from ..gui import agraeGUI
 from ..gui.components import CampaniasComboBox, ExplotacionesComboBox, CultivosComboBox, RegimenComboBox, InfoCardNumLotes
 from ..core.config import aGraeConfig
+from ..wfs import build_lotes_wfs_uri
 from ..dialogs import aGraeDialogs, AgricultorSelectDialog
 
 from .explotacion_dialogs import CopyExplotacionDialog, CreateExplotacionDialog, UpdateExplotacionDialog,GestionarExplotacionesDialog
@@ -55,6 +56,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
                  parent=None):
         super(agraeToolsDockwidget,self).__init__(parent)
         self.instance = QgsProject.instance()
+        self._last_lotes_filter = None
+        self._loading_lotes_filter = None
         
         # UI elements will be created in UIComponents
         self._create_ui_elements() # Helper to declare elements
@@ -122,7 +125,6 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
         self.combo_explotacion = ExplotacionesComboBox()
         self.combo_explotacion.bind_to_campaigns(self.combo_campania)
-        self.combo_explotacion.currentIndexChanged.connect(self.getLotesExplotacionLayer)
 
         self.tool_exp = QtWidgets.QToolButton()
 
@@ -599,8 +601,8 @@ class agraeToolsDockwidget(QtWidgets.QDockWidget):
 
 
         # if self.config.local:
-        #     self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
-        #     self.toolBox.setItemIcon(2,agraeGUI().getIcon('explotacion'))
+        self.toolBox.addItem(self.page_facturacion, "Datos de Facturación y Económicos Generales")
+        self.toolBox.setItemIcon(2,agraeGUI().getIcon('explotacion'))
 
 
         self.toolBox.addItem(self.page_gee_module, "Modulo de Google Earth Engine")
@@ -1417,29 +1419,50 @@ FROM
 
 
     def getLotesExplotacionLayer(self):
-       
-
-        sql = aGraeSQLTools().getSql('view_lotes.sql')
-
+        requested_filter = None
         try:
             # self.label_info.setText('Campaña: {} | Explotacion: {}'.format(self.combo_campania.currentData(),self.combo_explotacion.currentData()))
             self.getExpInfo()
-            sql = sql.format(self.combo_campania.currentData(),self.combo_explotacion.currentData())
+            idcampania = self.combo_campania.currentData()
+            idexplotacion = self.combo_explotacion.currentData()
+            requested_filter = (int(idcampania), int(idexplotacion))
+            if requested_filter in (self._last_lotes_filter, self._loading_lotes_filter):
+                return
+            self._loading_lotes_filter = requested_filter
             self.getCampaniaCultivoCombo(self.combo_explotacion.currentData())
-            layer = self.tools.getDataBaseLayer(sql,layername='{}-Lotes'.format(self.combo_campania.currentText()[2:]),styleName='lote',memory=False,idlayer='iddata')
+            uri = build_lotes_wfs_uri(idcampania, idexplotacion)
+            layer = QgsVectorLayer(
+                uri,
+                '{}-Lotes'.format(self.combo_campania.currentText()[2:]),
+                'WFS',
+            )
+            layer.loadNamedStyle(os.path.join(
+                os.path.dirname(__file__), '..', 'tools', 'styles', 'lote.qml'
+            ))
+            if not layer.isValid():
+                raise RuntimeError(
+                    'GeoServer no pudo cargar los lotes para campaña {} y explotación {}'.format(
+                        idcampania, idexplotacion
+                    )
+                )
             if layer.id() != self.layer.id():
                 QgsProject.instance().removeMapLayer(self.layer.id())
                 self.layer = layer
                 QgsProject.instance().addMapLayer(self.layer)
-                self.identifyTool = selectTool(self.layer)
+                self.identifyTool = aGraeSelectTool(self.layer)
                 self.identifyTool.featureSelected.connect(self.fillDataLote)
                 iface.mapCanvas().setMapTool(self.identifyTool)
+            self._last_lotes_filter = requested_filter
 
 
         except Exception as ex:
-            # self.conn.rollback()
-            # print(ex)
-            pass
+            QgsMessageLog.logMessage(str(ex), 'aGrae', level=Qgis.Critical)
+            iface.messageBar().pushMessage(
+                'Error WFS', str(ex), level=Qgis.Critical, duration=8
+            )
+        finally:
+            if self._loading_lotes_filter == requested_filter:
+                self._loading_lotes_filter = None
 
                 
         self.reloadLayer()
@@ -1454,8 +1477,6 @@ FROM
         pass
     
     def focusExp(self):
-        reset = ''
-        # self.layer.setSubsetString(reset)
         if self.combo_explotacion.currentData() != None:
             # exp = QgsExpression("\"idexplotacion\"={}".format(self.combo_explotacion.currentData()))
             # it = self.layer.getFeatures(QgsFeatureRequest(exp))
@@ -1464,8 +1485,17 @@ FROM
             # self.layer.setSubsetString("\"idexplotacion\"={}".format(self.combo_explotacion.currentData()))
             # bbox = self.layer.boundingBoxOfSelected()
             # iface.actionZoomToSelected().trigger()
-            iface.mapCanvas().setExtent(self.layer.extent())
-            iface.mapCanvas().refresh()
+            # Las vistas parametrizadas de GeoServer anuncian en GetCapabilities
+            # la extensión de sus valores por defecto. Calculamos la extensión
+            # con las geometrías descargadas para no usar ese bounding box obsoleto.
+            extent = QgsRectangle()
+            for feature in self.layer.getFeatures(QgsFeatureRequest().setNoAttributes()):
+                geometry = feature.geometry()
+                if geometry and not geometry.isEmpty():
+                    extent.combineExtentWith(geometry.boundingBox())
+            if not extent.isEmpty():
+                iface.mapCanvas().setExtent(extent)
+                iface.mapCanvas().refresh()
             # self.layer.removeSelection()
 
     def getCampaniaCultivoCombo(self,idexp):

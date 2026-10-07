@@ -1,6 +1,7 @@
 import requests
 import json
 from qgis.PyQt.QtCore import QThread, pyqtSignal, QObject # QObject añadido
+from ..core.config import aGraeConfig
 
 # --- ApiWorker Original (para KPIs, etc., si aún se usa) ---
 class ApiWorker(QThread):
@@ -72,7 +73,10 @@ class GenericApiWorker(QObject):
 
             url = self.config.get("url")
             params = self.config.get("params")
-            headers = self.config.get("headers")
+            headers = {
+                **aGraeConfig().api_headers,
+                **(self.config.get("headers") or {}),
+            }
             method = self.config.get("method", "GET").upper()
             data_payload = self.config.get("data") # Para cuerpos de solicitud
             timeout = self.config.get("timeout", 30) # Timeout por defecto de 30 segundos

@@ -7,6 +7,9 @@ class APIRequest:
         self.config = aGraeConfig()
         self.base_url = self.config.backend_url if base_url is None else base_url
 
+    def _headers(self, headers: dict = None) -> dict:
+        return {**self.config.api_headers, **(headers or {})}
+
     def _build_url(self, endpoint: str) -> str:
         url = f"{self.base_url}/{endpoint}"
         url = url.replace("//", "/").replace(":/", "://")
@@ -51,7 +54,7 @@ class APIRequest:
     def get(self, endpoint, params=None, raw=False, full_response: bool = False):
         url = self._build_url(endpoint)
         try:
-            response = requests.get(url, params=params, timeout=30)
+            response = requests.get(url, params=params, headers=self._headers(), timeout=30)
 
             if full_response:
                 return self._response_envelope(response)
@@ -83,7 +86,7 @@ class APIRequest:
         try:
             r = requests.get(
                 url,
-                headers=final_headers,
+                headers=self._headers(final_headers),
                 timeout=60
             )
 
@@ -118,7 +121,7 @@ class APIRequest:
         url = self._build_url(endpoint)
 
         try:
-            response = requests.post(url, json=data, timeout=30)
+            response = requests.post(url, json=data, headers=self._headers(), timeout=30)
 
             if full_response:
                 return self._response_envelope(response)
@@ -158,7 +161,7 @@ class APIRequest:
             r = requests.post(
                 url,
                 json=data,
-                headers=headers,
+                headers=self._headers(headers),
                 timeout=60
             )
 
@@ -210,7 +213,7 @@ class APIRequest:
         data = additional_data if additional_data else {}
 
         try:
-            r = requests.post(url, files=files, data=data, timeout=60)
+            r = requests.post(url, files=files, data=data, headers=self._headers(), timeout=60)
 
             try:
                 payload = r.json()
@@ -240,7 +243,7 @@ class APIRequest:
     def delete(self, endpoint, data=None, full_response: bool = False):
         url = self._build_url(endpoint)
         try:
-            response = requests.delete(url, json=data, timeout=30)
+            response = requests.delete(url, json=data, headers=self._headers(), timeout=30)
 
             if full_response:
                 return self._response_envelope(response)
@@ -260,7 +263,7 @@ class APIRequest:
         url = self._build_url(endpoint)
 
         try:
-            response = requests.put(url, json=data, timeout=30)
+            response = requests.put(url, json=data, headers=self._headers(), timeout=30)
 
             return {
                 "ok": response.ok,
@@ -282,7 +285,7 @@ class APIRequest:
         url = self._build_url(endpoint)
 
         try:
-            response = requests.patch(url, json=data, timeout=30)
+            response = requests.patch(url, json=data, headers=self._headers(), timeout=30)
 
             if full_response:
                 return self._response_envelope(response)

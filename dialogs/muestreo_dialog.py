@@ -241,10 +241,6 @@ class MuestreoDialog(QDialog):
             )
             if check.isChecked()
         ]
-        if not segmentos_muestreo:
-            QMessageBox.warning(self, 'aGrae Toolbox', 'Selecciona al menos un segmento.')
-            return
-
         alcance = 'todos los lotes de la capa'
         if self.check_seleccionados.isChecked():
             features = list(layer.getSelectedFeatures())
@@ -293,6 +289,11 @@ class MuestreoDialog(QDialog):
         segmentos_derivar = [
             numero for numero in (1, 2, 3) if numero not in segmentos_muestreo
         ] or [0]
+        segmentos_texto = (
+            ", ".join(map(str, segmentos_muestreo))
+            if segmentos_muestreo
+            else "Ninguno (se generarán derivadas en los segmentos 1, 2 y 3)"
+        )
         tipo_texto = 'Seguimiento' if tipo == 3 else 'Normal'
         comentario_texto = 'Sí' if comentario else 'No'
 
@@ -302,7 +303,7 @@ class MuestreoDialog(QDialog):
             'Vas a generar puntos de muestreo con esta configuración:\n\n'
             f' · Alcance: {alcance}\n'
             f' · Lotes: {len(ids)}\n'
-            f' · Segmentos: {", ".join(map(str, segmentos_muestreo))}\n'
+            f' · Segmentos: {segmentos_texto}\n'
             f' · Tipo: {tipo_texto}\n'
             f' · Prioridad: {self.combo_prioridad.currentText()}\n'
             f' · Comentario: {comentario_texto}\n\n'
